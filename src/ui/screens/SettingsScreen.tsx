@@ -1,0 +1,130 @@
+import { useEffect, useState } from 'react';
+import { useConfig } from '@/ui/context/ConfigContext';
+import { getApiKey, setApiKey, clearApiKey } from '@/services/platform/storage';
+import './SettingsScreen.css';
+
+export interface SettingsScreenProps {
+  onBack: () => void;
+}
+
+/** Shows enough of the key to recognise it, never enough to read it back. */
+function mask(key: string): string {
+  return key.length <= 12 ? '••••' : `${key.slice(0, 7)}…${key.slice(-4)}`;
+}
+
+/**
+ * Minimal Settings (§13): API key entry and the active model routes. Config
+ * overrides, notifications, and export/import land here in build order step 11.
+ *
+ * The key is stored through services/platform (Keychain / EncryptedSharedPrefs),
+ * never IndexedDB or localStorage (REQ-P4), and is sent nowhere but the model
+ * provider.
+ */
+export function SettingsScreen({ onBack }: SettingsScreenProps) {
+  const config = useConfig();
+  const [stored, setStored] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getApiKey().then((key) => {
+      if (cancelled) return;
+      setStored(key);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleSave() {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    await setApiKey(trimmed);
+    setStored(trimmed);
+    setDraft('');
+    setStatus('Key saved on this device.');
+  }
+
+  async function handleClear() {
+    await clearApiKey();
+    setStored(null);
+    setStatus('Key removed.');
+  }
+
+  return (
+    <div className="settings-screen">
+      <header className="settings-screen__header">
+        <button type="button" className="settings-screen__back" onClick={onBack}>
+          ← Home
+        </button>
+        <h1 className="settings-screen__title">Settings</h1>
+      </header>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Model provider key</h2>
+        <p className="settings-screen__note">
+          Stored on this device only, and sent nowhere but the model provider.
+        </p>
+
+        {loading ? (
+          <p className="settings-screen__note">Loading…</p>
+        ) : (
+          <>
+            <p className="settings-screen__current">
+              {stored ? `Current key: ${mask(stored)}` : 'No key set — rounds cannot be generated.'}
+            </p>
+
+            <input
+              type="password"
+              className="settings-screen__input"
+              placeholder="sk-ant-…"
+              value={draft}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+
+            <div className="settings-screen__row">
+              <button
+                type="button"
+                className="settings-screen__button"
+                onClick={() => void handleSave()}
+              >
+                Save key
+              </button>
+              {stored && (
+                <button
+                  type="button"
+                  className="settings-screen__button"
+                  onClick={() => void handleClear()}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+
+            {status && <p className="settings-screen__note">{status}</p>}
+          </>
+        )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Models</h2>
+        <ul className="settings-screen__list">
+          {Object.entries(config.models).map(([kind, route]) => (
+            <li key={kind} className="settings-screen__list-row">
+              <span>{kind}</span>
+              <span className="settings-screen__value">{route.model}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="settings-screen__note">
+          Per-route model selection is editable here in a later step.
+        </p>
+      </section>
+    </div>
+  );
+}

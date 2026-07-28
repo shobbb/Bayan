@@ -9,7 +9,8 @@ export interface ReadingScreenProps {
   segments?: Segment[];
   titleAr?: string;
   titleEn?: string;
-  onFinish: () => void;
+  /** Receives the segment indices flagged “didn’t know”, which carry the unclear signal. */
+  onFinish: (notKnownIndices: number[]) => void;
 }
 
 // Approx GlossPanel height plus margin — keeps a freshly tapped word visible
@@ -105,7 +106,11 @@ export function ReadingScreen({
       />
 
       <div className="reading-screen__finish-row">
-        <button type="button" className="reading-screen__finish" onClick={onFinish}>
+        <button
+          type="button"
+          className="reading-screen__finish"
+          onClick={() => onFinish([...notKnownIndices])}
+        >
           Finish
         </button>
       </div>

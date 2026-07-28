@@ -46,6 +46,10 @@ export const anthropicClient: LlmClient = {
         'content-type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        // The app is a WebView with no backend (§2.0), so requests are issued
+        // from a browser origin. Without this the provider rejects them at CORS.
+        // The key never leaves the device except on this request (§13).
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
         model,

@@ -19,12 +19,20 @@ export interface ModelRoute {
 
 export type ModelRoutes = Record<QueryKind, ModelRoute>;
 
-// REQ-C2: diacritization quality is the binding constraint on generation
-// quality — if output vowelling is unreliable, escalate roundGeneration
-// before changing anything else.
+/**
+ * Cheapest available model on every route while the method is under test —
+ * an explicit cost choice, not a quality judgement.
+ *
+ * REQ-C2: diacritization quality is the binding constraint on generation
+ * quality. If output vowelling proves unreliable, escalate `roundGeneration`
+ * to a more capable model before changing anything else — that is the whole
+ * reason routes are per-query-kind rather than one model app-wide.
+ */
+const CHEAPEST_MODEL = 'claude-haiku-4-5';
+
 export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
-  roundGeneration: { model: '<capable>', maxTokens: 4000, temperature: 0.8 },
-  sentenceGeneration: { model: '<mid>', maxTokens: 3000, temperature: 0.7 },
-  distractorGeneration: { model: '<cheap>', maxTokens: 1000, temperature: 0.9 },
-  diacritization: { model: '<capable>', maxTokens: 4000, temperature: 0.2 },
+  roundGeneration: { model: CHEAPEST_MODEL, maxTokens: 4000, temperature: 0.8 },
+  sentenceGeneration: { model: CHEAPEST_MODEL, maxTokens: 3000, temperature: 0.7 },
+  distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 1000, temperature: 0.9 },
+  diacritization: { model: CHEAPEST_MODEL, maxTokens: 4000, temperature: 0.2 },
 };

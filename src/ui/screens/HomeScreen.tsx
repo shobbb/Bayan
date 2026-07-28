@@ -9,6 +9,11 @@ export interface HomeScreenProps {
   onStartRound: (roundType: RoundType) => void;
   onReplayRound: (round: Round) => void;
   onOpenStats: () => void;
+  onOpenSettings: () => void;
+  /** The round type currently being generated, or null when idle. */
+  generating: RoundType | null;
+  /** Advisory text from the last failed attempt (REQ-13). */
+  failure: string | null;
 }
 
 /**
@@ -18,7 +23,14 @@ export interface HomeScreenProps {
  * registry — it never branches on which action was pressed (REQ-E2). No action
  * is disabled or gated; unmet preconditions surface as advisory text (REQ-13).
  */
-export function HomeScreen({ onStartRound, onReplayRound, onOpenStats }: HomeScreenProps) {
+export function HomeScreen({
+  onStartRound,
+  onReplayRound,
+  onOpenStats,
+  onOpenSettings,
+  generating,
+  failure,
+}: HomeScreenProps) {
   const status = useHomeStatus();
   const rounds = useRecentRounds();
   const [notice, setNotice] = useState<string | null>(null);
@@ -46,7 +58,7 @@ export function HomeScreen({ onStartRound, onReplayRound, onOpenStats }: HomeScr
             type="button"
             className="home-screen__settings"
             aria-label="Settings"
-            onClick={() => setNotice('Settings aren’t available yet.')}
+            onClick={onOpenSettings}
           >
             {/* Placeholder until the Settings view (§13) is built. */}
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,12 +99,25 @@ export function HomeScreen({ onStartRound, onReplayRound, onOpenStats }: HomeScr
             key={action.id}
             type="button"
             className="home-screen__action"
+            aria-busy={generating === action.id}
             onClick={() => action.run(ctx)}
           >
-            {action.label}
+            {generating === action.id ? `${action.label}…` : action.label}
           </button>
         ))}
       </div>
+
+      {generating !== null && (
+        <p className="home-screen__notice" role="status">
+          Generating a round. This takes a few seconds.
+        </p>
+      )}
+
+      {failure && !generating && (
+        <p className="home-screen__notice" role="status">
+          {failure}
+        </p>
+      )}
 
       {notice && (
         <p className="home-screen__notice" role="status">

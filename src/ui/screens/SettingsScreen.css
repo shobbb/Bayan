@@ -1,0 +1,125 @@
+/* Instrument register (§5.1): controls read as present and responsive. */
+.settings-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-7);
+}
+
+.settings-screen__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.settings-screen__back {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.settings-screen__back:hover {
+  color: var(--signal);
+}
+
+.settings-screen__title {
+  font-family: var(--font-english);
+  font-size: 1.4rem;
+  font-weight: 400;
+  margin: 0;
+  color: var(--ink);
+}
+
+.settings-screen__section {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+  margin-bottom: var(--space-6);
+}
+
+.settings-screen__section-title {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  font-weight: 400;
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+.settings-screen__note,
+.settings-screen__current {
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+.settings-screen__current {
+  color: var(--ink);
+}
+
+.settings-screen__input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+}
+
+.settings-screen__input:focus {
+  outline: none;
+  border-color: var(--signal);
+}
+
+.settings-screen__row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.settings-screen__button {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.settings-screen__button:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.settings-screen__list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.settings-screen__list-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink);
+}
+
+.settings-screen__value {
+  color: var(--ink-muted);
+  font-size: var(--text-data-size);
+}
