@@ -8,6 +8,9 @@
 }
 
 .home-screen__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--space-6);
 }
 
@@ -17,6 +20,26 @@
   font-weight: 700;
   margin: 0;
   color: var(--ink);
+}
+
+/* Icon control (§7 header). ≥44px tap target (§5.9); the negative inline-end
+   margin lets the glyph sit flush with the page edge without shrinking it. */
+.home-screen__settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline-end: calc(-1 * var(--space-2));
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.home-screen__settings:hover {
+  color: var(--signal);
 }
 
 .home-screen__status {

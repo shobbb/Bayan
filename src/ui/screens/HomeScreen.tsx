@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Round, RoundType } from '@/domain/types';
 import { useHomeStatus } from '@/ui/hooks/useHomeStatus';
 import { useRecentRounds } from '@/ui/hooks/useRecentRounds';
+import { HOME_ACTIONS, type HomeActionContext } from './homeActions';
 import './HomeScreen.css';
 
 export interface HomeScreenProps {
@@ -9,41 +10,50 @@ export interface HomeScreenProps {
   onReplayRound: (round: Round) => void;
 }
 
-interface HomeAction {
-  label: string;
-  onSelect: () => void;
-}
-
 /**
  * Entry screen (§7). Purpose: expose every action directly, orchestrate
- * nothing. REQ-13: no action is ever disabled or gated — preconditions
- * surface as advisory text only. REQ-16: the six actions are independent,
- * with no ordering dependency between them.
+ * nothing. The six actions live in homeActions.ts as independent functions
+ * (REQ-16); this view only supplies the dispatch context and maps over the
+ * registry — it never branches on which action was pressed (REQ-E2). No action
+ * is disabled or gated; unmet preconditions surface as advisory text (REQ-13).
  */
 export function HomeScreen({ onStartRound, onReplayRound }: HomeScreenProps) {
   const status = useHomeStatus();
   const rounds = useRecentRounds();
   const [notice, setNotice] = useState<string | null>(null);
 
-  const notBuiltYet = (feature: string) => () =>
-    setNotice(`${feature} isn't built in this session yet (build order step 9).`);
-
-  const actions: HomeAction[] = [
-    { label: 'Start explore round', onSelect: () => onStartRound('explore') },
-    { label: 'Start reinforcement round', onSelect: () => onStartRound('reinforcement') },
-    {
-      label: 'Start pure reinforcement round',
-      onSelect: () => onStartRound('pureReinforcement'),
-    },
-    { label: 'Start backlog clearing round', onSelect: () => onStartRound('backlog') },
-    { label: 'Generate new batch', onSelect: notBuiltYet('Batch generation') },
-    { label: 'Study current batch', onSelect: notBuiltYet('Drill sessions') },
-  ];
+  // Batch generation (§9) and drill sessions (§10) aren't built yet, so their
+  // dispatches surface an advisory rather than gating the button (REQ-13).
+  const ctx = useMemo<HomeActionContext>(
+    () => ({
+      startRound: onStartRound,
+      generateBatch: () => setNotice('Batch generation isn’t available yet.'),
+      studyBatch: () => setNotice('Drill sessions aren’t available yet.'),
+    }),
+    [onStartRound],
+  );
 
   return (
     <div className="home-screen">
       <header className="home-screen__header">
         <h1 className="home-screen__title">Bayan</h1>
+        <button
+          type="button"
+          className="home-screen__settings"
+          aria-label="Settings"
+          onClick={() => setNotice('Settings aren’t available yet.')}
+        >
+          {/* Placeholder until the Settings view (§13) is built. */}
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+            <path
+              d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9L5.3 5.3"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </header>
 
       <div className="home-screen__status" role="status">
@@ -66,19 +76,23 @@ export function HomeScreen({ onStartRound, onReplayRound }: HomeScreenProps) {
       </div>
 
       <div className="home-screen__grid">
-        {actions.map((action) => (
+        {HOME_ACTIONS.map((action) => (
           <button
-            key={action.label}
+            key={action.id}
             type="button"
             className="home-screen__action"
-            onClick={action.onSelect}
+            onClick={() => action.run(ctx)}
           >
             {action.label}
           </button>
         ))}
       </div>
 
-      {notice && <p className="home-screen__notice">{notice}</p>}
+      {notice && (
+        <p className="home-screen__notice" role="status">
+          {notice}
+        </p>
+      )}
 
       <section>
         <h2 className="home-screen__rounds-title">Recent rounds</h2>
