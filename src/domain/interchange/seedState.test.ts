@@ -7,6 +7,8 @@
 import { describe, it, expect } from 'vitest';
 import { parseStateExport } from './schema';
 import { planImport } from './importPlan';
+import { buildStateExport, serializeStateExport } from './buildExport';
+import { DEFAULT_CATEGORIES } from '@/config/categories';
 import { acquisitionRate, statusCounts } from '@/domain/stats/metrics';
 import { modernStandardArabicProfile } from '@/domain/languageProfile';
 import type { TrackId } from '@/domain/types';
@@ -91,6 +93,42 @@ describe('bundled seed corpus', () => {
 
     const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
     expect(total).toBe(summary.totalWords);
+  });
+
+  /**
+   * The strongest guarantee we can give the backup path: the real corpus, not a
+   * fixture, survives export -> import unchanged. A dump that loses anything
+   * here loses it permanently, since this is the only backup path (REQ-37).
+   */
+  it('survives a full export/import round trip unchanged (REQ-I11)', () => {
+    if (!result.ok) throw new Error('seed failed validation');
+    const imported = planImport(
+      result.value,
+      { words: [], rounds: [] },
+      modernStandardArabicProfile,
+      TRACK,
+    );
+
+    const dumped = serializeStateExport(
+      buildStateExport(imported.words, imported.rounds, DEFAULT_CATEGORIES, null, 1),
+    );
+    const reparsed = parseStateExport(JSON.parse(dumped));
+    if (!reparsed.ok) {
+      throw new Error(`export failed to validate: ${JSON.stringify(reparsed.failures.slice(0, 3))}`);
+    }
+
+    const restored = planImport(
+      reparsed.value,
+      { words: [], rounds: [] },
+      modernStandardArabicProfile,
+      TRACK,
+      'replace',
+    );
+
+    expect(restored.words).toHaveLength(imported.words.length);
+    expect(restored.rounds).toHaveLength(imported.rounds.length);
+    expect(restored.words).toEqual(imported.words);
+    expect(restored.rounds).toEqual(imported.rounds);
   });
 
   it('derives an acquisition rate consistent with that accounting (REQ-28)', () => {

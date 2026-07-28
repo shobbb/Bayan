@@ -123,3 +123,9 @@
   color: var(--ink-muted);
   font-size: var(--text-data-size);
 }
+
+.settings-screen__button:disabled {
+  color: var(--ink-muted);
+  border-color: var(--rule);
+  cursor: default;
+}

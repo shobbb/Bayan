@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useConfig } from '@/ui/context/ConfigContext';
 import { getApiKey, setApiKey, clearApiKey } from '@/services/platform/storage';
+import { copyToClipboard, downloadFile } from '@/services/platform/files';
+import { exportState } from '@/services/interchange/exportState';
 import './SettingsScreen.css';
 
 export interface SettingsScreenProps {
@@ -26,6 +28,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [draft, setDraft] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +50,21 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
     setStored(trimmed);
     setDraft('');
     setStatus('Key saved on this device.');
+  }
+
+  // REQ-37: export is the only backup path, so it is surfaced, not buried.
+  async function runExport(deliver: (json: string, filename: string) => Promise<void> | void) {
+    setBusy(true);
+    setBackupStatus(null);
+    try {
+      const dump = await exportState(config.categories);
+      await deliver(dump.json, dump.filename);
+      setBackupStatus(`Exported ${dump.wordCount} words and ${dump.roundCount} rounds.`);
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : 'Export failed.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleClear() {
@@ -109,6 +128,33 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
             {status && <p className="settings-screen__note">{status}</p>}
           </>
         )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Backup</h2>
+        <p className="settings-screen__note">
+          A complete dump of every word, round, and setting. This is the only backup path —
+          browser storage is not included in device backups.
+        </p>
+        <div className="settings-screen__row">
+          <button
+            type="button"
+            className="settings-screen__button"
+            disabled={busy}
+            onClick={() => void runExport((json, filename) => downloadFile(filename, json))}
+          >
+            Save file
+          </button>
+          <button
+            type="button"
+            className="settings-screen__button"
+            disabled={busy}
+            onClick={() => void runExport((json) => copyToClipboard(json))}
+          >
+            Copy
+          </button>
+        </div>
+        {backupStatus && <p className="settings-screen__note">{backupStatus}</p>}
       </section>
 
       <section className="settings-screen__section">

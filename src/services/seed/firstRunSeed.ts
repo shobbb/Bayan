@@ -10,7 +10,26 @@ import { parseStateExport } from '@/domain/interchange/schema';
 import { planImport } from '@/domain/interchange/importPlan';
 import type { ImportReport } from '@/domain/interchange/importPlan';
 import { applyImport, isCorpusEmpty } from '@/data/interchangeRepository';
+import { getConfigOverrides, setConfigOverrides } from '@/data/settingsRepository';
+import { mergeConfig } from '@/config';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
+
+/**
+ * Union of stored and incoming categories: an import brings the vocabulary its
+ * rounds are labelled with, but must not drop categories already configured.
+ */
+async function persistCategories(incoming: { topics: string[]; formats: string[] }): Promise<void> {
+  const overrides = (await getConfigOverrides()) ?? {};
+  const merged = mergeConfig(overrides).categories;
+
+  await setConfigOverrides({
+    ...overrides,
+    categories: {
+      topics: [...new Set([...merged.topics, ...incoming.topics])],
+      formats: [...new Set([...merged.formats, ...incoming.formats])],
+    },
+  });
+}
 
 export type SeedOutcome =
   | { status: 'skipped' }
@@ -43,5 +62,12 @@ export async function seedOnFirstRun(): Promise<SeedOutcome> {
   );
 
   await applyImport({ words: plan.words, rounds: plan.rounds }, DEFAULT_TRACK_ID);
+
+  // Carry the incoming category vocabulary across too. The bandit scores only
+  // configured arms (§12.1), so importing rounds whose topics are absent from
+  // the category list would silently discard their reward signal and make those
+  // topics unselectable.
+  await persistCategories(parsed.value.categories);
+
   return { status: 'seeded', report: plan.report };
 }
