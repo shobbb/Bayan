@@ -11,7 +11,6 @@ import { planImport } from '@/domain/interchange/importPlan';
 import type { ImportReport } from '@/domain/interchange/importPlan';
 import { applyImport, isCorpusEmpty } from '@/data/interchangeRepository';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
-import seedState from '@/assets/seed/seedState.json';
 
 export type SeedOutcome =
   | { status: 'skipped' }
@@ -20,6 +19,11 @@ export type SeedOutcome =
 
 export async function seedOnFirstRun(): Promise<SeedOutcome> {
   if (!(await isCorpusEmpty(DEFAULT_TRACK_ID))) return { status: 'skipped' };
+
+  // Imported here rather than at module scope so the corpus is code-split into
+  // its own chunk: it is fetched once, on the run that actually seeds, instead
+  // of being parsed on every launch.
+  const { default: seedState } = await import('@/assets/seed/seedState.json');
 
   const parsed = parseStateExport(seedState);
   if (!parsed.ok) {
