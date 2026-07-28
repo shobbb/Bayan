@@ -22,6 +22,27 @@
   color: var(--ink);
 }
 
+.home-screen__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.home-screen__stats-link {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.home-screen__stats-link:hover {
+  color: var(--signal);
+}
+
 /* Icon control (§7 header). ≥44px tap target (§5.9); the negative inline-end
    margin lets the glyph sit flush with the page edge without shrinking it. */
 .home-screen__settings {

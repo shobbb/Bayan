@@ -1,0 +1,203 @@
+/* Stats sits in the instrument register (§5.1): dense, legible, no decoration.
+   Read-only — nothing here is a primary action, so nothing competes for
+   attention with the figures themselves. */
+.stats-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-7);
+}
+
+.stats-screen__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.stats-screen__back {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.stats-screen__back:hover {
+  color: var(--signal);
+}
+
+.stats-screen__title {
+  font-family: var(--font-english);
+  font-size: 1.4rem;
+  font-weight: 400;
+  margin: 0;
+  color: var(--ink);
+}
+
+.stats-screen__summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--space-6);
+}
+
+.stats-screen__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stats-screen__value {
+  font-family: var(--font-english);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.stats-screen__label,
+.stats-screen__meta {
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
+.stats-screen__section {
+  margin-bottom: var(--space-6);
+}
+
+.stats-screen__section-title {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  font-weight: 400;
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+.stats-screen__status-list,
+.stats-screen__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stats-screen__status-row,
+.stats-screen__perf-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink);
+}
+
+.stats-screen__status-count {
+  color: var(--ink-muted);
+}
+
+/* Filter and sort chips. Radius 0 or 4px only (REQ-D7). */
+.stats-screen__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.stats-screen__chip {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  cursor: pointer;
+}
+
+.stats-screen__chip--on {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.stats-screen__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) 0;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  text-align: start;
+  cursor: pointer;
+}
+
+.stats-screen__row:hover:not(:disabled) {
+  color: var(--signal);
+}
+
+.stats-screen__row:disabled {
+  cursor: default;
+  color: var(--ink-muted);
+}
+
+.stats-screen__row-arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.25rem;
+  color: var(--ink);
+}
+
+.stats-screen__row-gloss {
+  flex: 1;
+  color: var(--ink-muted);
+}
+
+.stats-screen__row-figures {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-data-size);
+  white-space: nowrap;
+}
+
+.stats-screen__appearances {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.stats-screen__appearance {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  text-align: start;
+  cursor: pointer;
+}
+
+.stats-screen__appearance:hover {
+  color: var(--signal);
+}
+
+.stats-screen__empty {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+}

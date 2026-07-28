@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ConfigProvider } from '@/ui/context/ConfigContext';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { ReadingScreen } from '@/ui/screens/ReadingScreen';
+import { StatsScreen } from '@/ui/screens/StatsScreen';
 import type { Round, RoundType } from '@/domain/types';
 
 /**
@@ -12,6 +13,7 @@ import type { Round, RoundType } from '@/domain/types';
  */
 type Screen =
   | { name: 'home' }
+  | { name: 'stats' }
   | { name: 'reading'; round: Round | null; roundType: RoundType };
 
 export function App() {
@@ -29,18 +31,37 @@ export function App() {
     setScreen({ name: 'home' }); // REQ-14: no auto-advance — completing any activity returns here
   }, []);
 
+  const handleOpenStats = useCallback(() => setScreen({ name: 'stats' }), []);
+  const handleBackHome = useCallback(() => setScreen({ name: 'home' }), []);
+
+  if (screen.name === 'home') {
+    return (
+      <ConfigProvider>
+        <HomeScreen
+          onStartRound={handleStartRound}
+          onReplayRound={handleReplayRound}
+          onOpenStats={handleOpenStats}
+        />
+      </ConfigProvider>
+    );
+  }
+
+  if (screen.name === 'stats') {
+    return (
+      <ConfigProvider>
+        <StatsScreen onBack={handleBackHome} onReplayRound={handleReplayRound} />
+      </ConfigProvider>
+    );
+  }
+
   return (
     <ConfigProvider>
-      {screen.name === 'home' ? (
-        <HomeScreen onStartRound={handleStartRound} onReplayRound={handleReplayRound} />
-      ) : (
-        <ReadingScreen
-          segments={screen.round?.segments}
-          titleAr={screen.round?.titleAr}
-          titleEn={screen.round?.titleEn}
-          onFinish={handleFinishReading}
-        />
-      )}
+      <ReadingScreen
+        segments={screen.round?.segments}
+        titleAr={screen.round?.titleAr}
+        titleEn={screen.round?.titleEn}
+        onFinish={handleFinishReading}
+      />
     </ConfigProvider>
   );
 }

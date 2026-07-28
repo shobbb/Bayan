@@ -8,6 +8,7 @@ import './HomeScreen.css';
 export interface HomeScreenProps {
   onStartRound: (roundType: RoundType) => void;
   onReplayRound: (round: Round) => void;
+  onOpenStats: () => void;
 }
 
 /**
@@ -17,7 +18,7 @@ export interface HomeScreenProps {
  * registry — it never branches on which action was pressed (REQ-E2). No action
  * is disabled or gated; unmet preconditions surface as advisory text (REQ-13).
  */
-export function HomeScreen({ onStartRound, onReplayRound }: HomeScreenProps) {
+export function HomeScreen({ onStartRound, onReplayRound, onOpenStats }: HomeScreenProps) {
   const status = useHomeStatus();
   const rounds = useRecentRounds();
   const [notice, setNotice] = useState<string | null>(null);
@@ -37,23 +38,28 @@ export function HomeScreen({ onStartRound, onReplayRound }: HomeScreenProps) {
     <div className="home-screen">
       <header className="home-screen__header">
         <h1 className="home-screen__title">Bayan</h1>
-        <button
-          type="button"
-          className="home-screen__settings"
-          aria-label="Settings"
-          onClick={() => setNotice('Settings aren’t available yet.')}
-        >
-          {/* Placeholder until the Settings view (§13) is built. */}
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-            <path
-              d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9L5.3 5.3"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+        <div className="home-screen__header-actions">
+          <button type="button" className="home-screen__stats-link" onClick={onOpenStats}>
+            Stats
+          </button>
+          <button
+            type="button"
+            className="home-screen__settings"
+            aria-label="Settings"
+            onClick={() => setNotice('Settings aren’t available yet.')}
+          >
+            {/* Placeholder until the Settings view (§13) is built. */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9L5.3 5.3"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div className="home-screen__status" role="status">
