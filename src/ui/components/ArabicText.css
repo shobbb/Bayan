@@ -34,8 +34,15 @@
   margin-inline-start: 0.28em;
 }
 
-.arabic-text__word--marked {
+/* Transient: the word currently being viewed. Moves with each tap. */
+.arabic-text__word--active {
   background: var(--mark-seen);
+}
+
+/* Persistent: a word flagged "didn't know". Declared after --active so it wins
+   when a word is both (you flag the word you are viewing). */
+.arabic-text__word--not-known {
+  background: var(--mark-new);
 }
 
 .arabic-text__punct {

@@ -28,37 +28,65 @@ export function ReadingScreen({
   titleEn = DEMO_TITLE_EN,
   onFinish,
 }: ReadingScreenProps) {
-  const [markedIndices, setMarkedIndices] = useState<Set<number>>(new Set());
+  // Two independent highlights:
+  //  - activeIndex     the one word being viewed now; a transient highlight
+  //                    that moves to whatever word was tapped last.
+  //  - notKnownIndices words explicitly flagged "didn't know"; a persistent
+  //                    highlight that survives tapping other words.
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [notKnownIndices, setNotKnownIndices] = useState<Set<number>>(new Set());
   const [glossItem, setGlossItem] = useState<GlossPanelItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleTapWord = useCallback((segment: Segment, index: number) => {
-    if (segment.gloss === null) return; // punctuation and breaks are not tappable
+  const handleTapWord = useCallback(
+    (segment: Segment, index: number) => {
+      if (segment.gloss === null) return; // punctuation and breaks are not tappable
 
-    setMarkedIndices((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index); // REQ-19: mistaps are reversible
-      } else {
-        next.add(index); // REQ-18: the tap is the unclear signal, nothing else records it
+      if (index === activeIndex) {
+        // Re-tapping the active word clears it (double-tap to remove) and drops
+        // any "didn't know" flag on it — a fully reversible mistap (REQ-19).
+        setActiveIndex(null);
+        setGlossItem(null);
+        setNotKnownIndices((prev) => {
+          if (!prev.has(index)) return prev;
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+        return;
       }
+
+      // Tapping a different word moves the transient highlight to it. The
+      // previous word loses its highlight unless it was flagged "didn't know".
+      setActiveIndex(index);
+      setGlossItem({ arabic: segment.text, forms: segment.forms, gloss: segment.gloss });
+
+      // REQ-D6: the gloss panel must never cover the tapped word.
+      const target = containerRef.current?.querySelector<HTMLElement>(
+        `[data-segment-index="${index}"]`,
+      );
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        const viewportBottom = window.innerHeight - GLOSS_PANEL_CLEARANCE_PX;
+        if (rect.bottom > viewportBottom) {
+          target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }
+    },
+    [activeIndex],
+  );
+
+  const handleToggleNotKnown = useCallback(() => {
+    if (activeIndex === null) return;
+    setNotKnownIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(activeIndex)) next.delete(activeIndex);
+      else next.add(activeIndex);
       return next;
     });
+  }, [activeIndex]);
 
-    setGlossItem({ arabic: segment.text, forms: segment.forms, gloss: segment.gloss });
-
-    // REQ-D6: the gloss panel must never cover the tapped word.
-    const target = containerRef.current?.querySelector<HTMLElement>(
-      `[data-segment-index="${index}"]`,
-    );
-    if (target) {
-      const rect = target.getBoundingClientRect();
-      const viewportBottom = window.innerHeight - GLOSS_PANEL_CLEARANCE_PX;
-      if (rect.bottom > viewportBottom) {
-        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }
-    }
-  }, []);
+  const activeIsNotKnown = activeIndex !== null && notKnownIndices.has(activeIndex);
 
   return (
     <div className="reading-screen" ref={containerRef}>
@@ -69,7 +97,12 @@ export function ReadingScreen({
         <p className="reading-screen__title-en">{titleEn}</p>
       </header>
 
-      <ArabicText segments={segments} markedIndices={markedIndices} onTapWord={handleTapWord} />
+      <ArabicText
+        segments={segments}
+        activeIndex={activeIndex}
+        notKnownIndices={notKnownIndices}
+        onTapWord={handleTapWord}
+      />
 
       <div className="reading-screen__finish-row">
         <button type="button" className="reading-screen__finish" onClick={onFinish}>
@@ -77,7 +110,11 @@ export function ReadingScreen({
         </button>
       </div>
 
-      <GlossPanel item={glossItem} />
+      <GlossPanel
+        item={glossItem}
+        isNotKnown={activeIsNotKnown}
+        onToggleNotKnown={handleToggleNotKnown}
+      />
     </div>
   );
 }

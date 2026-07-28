@@ -4,7 +4,17 @@ import './ArabicText.css';
 
 export interface ArabicTextProps {
   segments: Segment[];
-  markedIndices: ReadonlySet<number>;
+  /**
+   * The single word currently being viewed — a transient highlight that moves
+   * to whatever word was tapped last. `null` when nothing is selected.
+   */
+  activeIndex: number | null;
+  /**
+   * Words explicitly flagged "didn't know" — a persistent highlight that
+   * survives tapping other words. Cleared only by re-tapping the word or
+   * toggling the flag off.
+   */
+  notKnownIndices: ReadonlySet<number>;
   onTapWord: (segment: Segment, index: number) => void;
 }
 
@@ -14,7 +24,7 @@ export interface ArabicTextProps {
  * proven by docs/reference_reader.jsx. Punctuation renders inline with no
  * leading space; PARAGRAPH_BREAK renders as a line break.
  */
-export function ArabicText({ segments, markedIndices, onTapWord }: ArabicTextProps) {
+export function ArabicText({ segments, activeIndex, notKnownIndices, onTapWord }: ArabicTextProps) {
   return (
     <div dir="rtl" lang="ar" className="arabic-text">
       {segments.map((segment, index) => {
@@ -34,17 +44,20 @@ export function ArabicText({ segments, markedIndices, onTapWord }: ArabicTextPro
 
         const previous = index > 0 ? segments[index - 1] : undefined;
         const needsLeadingSpace = index > 0 && previous?.text !== PARAGRAPH_BREAK;
-        const isMarked = markedIndices.has(index);
+        const isActive = index === activeIndex;
+        const isNotKnown = notKnownIndices.has(index);
 
         return (
           <button
             key={index}
             type="button"
             data-segment-index={index}
-            aria-pressed={isMarked}
+            aria-pressed={isNotKnown}
+            aria-current={isActive ? 'true' : undefined}
             className={
               'arabic-text__word' +
-              (isMarked ? ' arabic-text__word--marked' : '') +
+              (isActive ? ' arabic-text__word--active' : '') +
+              (isNotKnown ? ' arabic-text__word--not-known' : '') +
               (needsLeadingSpace ? ' arabic-text__word--spaced' : '')
             }
             onClick={() => onTapWord(segment, index)}
