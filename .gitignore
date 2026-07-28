@@ -1,0 +1,25 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# Native platforms are committed (§2.0.2) once added via `cap add`.
+# Build output within them is not.
+ios/App/Pods/
+ios/App/build/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+
+.DS_Store
+*.log
+npm-debug.log*
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+coverage/

@@ -1,0 +1,68 @@
+/**
+ * Provider-agnostic LLM transport (REQ-E10). Model identifiers live only in
+ * config/models.ts — this file only knows how to send a prompt to whichever
+ * endpoint the active provider points at and get text back. Swapping
+ * providers means implementing LlmClient differently; nothing else in the
+ * app knows which provider is in use.
+ */
+
+export interface LlmCompleteParams {
+  model: string;
+  maxTokens: number;
+  temperature: number;
+  prompt: string;
+  apiKey: string;
+}
+
+export interface LlmClient {
+  complete(params: LlmCompleteParams): Promise<string>;
+}
+
+export class LlmRequestError extends Error {
+  readonly status: number | undefined;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'LlmRequestError';
+    this.status = status;
+  }
+}
+
+interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+}
+
+interface AnthropicMessagesResponse {
+  content?: AnthropicContentBlock[];
+}
+
+/** Anthropic Messages API. One concrete LlmClient implementation among possibly several. */
+export const anthropicClient: LlmClient = {
+  async complete({ model, maxTokens, temperature, prompt, apiKey }) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new LlmRequestError(`LLM request failed (${response.status}): ${body}`, response.status);
+    }
+
+    const data = (await response.json()) as AnthropicMessagesResponse;
+    const text = data.content?.find((block) => block.type === 'text')?.text;
+    if (!text) throw new LlmRequestError('LLM response contained no text content');
+    return text;
+  },
+};

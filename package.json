@@ -1,0 +1,48 @@
+{
+  "name": "bayan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bayan — adaptive Arabic reading & drilling. Capacitor + React/TypeScript.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "cap:sync": "npm run build && cap sync",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1",
+    "@capacitor/haptics": "^6.0.1",
+    "@capacitor/local-notifications": "^6.1.0",
+    "@capacitor/preferences": "^6.0.2",
+    "@capacitor/share": "^6.0.2",
+    "@capacitor/status-bar": "^6.0.1",
+    "dexie": "^4.0.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.4.0",
+    "@typescript-eslint/parser": "^8.4.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "jsdom": "^25.0.0",
+    "playwright": "^1.62.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3",
+    "vitest": "^2.0.5"
+  }
+}

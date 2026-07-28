@@ -1,0 +1,63 @@
+@import './tokens.css';
+@import './fonts.css';
+
+/* Type scale (§5.4). Never render Arabic body text below 1.6rem; never
+   letter-space Arabic (breaks cursive joining); never faux-bold/italic it. */
+:root {
+  --font-arabic: 'Amiri', 'Noto Naskh Arabic', serif;
+  --font-english: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --text-reading-body-size: 1.85rem;
+  --text-reading-body-line: 2.45;
+  --text-reading-title-size: 2.1rem;
+  --text-reading-title-line: 1.4;
+  --text-gloss-arabic-size: 1.3rem;
+  --text-gloss-arabic-line: 1.6;
+  --text-gloss-english-size: 1rem;
+  --text-gloss-english-line: 1.4;
+  --text-ui-label-size: 0.82rem;
+  --text-ui-label-line: 1.3;
+  --text-data-size: 0.75rem;
+  --text-data-line: 1.2;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-english);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Quality floor (§5.9): visible keyboard focus rings everywhere. */
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Arabic text never gets letter-spacing (breaks cursive joining) and never
+   synthetic bold/italic — use a real weight or none (§5.2). */
+[lang='ar'],
+[dir='rtl'] {
+  font-family: var(--font-arabic);
+  letter-spacing: normal;
+  font-synthesis: none;
+}

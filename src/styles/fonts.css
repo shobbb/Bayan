@@ -1,0 +1,27 @@
+/**
+ * The Arabic face is both the display face and the body face (§5.4) — this
+ * inverts the usual bilingual hierarchy deliberately, so English never
+ * competes for attention with the text being learned. Bundled locally
+ * (REQ-D4): the app must render correctly offline on first launch, so this
+ * never points at a CDN.
+ *
+ * Amiri, SIL Open Font License — see src/assets/fonts/Amiri-OFL.txt.
+ * Subset to the Arabic unicode range only; Latin text uses the system sans.
+ */
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/Amiri-Regular.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Amiri';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/Amiri-Bold.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFC;
+}

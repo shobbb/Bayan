@@ -1,0 +1,44 @@
+/* Reading is a page (REQ-D1): no cards, no shadows, no visible containers. */
+.arabic-text {
+  font-family: var(--font-arabic);
+  font-size: var(--text-reading-body-size);
+  line-height: var(--text-reading-body-line);
+  color: var(--ink);
+  /* REQ-D5: ragged edges over rivers in vowelled Arabic — right-align in RTL
+     rather than justify, since even word-spacing under justify isn't guaranteed. */
+  text-align: start;
+}
+
+.arabic-text__break {
+  display: block;
+  content: '';
+  height: var(--space-4);
+}
+
+.arabic-text__word {
+  display: inline;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: var(--radius);
+  /* REQ-D3: tapped state is a background wash, never underline/border/outline —
+     rules sit in the same visual band as diacritics and compete with them. */
+  transition: background-color var(--motion-tap-wash) ease-out;
+}
+
+.arabic-text__word--spaced {
+  margin-inline-start: 0.28em;
+}
+
+.arabic-text__word--marked {
+  background: var(--mark-seen);
+}
+
+.arabic-text__punct {
+  display: inline;
+  color: var(--ink);
+}

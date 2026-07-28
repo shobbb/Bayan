@@ -1,0 +1,50 @@
+.reading-screen {
+  min-height: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  /* Generous horizontal margins (§5.6); bottom padding clears the fixed GlossPanel. */
+  padding: var(--space-6) var(--space-5) 140px;
+}
+
+.reading-screen__header {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.reading-screen__title-ar {
+  font-family: var(--font-arabic);
+  font-size: var(--text-reading-title-size);
+  line-height: var(--text-reading-title-line);
+  font-weight: 700;
+  margin: 0 0 var(--space-2);
+}
+
+.reading-screen__title-en {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.reading-screen__finish-row {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-7);
+}
+
+.reading-screen__finish {
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.reading-screen__finish:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}

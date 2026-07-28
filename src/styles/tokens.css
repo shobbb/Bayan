@@ -1,0 +1,79 @@
+/**
+ * Design tokens (§5.3 palette). Cool-neutral ground, not warm cream — warm
+ * paper tones push diacritic contrast down, and this app needs contrast
+ * more than it needs warmth (§5.2: diacritics drive every visual decision).
+ *
+ * --signal appears only where something is interactive or currently active
+ * (REQ-D2). Never decorative, never a background, never a gradient.
+ */
+:root {
+  --ground: #f7f7f5;
+  --ink: #16161a;
+  --ink-muted: #5c5c66;
+  --rule: #e2e2de;
+  --mark-seen: #dce4ee;
+  --mark-new: #e8dff0;
+  --signal: #2e5e8c;
+
+  /* Spacing scale (§5.6) — nothing off-scale. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Border radius (REQ-D7): 0 or 4px. Nothing more. */
+  --radius: 4px;
+
+  /* Motion (§5.7) */
+  --motion-gloss-fade: 120ms;
+  --motion-tap-wash: 100ms;
+  --motion-drill-reveal: 160ms;
+  --motion-screen-fade: 120ms;
+}
+
+/* Dark mode is required, not optional (§5.3) — used in the evening for long
+   stretches. --ink is not pure white: pure white on dark haloes thin marks. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #131316;
+    --ink: #e8e8e4;
+    --ink-muted: #93939c;
+    --rule: #2a2a30;
+    --mark-seen: #22303f;
+    --mark-new: #2e2740;
+    --signal: #6fa3d6;
+  }
+}
+
+/* Explicit theme override, for an eventual in-app toggle. */
+:root[data-theme='dark'] {
+  --ground: #131316;
+  --ink: #e8e8e4;
+  --ink-muted: #93939c;
+  --rule: #2a2a30;
+  --mark-seen: #22303f;
+  --mark-new: #2e2740;
+  --signal: #6fa3d6;
+}
+
+:root[data-theme='light'] {
+  --ground: #f7f7f5;
+  --ink: #16161a;
+  --ink-muted: #5c5c66;
+  --rule: #e2e2de;
+  --mark-seen: #dce4ee;
+  --mark-new: #e8dff0;
+  --signal: #2e5e8c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-gloss-fade: 0ms;
+    --motion-tap-wash: 0ms;
+    --motion-drill-reveal: 0ms;
+    --motion-screen-fade: 0ms;
+  }
+}
