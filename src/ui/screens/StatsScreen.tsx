@@ -45,6 +45,8 @@ const PERFORMANCE_GROUPS = [
 
 type PerformanceGroup = (typeof PERFORMANCE_GROUPS)[number]['id'];
 
+const PAGE_SIZE = 50;
+
 function percent(value: number | null): string {
   return value === null ? '—' : `${Math.round(value * 100)}%`;
 }
@@ -64,6 +66,9 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
   const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [group, setGroup] = useState<PerformanceGroup>('topic');
+  // The corpus runs to thousands of forms; rendering every row at once is slow
+  // on a phone. Paged rather than truncated — the total is always shown.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const summary = useMemo(() => summarize(words, rounds), [words, rounds]);
   const rows = useMemo(
@@ -132,7 +137,10 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                   className={
                     'stats-screen__chip' + (sort === option.id ? ' stats-screen__chip--on' : '')
                   }
-                  onClick={() => setSort(option.id)}
+                  onClick={() => {
+                    setSort(option.id);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
                 >
                   {option.label}
                 </button>
@@ -149,7 +157,10 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                     'stats-screen__chip' +
                     (statusFilter === status ? ' stats-screen__chip--on' : '')
                   }
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => {
+                    setStatusFilter(status);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
                 >
                   {status === 'all' ? 'All' : WORD_STATUS_LABELS[status]}
                 </button>
@@ -160,7 +171,7 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
               <p className="stats-screen__empty">No forms match this filter yet.</p>
             ) : (
               <ul className="stats-screen__rows">
-                {rows.map((row) => {
+                {rows.slice(0, visibleCount).map((row) => {
                   const expanded = expandedId === row.id;
                   const appearances = row.roundIds
                     .map((id) => roundsById.get(id))
@@ -209,6 +220,16 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                   );
                 })}
               </ul>
+            )}
+
+            {rows.length > visibleCount && (
+              <button
+                type="button"
+                className="stats-screen__more"
+                onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+              >
+                Show more — {visibleCount} of {rows.length}
+              </button>
             )}
           </section>
 

@@ -15,7 +15,7 @@ import type { SelectionContext } from './roundTypes/types';
  * they yield null: still a pull, but no reward (REQ-32).
  */
 export function roundFlagRate(round: Round): number | null {
-  if (round.distinctForms <= 0) return null;
+  if (round.flagCount === null || round.distinctForms <= 0) return null;
   return round.flagCount / round.distinctForms;
 }
 

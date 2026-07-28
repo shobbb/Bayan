@@ -29,16 +29,19 @@ export interface SrsState {
 export interface Word {
   id: WordId;
   trackId: TrackId;
-  surface: string; // vowelled form as last displayed
-  gloss: string; // English, 1-3 words
+  surface: string; // vowelled display form
+  gloss: string; // English, 1-3 words; '' when unknown — see needsEnrichment
   forms: string | null; // "كَتَبَ / يَكْتُبُ / كِتَابَة" | "جَانِب / جَوَانِب"
-  partOfSpeech: PartOfSpeech;
+  /** null when the source didn't classify it; imported data often hasn't. */
+  partOfSpeech: PartOfSpeech | null;
   seenCount: number;
   unclearCount: number;
   firstSeenAt: number;
   lastSeenAt: number;
   roundIds: string[];
-  srs: SrsState | null; // null until first included in a batch
+  srs: SrsState | null; // null until first included in a batch (REQ-I7)
+  /** REQ-I5: imported without a gloss. Eligible for the fill-missing-glosses pass. */
+  needsEnrichment?: boolean;
 }
 
 /** One renderable token. gloss === null => punctuation or paragraph break. */
@@ -59,9 +62,10 @@ export interface Round {
   topic: string;
   format: string;
   roundType: RoundType;
-  segments: Segment[]; // stored so rounds are re-readable
+  segments: Segment[]; // empty ⇒ text not retained; round is history-only (REQ-I6)
   distinctForms: number;
-  flagCount: number;
+  /** null ⇒ round generated, feedback not recorded. Counts as a pull, not a reward (REQ-32). */
+  flagCount: number | null;
   createdAt: number;
 }
 

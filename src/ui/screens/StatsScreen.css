@@ -201,3 +201,23 @@
   font-size: var(--text-ui-label-size);
   color: var(--ink-muted);
 }
+
+/* Paging control for the word breakdown. The total is always visible, so a
+   long corpus is paged rather than silently truncated. */
+.stats-screen__more {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  cursor: pointer;
+}
+
+.stats-screen__more:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
