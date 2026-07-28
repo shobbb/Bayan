@@ -643,6 +643,15 @@ Read-only. All computation in `domain/stats/metrics.ts`.
 
 `REQ-29` Never display raw word-row count as vocabulary size. Label it "forms tracked" — multiple inflections of one root are multiple rows and one word.
 
+**Word breakdown**: the per-form view behind the status buckets, so a count can be opened and inspected rather than taken on trust.
+- Columns: surface, gloss, seen, flagged, miss rate, last seen, status bucket.
+- Sortable by miss rate, seen count, and last seen. Filterable by status bucket.
+- Tapping a row lists the rounds that form appeared in, each tappable to re-read.
+
+`REQ-44` The breakdown reads the same `domain/stats/metrics.ts` figures the summary does. No component recomputes a metric — a number shown in two places is computed once.
+
+`REQ-45` Default sort is miss rate descending across forms seen ≥ 2, matching REQ-28's threshold. Forms seen once sort last regardless of rate: they are untested, not failing.
+
 **Category performance**: flag rate by topic, by format, by round type. Sortable. Surface sample size next to each rate; a single round is not a signal.
 
 **History**: rounds with date, type, topic, format, flag rate. Tappable to re-read.
@@ -822,8 +831,8 @@ State these in-app so expectations stay calibrated:
 6. `services/llm` — client, prompts, zod schemas, retry.
 7. `ui/HomeScreen` with the six actions wired to independent functions.
 8. `domain/selector/*` + tests.
-9. `domain/srs/*`, batch generation, three drill views.
-10. `ui/StatsScreen`.
+9. `ui/StatsScreen` (§11) — aggregate metrics and the per-word breakdown. Ahead of drilling deliberately: reading rounds already produce flag data, so seeing which words are actually failing is what validates the selector before more machinery is built on top of it.
+10. `domain/srs/*`, batch generation, three drill views.
 11. Settings, notifications.
 12. **State interchange (§14)** — import first, so the app can be seeded with real data and everything downstream is exercised against a realistic corpus rather than a handful of test rounds.
 13. Store assets: icons, splash screens, listing metadata.
