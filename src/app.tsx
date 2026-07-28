@@ -66,7 +66,18 @@ function AppScreens() {
     [],
   );
 
-  const handleBackHome = useCallback(() => setScreen({ name: 'home' }), []);
+  // Clearing the advisory on navigation matters: it names a precondition the
+  // user has just gone off to fix, so leaving it up makes a successful fix look
+  // like a failed one.
+  const handleBackHome = useCallback(() => {
+    setFailure(null);
+    setScreen({ name: 'home' });
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setFailure(null);
+    setScreen({ name: 'settings' });
+  }, []);
 
   if (screen.name === 'stats') {
     return <StatsScreen onBack={handleBackHome} onReplayRound={handleReplayRound} />;
@@ -93,7 +104,7 @@ function AppScreens() {
       onStartRound={handleStartRound}
       onReplayRound={handleReplayRound}
       onOpenStats={() => setScreen({ name: 'stats' })}
-      onOpenSettings={() => setScreen({ name: 'settings' })}
+      onOpenSettings={handleOpenSettings}
       generating={generating}
       failure={failure}
     />

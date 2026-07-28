@@ -162,3 +162,17 @@
   font-size: var(--text-ui-label-size);
   color: var(--ink-muted);
 }
+
+/* Inline route out of an advisory: naming a precondition is only useful if the
+   fix is one tap away. */
+.home-screen__notice-action {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  text-decoration: underline;
+  cursor: pointer;
+}

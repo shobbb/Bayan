@@ -115,7 +115,10 @@ export function HomeScreen({
 
       {failure && !generating && (
         <p className="home-screen__notice" role="status">
-          {failure}
+          {failure}{' '}
+          <button type="button" className="home-screen__notice-action" onClick={onOpenSettings}>
+            Open Settings
+          </button>
         </p>
       )}
 
