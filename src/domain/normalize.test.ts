@@ -62,4 +62,31 @@ describe('normalizeArabic', () => {
     expect(normalizeArabic('')).toBe('');
     expect(normalizeArabic('   ')).toBe('');
   });
+
+  // Each hamza seat drops to the letter it sits on, which is what the seeded
+  // corpus's ids already assume. 48 of its 1719 words had an id normalization
+  // could not reproduce without this, and each would have opened a second
+  // entry beside the one holding its history.
+  it('drops each hamza seat to its underlying letter (REQ-11)', () => {
+    expect(normalizeArabic('تُؤَثِّرُ')).toBe('توثر');
+    expect(normalizeArabic('يُؤَدِّي')).toBe('يودي');
+    expect(normalizeArabic('الْوَظَائِفِ')).toBe('وظايف');
+  });
+
+  it('reaches the same key whether or not the source was vowelled', () => {
+    expect(normalizeArabic('مَسْؤُول')).toBe(normalizeArabic('مسؤول'));
+    expect(normalizeArabic('وَظَائِف')).toBe(normalizeArabic('وظائف'));
+  });
+
+  // Documented limitation, not an oversight: the two seats land on different
+  // letters, so the variant spellings stay distinct. Unifying them would mean
+  // dropping the hamza entirely, which merges words that genuinely differ.
+  it('does not unify variants that seat the hamza differently', () => {
+    expect(normalizeArabic('مسؤول')).not.toBe(normalizeArabic('مسئول'));
+  });
+
+  // Bare hamza is a letter in its own right, not a seat.
+  it('leaves bare hamza alone, so شيء does not become شي', () => {
+    expect(normalizeArabic('شَيْء')).not.toBe(normalizeArabic('شي'));
+  });
 });

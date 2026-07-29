@@ -29,6 +29,29 @@ const DIACRITICS_AND_TATWEEL = new RegExp('[\\u0640\\u064B-\\u0652\\u0670]', 'g'
 const HAMZA_ALEF_VARIANTS = /[آأإٱ]/g;
 const BARE_ALEF = 'ا'; // ا
 
+/**
+ * The other two hamza seats, each dropped to the letter it is seated on: waw
+ * with hamza (U+0624) -> waw, yeh with hamza (U+0626) -> yeh.
+ *
+ * This is what the seeded corpus's ids already assume. Without it, 48 of its
+ * 1719 words had a stored id that normalization could not reproduce — تُؤَثِّرُ
+ * keyed as توثر, وَظَائِف as وظايف — so every fresh sighting of those words
+ * would have opened a second entry beside the one holding their history.
+ * Applied to the whole corpus it closes all 48 and collides no two distinct
+ * ids.
+ *
+ * It does not unify the variant spellings مسؤول / مسئول, since those seat the
+ * hamza differently and therefore land on different letters. Unifying those
+ * would mean dropping the hamza entirely, which would also merge words that
+ * genuinely differ — not worth it for a variation this corpus does not contain.
+ *
+ * Bare hamza (U+0621) is left alone: it is a letter in its own right in words
+ * like شيء, and removing it would merge شيء with شي.
+ */
+const HAMZA_WAW = /ؤ/g;
+const WAW = 'و';
+const HAMZA_YEH = /ئ/g;
+
 const TEH_MARBUTA = /ة/g; // ة -> ه
 const HEH = 'ه'; // ه
 const ALEF_MAKSURA = /ى/g; // ى -> ي
@@ -45,7 +68,7 @@ const ALEF_LAM_PREFIX = BARE_ALEF + 'ل'; // ال
  * Normalizes a vowelled or unvowelled Arabic surface form into its identity
  * key (REQ-11):
  * - strips harakat, shadda, sukun, and tatweel
- * - collapses hamza carriers (أ إ آ ٱ) to ا
+ * - collapses hamza carriers: أ إ آ ٱ -> ا, ؤ -> و, ئ -> ي
  * - normalizes ة -> ه and ى -> ي
  * - strips the definite article ال prefix only when the remainder is >= 3 characters
  * - trims surrounding whitespace and punctuation
@@ -53,6 +76,8 @@ const ALEF_LAM_PREFIX = BARE_ALEF + 'ل'; // ال
 export function normalizeArabic(input: string): WordId {
   let s = input;
   s = s.replace(HAMZA_ALEF_VARIANTS, BARE_ALEF);
+  s = s.replace(HAMZA_WAW, WAW);
+  s = s.replace(HAMZA_YEH, YEH);
   s = s.replace(DIACRITICS_AND_TATWEEL, '');
   s = s.replace(TEH_MARBUTA, HEH);
   s = s.replace(ALEF_MAKSURA, YEH);
