@@ -39,6 +39,22 @@ describe('word draw', () => {
     expect(missRate(word('b', { seenCount: 0, unclearCount: 0 }))).toBe(0);
   });
 
+  // Ten words in the seeded corpus carry more flags than sightings. Left
+  // unclamped they outrank words genuinely missed every time, and Stats
+  // rendered them as "150%".
+  it('caps miss rate at 1 when a record holds more flags than sightings', () => {
+    expect(missRate(word('a', { seenCount: 2, unclearCount: 3 }))).toBe(1);
+    expect(missRate(word('b', { seenCount: 1, unclearCount: 2 }))).toBe(1);
+  });
+
+  it('does not let an over-flagged word outrank one missed every time', () => {
+    const ctx = context({});
+    const overFlagged = word('a', { seenCount: 2, unclearCount: 3 });
+    const alwaysMissed = word('b', { seenCount: 2, unclearCount: 2 });
+
+    expect(scoreWord(overFlagged, WEIGHTS, ctx)).toBe(scoreWord(alwaysMissed, WEIGHTS, ctx));
+  });
+
   it('keeps early vocabulary in rotation via the staleness term (REQ-34)', () => {
     const ctx = context({
       roundIndexById: new Map([

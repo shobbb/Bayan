@@ -97,38 +97,24 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
         <p className="stats-screen__empty">Loading…</p>
       ) : (
         <>
+          {/* Acquisition rate is the figure the method is judged on (REQ-28),
+              so it carries the weight and the rest become context (REQ-49). */}
           <div className="stats-screen__summary">
-            <div className="stats-screen__figure">
-              <span className="stats-screen__value">{summary.formsTracked}</span>
-              {/* REQ-29: never labelled as vocabulary size. */}
-              <span className="stats-screen__label">forms tracked</span>
-            </div>
-            <div className="stats-screen__figure">
+            <p className="stats-screen__headline">
               <span className="stats-screen__value">{percent(summary.acquisitionRate)}</span>
               <span className="stats-screen__label">acquisition rate</span>
-            </div>
-            <div className="stats-screen__figure">
-              <span className="stats-screen__value">{summary.roundsCompleted}</span>
-              <span className="stats-screen__label">rounds completed</span>
-            </div>
+            </p>
+            <p className="stats-screen__context">
+              {/* REQ-29: never labelled as vocabulary size. */}
+              {summary.formsTracked} forms tracked · {summary.roundsCompleted} rounds completed
+            </p>
           </div>
 
           <section className="stats-screen__section">
-            <h2 className="stats-screen__section-title">Word status</h2>
-            <ul className="stats-screen__status-list">
-              {(Object.keys(WORD_STATUS_LABELS) as WordStatus[]).map((status) => (
-                <li key={status} className="stats-screen__status-row">
-                  <span>{WORD_STATUS_LABELS[status]}</span>
-                  <span className="stats-screen__status-count">{summary.statusCounts[status]}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+            <h2 className="stats-screen__section-title">Words</h2>
 
-          <section className="stats-screen__section">
-            <h2 className="stats-screen__section-title">Word breakdown</h2>
-
-            <div className="stats-screen__controls">
+            <div className="stats-screen__controls stats-screen__controls--sort">
+              <span className="stats-screen__control-label">Sort</span>
               {SORTS.map((option) => (
                 <button
                   key={option.id}
@@ -147,6 +133,9 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
               ))}
             </div>
 
+            {/* The status buckets were a separate list above these filters,
+                naming the same five things with the same five counts. One
+                control carrying its own count replaces both. */}
             <div className="stats-screen__controls">
               {STATUS_FILTERS.map((status) => (
                 <button
@@ -162,7 +151,10 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                     setVisibleCount(PAGE_SIZE);
                   }}
                 >
-                  {status === 'all' ? 'All' : WORD_STATUS_LABELS[status]}
+                  {status === 'all' ? 'All' : WORD_STATUS_LABELS[status]}{' '}
+                  <span className="stats-screen__chip-count">
+                    {status === 'all' ? summary.formsTracked : summary.statusCounts[status]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -233,8 +225,8 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
             )}
           </section>
 
-          <section className="stats-screen__section">
-            <h2 className="stats-screen__section-title">Category performance</h2>
+          <details className="stats-screen__section stats-screen__fold">
+            <summary className="stats-screen__section-title">Category performance</summary>
             <div className="stats-screen__controls">
               {PERFORMANCE_GROUPS.map((option) => (
                 <button
@@ -267,10 +259,10 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                 ))}
               </ul>
             )}
-          </section>
+          </details>
 
-          <section className="stats-screen__section">
-            <h2 className="stats-screen__section-title">History</h2>
+          <details className="stats-screen__section stats-screen__fold">
+            <summary className="stats-screen__section-title">History</summary>
             {history.length === 0 ? (
               <p className="stats-screen__empty">No rounds yet.</p>
             ) : (
@@ -303,7 +295,7 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                 })}
               </ul>
             )}
-          </section>
+          </details>
         </>
       )}
     </div>

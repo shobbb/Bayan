@@ -28,8 +28,22 @@ export interface WordDrawContext {
   random: () => number;
 }
 
+/**
+ * Share of a word's sightings that were flagged unclear.
+ *
+ * Clamped to 1 because a proportion cannot exceed the whole. This is not
+ * defensive padding: ten words in the seeded corpus carry more flags than
+ * sightings — historical bookkeeping from the tooling the data came out of —
+ * and without the clamp they score above every word that has genuinely been
+ * missed every single time, taking priority in the draw they have not earned.
+ * Stats showed the same words at "150%".
+ *
+ * The stored record keeps the original counts. Clamping here rather than on
+ * import keeps the export a faithful round-trip of what came in (REQ-I1).
+ */
 export function missRate(word: Word): number {
-  return word.seenCount > 0 ? word.unclearCount / word.seenCount : 0;
+  if (word.seenCount <= 0) return 0;
+  return Math.min(1, word.unclearCount / word.seenCount);
 }
 
 /**
