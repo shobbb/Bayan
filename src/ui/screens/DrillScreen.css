@@ -1,0 +1,83 @@
+.drill-screen {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-4) 0 0;
+}
+
+.drill-screen__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+}
+
+.drill-screen__exit {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.drill-screen__count {
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
+/* Thin bar, position in queue (§10.1). */
+.drill-screen__bar {
+  height: 2px;
+  background: var(--rule);
+  margin: var(--space-2) var(--space-5) 0;
+}
+
+.drill-screen__bar-fill {
+  height: 100%;
+  background: var(--signal);
+  transition: width var(--motion-screen-fade) ease-out;
+}
+
+.drill-screen__summary {
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.drill-screen__score {
+  font-family: var(--font-english);
+  font-size: 2.4rem;
+  color: var(--ink);
+  margin: 0 0 var(--space-4);
+}
+
+.drill-screen__note {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+.drill-screen__missed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: start;
+}
+
+.drill-screen__missed-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.drill-screen__missed-arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.25rem;
+  color: var(--ink);
+}

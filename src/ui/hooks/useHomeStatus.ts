@@ -24,7 +24,7 @@ const EMPTY_STATUS: HomeStatus = {
  * that interface doesn't exist yet (build order step 9). Replace this
  * filter with scheduler.isDue() once it does.
  */
-export function useHomeStatus(): HomeStatus {
+export function useHomeStatus(refreshToken = 0): HomeStatus {
   const [status, setStatus] = useState<HomeStatus>(EMPTY_STATUS);
 
   useEffect(() => {
@@ -56,7 +56,8 @@ export function useHomeStatus(): HomeStatus {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // Re-read when the caller signals that the corpus changed.
+  }, [refreshToken]);
 
   return status;
 }

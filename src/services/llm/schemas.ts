@@ -21,3 +21,20 @@ export const llmRoundResponseSchema = z.object({
 
 export type LlmSegment = z.infer<typeof llmSegmentSchema>;
 export type LlmRoundResponse = z.infer<typeof llmRoundResponseSchema>;
+
+/**
+ * Batched example sentences for a card batch (§9). Keyed by the word each
+ * sentence illustrates so a partial or reordered response still maps back
+ * correctly — position would be a fragile join.
+ */
+export const llmSentenceSchema = z.object({
+  word: z.string().min(1),
+  sentence: z.string().min(1),
+});
+
+export const llmSentencesResponseSchema = z.object({
+  sentences: z.array(llmSentenceSchema),
+});
+
+export type LlmSentence = z.infer<typeof llmSentenceSchema>;
+export type LlmSentencesResponse = z.infer<typeof llmSentencesResponseSchema>;

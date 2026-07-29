@@ -3,7 +3,7 @@ import { listRounds } from '@/data/roundRepository';
 import { DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { Round } from '@/domain/types';
 
-export function useRecentRounds(limit = 10): Round[] {
+export function useRecentRounds(limit = 10, refreshToken = 0): Round[] {
   const [rounds, setRounds] = useState<Round[]>([]);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export function useRecentRounds(limit = 10): Round[] {
     return () => {
       cancelled = true;
     };
-  }, [limit]);
+  }, [limit, refreshToken]);
 
   return rounds;
 }

@@ -54,3 +54,31 @@ export function buildRoundGenerationPrompt(params: RoundPromptParams): string {
   ];
   return sections.filter((section) => section.trim().length > 0).join('\n\n');
 }
+
+const BASE_SENTENCE_INSTRUCTIONS = `You are writing example sentences for vocabulary cards.
+
+For each supplied word, write ONE short Arabic sentence that uses it. Every sentence must:
+- contain the supplied word,
+- be fully diacritized (tashkeel on every word),
+- stay within simple, already-common vocabulary wherever possible, so the sentence illuminates the target word rather than introducing new difficulty,
+- be natural Arabic, not a definition or a translation exercise.
+
+Respond with strict JSON only, no prose before or after and no markdown code fence:
+{ "sentences": [ { "word": string, "sentence": string } ] }
+
+Echo each word back exactly as supplied so the sentences can be matched to it.`;
+
+export interface SentencePromptParams {
+  /** Vowelled surface forms to illustrate. */
+  words: string[];
+  /** LanguageProfile.promptGuidance for the active track. */
+  languageGuidance: string;
+}
+
+export function buildSentenceGenerationPrompt(params: SentencePromptParams): string {
+  return [
+    BASE_SENTENCE_INSTRUCTIONS,
+    params.languageGuidance,
+    `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
+  ].join('\n\n');
+}

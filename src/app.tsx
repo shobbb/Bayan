@@ -4,9 +4,12 @@ import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { ReadingScreen } from '@/ui/screens/ReadingScreen';
 import { StatsScreen } from '@/ui/screens/StatsScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
+import { DrillScreen } from '@/ui/screens/DrillScreen';
 import { createRound, finishRound, MissingApiKeyError } from '@/services/rounds/roundService';
+import { generateBatch, startDrillSession } from '@/services/batch/batchService';
+import type { QueueEntry } from '@/domain/drills/session';
 import { LlmValidationError } from '@/services/llm/generate';
-import type { Round, RoundType } from '@/domain/types';
+import type { Round, RoundType, Word } from '@/domain/types';
 
 /**
  * In-app navigation state (REQ-P3): no URL-based routing, no reliance on
@@ -18,7 +21,13 @@ type Screen =
   | { name: 'home' }
   | { name: 'stats' }
   | { name: 'settings' }
-  | { name: 'reading'; round: Round };
+  | { name: 'reading'; round: Round }
+  | {
+      name: 'drill';
+      queue: QueueEntry[];
+      corpus: Word[];
+      sentences: Readonly<Record<string, string>>;
+    };
 
 function describeFailure(error: unknown): string {
   if (error instanceof MissingApiKeyError) return error.message;
@@ -34,7 +43,12 @@ function AppScreens() {
   const config = useConfig();
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [generating, setGenerating] = useState<RoundType | null>(null);
+  const [busy, setBusy] = useState<'batch' | 'study' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  // Bumped after anything that writes to the corpus, so Home re-reads its
+  // status strip instead of showing figures from when it first mounted.
+  const [refreshToken, setRefreshToken] = useState(0);
 
   const handleStartRound = useCallback(
     (roundType: RoundType) => {
@@ -60,7 +74,7 @@ function AppScreens() {
 
   const handleFinishReading = useCallback(
     (round: Round, notKnownIndices: number[]) => {
-      void finishRound(round, notKnownIndices);
+      void finishRound(round, notKnownIndices).then(() => setRefreshToken((n) => n + 1));
       setScreen({ name: 'home' }); // REQ-14: completing any activity returns here
     },
     [],
@@ -69,8 +83,48 @@ function AppScreens() {
   // Clearing the advisory on navigation matters: it names a precondition the
   // user has just gone off to fix, so leaving it up makes a successful fix look
   // like a failed one.
+  // REQ-20: batch generation runs only from this action, never on a schedule.
+  const handleGenerateBatch = useCallback(() => {
+    setFailure(null);
+    setBusy('batch');
+    generateBatch(config)
+      .then((result) => {
+        const warning = result.oversized ? ' Batch is past the recommended size.' : '';
+        const gaps = result.missingSentences > 0
+          ? ` ${result.missingSentences} card(s) have no example sentence.`
+          : '';
+        setNotice(`Batch ready: ${result.batch.wordIds.length} cards.${warning}${gaps}`);
+        setRefreshToken((n) => n + 1);
+      })
+      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .finally(() => setBusy(null));
+  }, [config]);
+
+  const handleStudyBatch = useCallback(() => {
+    setFailure(null);
+    setBusy('study');
+    startDrillSession()
+      .then((session) => {
+        if (session.queue.length === 0) {
+          setNotice('Nothing to drill yet — generate a batch first.');
+          return;
+        }
+        setScreen({
+          name: 'drill',
+          queue: session.queue,
+          corpus: session.corpus,
+          sentences: session.batch?.exampleSentences ?? {},
+        });
+      })
+      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .finally(() => setBusy(null));
+  }, []);
+
   const handleBackHome = useCallback(() => {
     setFailure(null);
+    setNotice(null);
+    // Returning from a drill or a round means the corpus likely moved.
+    setRefreshToken((n) => n + 1);
     setScreen({ name: 'home' });
   }, []);
 
@@ -85,6 +139,17 @@ function AppScreens() {
 
   if (screen.name === 'settings') {
     return <SettingsScreen onBack={handleBackHome} />;
+  }
+
+  if (screen.name === 'drill') {
+    return (
+      <DrillScreen
+        queue={screen.queue}
+        corpus={screen.corpus}
+        sentences={screen.sentences}
+        onExit={handleBackHome}
+      />
+    );
   }
 
   if (screen.name === 'reading') {
@@ -106,6 +171,11 @@ function AppScreens() {
       onOpenStats={() => setScreen({ name: 'stats' })}
       onOpenSettings={handleOpenSettings}
       generating={generating}
+      busy={busy}
+      notice={notice}
+      onGenerateBatch={handleGenerateBatch}
+      onStudyBatch={handleStudyBatch}
+      refreshToken={refreshToken}
       failure={failure}
     />
   );

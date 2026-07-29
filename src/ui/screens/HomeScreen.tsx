@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Round, RoundType } from '@/domain/types';
 import { useHomeStatus } from '@/ui/hooks/useHomeStatus';
 import { useRecentRounds } from '@/ui/hooks/useRecentRounds';
@@ -14,6 +14,21 @@ export interface HomeScreenProps {
   generating: RoundType | null;
   /** Advisory text from the last failed attempt (REQ-13). */
   failure: string | null;
+  /** Non-round work in flight, so its action can show progress. */
+  busy: 'batch' | 'study' | null;
+  /** Informational result of the last completed action. */
+  notice: string | null;
+  onGenerateBatch: () => void;
+  onStudyBatch: () => void;
+  /** Bumped whenever the corpus changes, so the status strip re-reads. */
+  refreshToken: number;
+}
+
+/** The two non-round actions report progress through their own busy key. */
+function busyKeyFor(actionId: string): 'batch' | 'study' | null {
+  if (actionId === 'generateBatch') return 'batch';
+  if (actionId === 'studyBatch') return 'study';
+  return null;
 }
 
 /**
@@ -30,20 +45,22 @@ export function HomeScreen({
   onOpenSettings,
   generating,
   failure,
+  busy,
+  notice,
+  onGenerateBatch,
+  onStudyBatch,
+  refreshToken,
 }: HomeScreenProps) {
-  const status = useHomeStatus();
-  const rounds = useRecentRounds();
-  const [notice, setNotice] = useState<string | null>(null);
+  const status = useHomeStatus(refreshToken);
+  const rounds = useRecentRounds(10, refreshToken);
 
-  // Batch generation (§9) and drill sessions (§10) aren't built yet, so their
-  // dispatches surface an advisory rather than gating the button (REQ-13).
   const ctx = useMemo<HomeActionContext>(
     () => ({
       startRound: onStartRound,
-      generateBatch: () => setNotice('Batch generation isn’t available yet.'),
-      studyBatch: () => setNotice('Drill sessions aren’t available yet.'),
+      generateBatch: onGenerateBatch,
+      studyBatch: onStudyBatch,
     }),
-    [onStartRound],
+    [onStartRound, onGenerateBatch, onStudyBatch],
   );
 
   return (
@@ -99,10 +116,12 @@ export function HomeScreen({
             key={action.id}
             type="button"
             className="home-screen__action"
-            aria-busy={generating === action.id}
+            aria-busy={generating === action.id || busy === busyKeyFor(action.id)}
             onClick={() => action.run(ctx)}
           >
-            {generating === action.id ? `${action.label}…` : action.label}
+            {generating === action.id || busy === busyKeyFor(action.id)
+              ? `${action.label}…`
+              : action.label}
           </button>
         ))}
       </div>
@@ -110,6 +129,12 @@ export function HomeScreen({
       {generating !== null && (
         <p className="home-screen__notice" role="status">
           Generating a round. This takes a few seconds.
+        </p>
+      )}
+
+      {busy === 'batch' && (
+        <p className="home-screen__notice" role="status">
+          Building a batch and writing example sentences. This takes a moment.
         </p>
       )}
 

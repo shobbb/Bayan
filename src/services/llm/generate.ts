@@ -6,8 +6,18 @@
 import { z } from 'zod';
 import type { ModelRoute } from '@/config/models';
 import { anthropicClient, type LlmClient } from './client';
-import { llmRoundResponseSchema, type LlmRoundResponse } from './schemas';
-import { buildRoundGenerationPrompt, type RoundPromptParams } from './prompts';
+import {
+  llmRoundResponseSchema,
+  llmSentencesResponseSchema,
+  type LlmRoundResponse,
+  type LlmSentencesResponse,
+} from './schemas';
+import {
+  buildRoundGenerationPrompt,
+  buildSentenceGenerationPrompt,
+  type RoundPromptParams,
+  type SentencePromptParams,
+} from './prompts';
 
 export class LlmValidationError extends Error {
   readonly rawResponse: string;
@@ -74,4 +84,16 @@ export async function generateRound(
 ): Promise<LlmRoundResponse> {
   const prompt = buildRoundGenerationPrompt(params);
   return generateAndValidate(client, route, apiKey, prompt, llmRoundResponseSchema, maxRetries);
+}
+
+/** §9: one batched call for all of a batch's example sentences. */
+export async function generateSentences(
+  params: SentencePromptParams,
+  route: ModelRoute,
+  apiKey: string,
+  maxRetries: number,
+  client: LlmClient = anthropicClient,
+): Promise<LlmSentencesResponse> {
+  const prompt = buildSentenceGenerationPrompt(params);
+  return generateAndValidate(client, route, apiKey, prompt, llmSentencesResponseSchema, maxRetries);
 }

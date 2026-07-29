@@ -1,0 +1,176 @@
+/* Shared drill presentation (§10.1). Prompt in the upper half with generous
+   whitespace, response controls in the lower half where a thumb reaches. */
+.drill {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 120px);
+}
+
+.drill__prompt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  background: transparent;
+  border: none;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+.drill__prompt--tappable {
+  cursor: pointer;
+}
+
+/* REQ-38: the same face and treatment as the reading screen, so the script
+   renders identically in both contexts. */
+.drill__arabic {
+  font-family: var(--font-arabic);
+  font-size: 2rem;
+  line-height: 2.4;
+  color: var(--ink);
+}
+
+.drill__forms {
+  font-family: var(--font-arabic);
+  font-size: 1.5rem;
+  line-height: 2;
+  color: var(--ink-muted);
+}
+
+.drill__sentence {
+  font-family: var(--font-arabic);
+  font-size: 1.6rem;
+  line-height: 2.4;
+  color: var(--ink-muted);
+  max-width: 32ch;
+}
+
+.drill__gloss {
+  font-family: var(--font-english);
+  font-size: 1.5rem;
+  color: var(--ink);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+  width: 100%;
+  max-width: 24ch;
+}
+
+.drill__controls {
+  padding: var(--space-4) var(--space-5) var(--space-6);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+}
+
+.drill__hint,
+.drill__note {
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* Four grades, equal width, left to right (§10.2). */
+.drill__grades {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.drill__grade,
+.drill__option,
+.drill__advance,
+.drill__secondary {
+  min-height: 48px;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.drill__options {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.drill__option {
+  width: 100%;
+  text-align: start;
+}
+
+/* Answer feedback is the one place colour carries meaning rather than
+   decoration, so it is stated directly rather than through --signal. */
+.drill__option--correct {
+  border-color: #2f7d4f;
+  color: #2f7d4f;
+}
+
+.drill__option--wrong {
+  border-color: #a33a3a;
+  color: #a33a3a;
+}
+
+.drill__advance,
+.drill__secondary {
+  width: 100%;
+}
+
+.drill__row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.drill__answer {
+  text-align: center;
+}
+
+.drill__verdict--right,
+.drill__verdict--wrong {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  margin: 0 0 var(--space-2);
+}
+
+.drill__verdict--right {
+  color: #2f7d4f;
+}
+
+.drill__verdict--wrong {
+  color: #a33a3a;
+}
+
+.drill__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.drill__input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: 1.1rem;
+}
+
+.drill__input:focus {
+  outline: none;
+  border-color: var(--signal);
+}
