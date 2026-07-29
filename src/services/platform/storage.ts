@@ -41,6 +41,50 @@ export async function setApiKey(apiKey: string): Promise<void> {
   await Preferences.set({ key: API_KEY_STORAGE_KEY, value: apiKey });
 }
 
+const SUPABASE_URL_KEY = 'bayan.supabaseUrl';
+const SUPABASE_ANON_KEY = 'bayan.supabaseAnonKey';
+
+export interface SupabaseCredentials {
+  url: string;
+  anonKey: string;
+  bucket: string;
+}
+
+/**
+ * Remote-backup credentials, device value first, then the build.
+ *
+ * Only the anon key is handled. It is publishable by design — privileges come
+ * from row-level security, not the key. The service_role key bypasses every
+ * policy, so it is never accepted here: on a client it would hand full control
+ * of the project to anyone who can read the bundle.
+ */
+export async function getSupabaseCredentials(): Promise<SupabaseCredentials | null> {
+  const [storedUrl, storedKey] = await Promise.all([
+    Preferences.get({ key: SUPABASE_URL_KEY }),
+    Preferences.get({ key: SUPABASE_ANON_KEY }),
+  ]);
+
+  const url = storedUrl.value ?? import.meta.env.VITE_SUPABASE_URL ?? '';
+  const anonKey = storedKey.value ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  if (url.trim() === '' || anonKey.trim() === '') return null;
+
+  return {
+    url: url.trim(),
+    anonKey: anonKey.trim(),
+    bucket: (import.meta.env.VITE_SUPABASE_BUCKET ?? 'bayan').trim(),
+  };
+}
+
+export async function setSupabaseCredentials(url: string, anonKey: string): Promise<void> {
+  await Preferences.set({ key: SUPABASE_URL_KEY, value: url });
+  await Preferences.set({ key: SUPABASE_ANON_KEY, value: anonKey });
+}
+
+export async function clearSupabaseCredentials(): Promise<void> {
+  await Preferences.remove({ key: SUPABASE_URL_KEY });
+  await Preferences.remove({ key: SUPABASE_ANON_KEY });
+}
+
 export async function clearApiKey(): Promise<void> {
   await Preferences.remove({ key: API_KEY_STORAGE_KEY });
 }

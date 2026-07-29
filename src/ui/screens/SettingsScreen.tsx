@@ -8,6 +8,18 @@ import {
 } from '@/services/platform/storage';
 import { copyToClipboard, downloadFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
+import {
+  getSupabaseCredentials,
+  setSupabaseCredentials,
+  clearSupabaseCredentials,
+} from '@/services/platform/storage';
+import {
+  backUpNow,
+  restoreFromBackup,
+  readRemoteStatus,
+  BackupWouldShrinkError,
+  type RemoteStatus,
+} from '@/services/sync/backupService';
 import './SettingsScreen.css';
 
 export interface SettingsScreenProps {
@@ -36,15 +48,23 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [fromBuild, setFromBuild] = useState(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [remote, setRemote] = useState<RemoteStatus | null>(null);
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseKey, setSupabaseKey] = useState('');
+  const [hasCredentials, setHasCredentials] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getApiKey(), isUsingBuildTimeKey()]).then(([key, buildProvided]) => {
-      if (cancelled) return;
-      setStored(key);
-      setFromBuild(buildProvided);
-      setLoading(false);
-    });
+    Promise.all([getApiKey(), isUsingBuildTimeKey(), getSupabaseCredentials()]).then(
+      ([key, buildProvided, credentials]) => {
+        if (cancelled) return;
+        setStored(key);
+        setFromBuild(buildProvided);
+        setHasCredentials(credentials !== null);
+        setLoading(false);
+        if (credentials) void refreshRemote();
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -73,6 +93,61 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function refreshRemote() {
+    try {
+      setRemote(await readRemoteStatus());
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : 'Could not read the backup.');
+    }
+  }
+
+  async function runBackup(force = false) {
+    setBusy(true);
+    setBackupStatus(null);
+    try {
+      const result = await backUpNow(config.categories, { force });
+      setBackupStatus(`Backed up ${result.words} words and ${result.rounds} rounds.`);
+      await refreshRemote();
+    } catch (error) {
+      if (error instanceof BackupWouldShrinkError) {
+        setBackupStatus(`${error.message} Tap "Back up anyway" to replace it.`);
+      } else {
+        setBackupStatus(error instanceof Error ? error.message : 'Backup failed.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runRestore() {
+    setBusy(true);
+    setBackupStatus(null);
+    try {
+      const result = await restoreFromBackup();
+      setBackupStatus(`Restored ${result.words} words and ${result.rounds} rounds. Reopen the app.`);
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : 'Restore failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveSupabase() {
+    if (!supabaseUrl.trim() || !supabaseKey.trim()) return;
+    await setSupabaseCredentials(supabaseUrl.trim(), supabaseKey.trim());
+    setHasCredentials(true);
+    setSupabaseKey('');
+    setBackupStatus('Remote backup configured.');
+    await refreshRemote();
+  }
+
+  async function handleClearSupabase() {
+    await clearSupabaseCredentials();
+    setHasCredentials(false);
+    setRemote(null);
+    setBackupStatus('Remote backup credentials removed.');
   }
 
   async function handleClear() {
@@ -174,6 +249,94 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
           </button>
         </div>
         {backupStatus && <p className="settings-screen__note">{backupStatus}</p>}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Remote backup</h2>
+        <p className="settings-screen__note">
+          Uploads the same dump to Supabase Storage. Only the anon key is accepted — it is
+          publishable by design, with access decided by a policy on the bucket. Never put a
+          service_role key here: it bypasses every policy and would give anyone who can load
+          this site full control of the project.
+        </p>
+
+        {hasCredentials ? (
+          <>
+            <p className="settings-screen__current">
+              {remote === null
+                ? 'Checking…'
+                : remote.exists
+                  ? `Backup holds ${remote.words ?? '?'} words and ${remote.rounds ?? '?'} rounds.`
+                  : 'No backup stored yet.'}
+            </p>
+            <div className="settings-screen__row">
+              <button
+                type="button"
+                className="settings-screen__button"
+                disabled={busy}
+                onClick={() => void runBackup(false)}
+              >
+                Back up now
+              </button>
+              <button
+                type="button"
+                className="settings-screen__button"
+                disabled={busy || !remote?.exists}
+                onClick={() => void runRestore()}
+              >
+                Restore
+              </button>
+            </div>
+            <div className="settings-screen__row">
+              <button
+                type="button"
+                className="settings-screen__button"
+                disabled={busy}
+                onClick={() => void runBackup(true)}
+              >
+                Back up anyway
+              </button>
+              <button
+                type="button"
+                className="settings-screen__button"
+                disabled={busy}
+                onClick={() => void handleClearSupabase()}
+              >
+                Forget
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <input
+              type="url"
+              className="settings-screen__input"
+              placeholder="https://your-project.supabase.co"
+              value={supabaseUrl}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setSupabaseUrl(event.target.value)}
+            />
+            <input
+              type="password"
+              className="settings-screen__input"
+              placeholder="anon key"
+              value={supabaseKey}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setSupabaseKey(event.target.value)}
+            />
+            <div className="settings-screen__row">
+              <button
+                type="button"
+                className="settings-screen__button"
+                onClick={() => void handleSaveSupabase()}
+              >
+                Save
+              </button>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="settings-screen__section">
