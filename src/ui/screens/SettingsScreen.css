@@ -129,3 +129,171 @@
   border-color: var(--rule);
   cursor: default;
 }
+
+/* --- Reminder, import, and the config editor (§13) --------------------------
+   Everything below is chrome around values, so it stays quiet: no fills, no
+   colour except --signal on the things that act (REQ-D2), rules where a
+   boundary is genuinely needed and nowhere else. */
+
+.settings-screen__toggle,
+.config-field__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.settings-screen__toggle input,
+.config-field__toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--signal);
+}
+
+.settings-screen__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.settings-screen__field-label {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+}
+
+.settings-screen__input--time {
+  width: auto;
+  margin: 0;
+}
+
+.settings-screen__textarea {
+  display: block;
+  width: 100%;
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-data-size);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.settings-screen__button--danger {
+  border-color: var(--rule);
+}
+
+.settings-screen__button--danger:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.settings-screen__details,
+.settings-screen__group {
+  border-top: 1px solid var(--rule);
+}
+
+.settings-screen__details > summary,
+.settings-screen__group-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) 0;
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--signal);
+  cursor: pointer;
+}
+
+.settings-screen__badge {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--signal);
+  border-radius: var(--radius);
+  font-size: var(--text-data-size);
+  line-height: 1.6;
+}
+
+.settings-screen__raw {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  background: var(--mark-seen);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.config-field {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.config-field:last-child {
+  border-bottom: none;
+}
+
+.config-field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.config-field__label {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink);
+}
+
+.config-field__reset {
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.config-field__input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+}
+
+.config-field__input:focus {
+  border-color: var(--signal);
+}
+
+.config-field__help,
+.config-field__default {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
+.config-field__default {
+  margin-top: var(--space-1);
+}

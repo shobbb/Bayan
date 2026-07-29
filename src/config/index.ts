@@ -19,27 +19,38 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   generation: DEFAULT_GENERATION_CONFIG,
 };
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Overlays overrides on defaults at every depth, replacing arrays wholesale.
+ *
+ * Depth matters more than it looks: Settings writes a single leaf at a time, so
+ * an override is typically `{ models: { roundGeneration: { maxTokens: 16000 } } }`.
+ * Spreading one level down would replace the whole route object with that
+ * fragment and take the model id and temperature with it — the override would
+ * appear to work while quietly deleting its siblings.
+ *
+ * Arrays are replaced rather than concatenated because the only arrays here are
+ * `categories.topics` and `categories.formats`, where a user's edited list is
+ * the list, not an addition to the compiled-in one.
+ */
+function deepMerge<T>(base: T, patch: unknown): T {
+  if (patch === undefined) return base;
+  if (!isPlainObject(base) || !isPlainObject(patch)) return patch as T;
+
+  const result: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) continue;
+    result[key] = key in base ? deepMerge(base[key], value) : value;
+  }
+  return result as T;
+}
+
 export function mergeConfig(overrides: AppConfigOverrides | null | undefined): AppConfig {
   if (!overrides) return DEFAULT_APP_CONFIG;
-
-  return {
-    models: { ...DEFAULT_APP_CONFIG.models, ...overrides.models },
-    algorithm: {
-      bandit: { ...DEFAULT_APP_CONFIG.algorithm.bandit, ...overrides.algorithm?.bandit },
-      wordDraw: { ...DEFAULT_APP_CONFIG.algorithm.wordDraw, ...overrides.algorithm?.wordDraw },
-      batch: { ...DEFAULT_APP_CONFIG.algorithm.batch, ...overrides.algorithm?.batch },
-      grading: { ...DEFAULT_APP_CONFIG.algorithm.grading, ...overrides.algorithm?.grading },
-    },
-    categories: { ...DEFAULT_APP_CONFIG.categories, ...overrides.categories },
-    generation: {
-      ...DEFAULT_APP_CONFIG.generation,
-      ...overrides.generation,
-      newWordDensity: {
-        ...DEFAULT_APP_CONFIG.generation.newWordDensity,
-        ...overrides.generation?.newWordDensity,
-      },
-    },
-  };
+  return deepMerge(DEFAULT_APP_CONFIG, overrides);
 }
 
 export type { AppConfig, AppConfigOverrides } from './types';

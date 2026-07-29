@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useConfig } from '@/ui/context/ConfigContext';
+import { DEFAULT_APP_CONFIG } from '@/config';
+import { readConfigValue, hasOverride, type ConfigValue } from '@/config/overrides';
+import { useConfig, useConfigEditor } from '@/ui/context/ConfigContext';
+import { CONFIG_FIELDS, CONFIG_FIELD_GROUPS, type ConfigField } from '@/ui/settings/configFields';
+import { ConfigFieldRow } from '@/ui/settings/ConfigFieldRow';
 import {
   getApiKey,
   setApiKey,
@@ -9,8 +13,16 @@ import {
   setSupabaseCredentials,
   clearSupabaseCredentials,
 } from '@/services/platform/storage';
+import {
+  applyDailyReminder,
+  notificationsAvailable,
+  DEFAULT_DAILY_REMINDER,
+  type DailyReminder,
+} from '@/services/platform/notifications';
+import { getSetting, setSetting } from '@/data/settingsRepository';
 import { copyToClipboard, downloadFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
+import { importFromJson, ImportValidationError } from '@/services/interchange/importState';
 import {
   backUpNow,
   restoreFromBackup,
@@ -29,9 +41,27 @@ function mask(key: string): string {
   return key.length <= 12 ? '••••' : `${key.slice(0, 7)}…${key.slice(-4)}`;
 }
 
+export const DAILY_REMINDER_SETTING_KEY = 'dailyReminder';
+
+/** Local time as an <input type="time"> value, and back. */
+function toTimeValue(reminder: DailyReminder): string {
+  return `${String(reminder.hour).padStart(2, '0')}:${String(reminder.minute).padStart(2, '0')}`;
+}
+
+function fromTimeValue(value: string, fallback: DailyReminder): DailyReminder {
+  const [hour, minute] = value.split(':').map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return fallback;
+  return { ...fallback, hour: hour ?? fallback.hour, minute: minute ?? fallback.minute };
+}
+
 /**
- * Minimal Settings (§13): API key entry and the active model routes. Config
- * overrides, notifications, and export/import land here in build order step 11.
+ * Settings (§13): the model provider key, every config value in algorithm.ts,
+ * models.ts and generation.ts, the daily reminder, and export/import.
+ *
+ * The config values are rendered by mapping the field registry, not by a block
+ * of JSX per value (REQ-E2) — this view has no knowledge of what any particular
+ * weight means, which is what keeps §13's "everything is editable" from decaying
+ * into "everything that was editable the day this was written".
  *
  * The key is stored through services/platform (Keychain / EncryptedSharedPrefs),
  * never IndexedDB or localStorage (REQ-P4), and is sent nowhere but the model
@@ -39,6 +69,7 @@ function mask(key: string): string {
  */
 export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const config = useConfig();
+  const { overrides, setValue, resetValue, resetAll } = useConfigEditor();
   const [stored, setStored] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [status, setStatus] = useState<string | null>(null);
@@ -50,23 +81,77 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseKey, setSupabaseKey] = useState('');
   const [hasCredentials, setHasCredentials] = useState(false);
+  const [reminder, setReminder] = useState<DailyReminder>(DEFAULT_DAILY_REMINDER);
+  const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [importText, setImportText] = useState('');
+  const [importDetail, setImportDetail] = useState<string | null>(null);
+  const [confirmingReplace, setConfirmingReplace] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getApiKey(), isUsingBuildTimeKey(), getSupabaseCredentials()]).then(
-      ([key, buildProvided, credentials]) => {
-        if (cancelled) return;
-        setStored(key);
-        setFromBuild(buildProvided);
-        setHasCredentials(credentials !== null);
-        setLoading(false);
-        if (credentials) void refreshRemote();
-      },
-    );
+    Promise.all([
+      getApiKey(),
+      isUsingBuildTimeKey(),
+      getSupabaseCredentials(),
+      getSetting<DailyReminder>(DAILY_REMINDER_SETTING_KEY),
+    ]).then(([key, buildProvided, credentials, storedReminder]) => {
+      if (cancelled) return;
+      setStored(key);
+      setFromBuild(buildProvided);
+      setHasCredentials(credentials !== null);
+      setReminder(storedReminder ?? DEFAULT_DAILY_REMINDER);
+      setLoading(false);
+      if (credentials) void refreshRemote();
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // The stored preference is the source of truth; the OS schedule is derived
+  // from it, because a reinstall drops scheduled notifications silently.
+  async function saveReminder(next: DailyReminder) {
+    setReminder(next);
+    await setSetting(DAILY_REMINDER_SETTING_KEY, next);
+    if (!notificationsAvailable()) {
+      setReminderStatus(
+        next.enabled
+          ? 'Saved. Reminders need the native app — a browser build cannot schedule them.'
+          : 'Saved.',
+      );
+      return;
+    }
+    const armed = await applyDailyReminder(next);
+    setReminderStatus(
+      !next.enabled
+        ? 'Reminder off.'
+        : armed
+          ? `Reminder set for ${toTimeValue(next)} daily.`
+          : 'Notification permission was refused, so nothing is scheduled.',
+    );
+  }
+
+  async function runImport(mode: 'merge' | 'replace') {
+    const raw = importText.trim();
+    if (!raw) return;
+    setBusy(true);
+    setBackupStatus(null);
+    setImportDetail(null);
+    try {
+      const report = await importFromJson(raw, mode);
+      setBackupStatus(
+        `Imported ${report.wordsAdded} new words (${report.wordsMerged} merged) and ` +
+          `${report.roundsAdded} rounds. Now holding ${report.totalWords} words. Reopen the app.`,
+      );
+      setImportText('');
+      setConfirmingReplace(false);
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : 'Import failed.');
+      if (error instanceof ImportValidationError) setImportDetail(error.describe());
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleSave() {
     const trimmed = draft.trim();
@@ -156,6 +241,10 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
     setFromBuild(buildProvided);
     setStatus('Key removed from this device.');
   }
+
+  const countChanged = (fields: readonly ConfigField[]): number =>
+    fields.filter((field) => hasOverride(overrides, field.path)).length;
+  const changedCount = countChanged(CONFIG_FIELDS);
 
   return (
     <div className="settings-screen">
@@ -338,18 +427,135 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       </section>
 
       <section className="settings-screen__section">
-        <h2 className="settings-screen__section-title">Models</h2>
-        <ul className="settings-screen__list">
-          {Object.entries(config.models).map(([kind, route]) => (
-            <li key={kind} className="settings-screen__list-row">
-              <span>{kind}</span>
-              <span className="settings-screen__value">{route.model}</span>
-            </li>
-          ))}
-        </ul>
+        <h2 className="settings-screen__section-title">Reminder</h2>
         <p className="settings-screen__note">
-          Per-route model selection is editable here in a later step.
+          One daily notification when cards are due. Off unless you turn it on, and never used
+          for anything else.
         </p>
+
+        <label className="settings-screen__toggle">
+          <input
+            type="checkbox"
+            checked={reminder.enabled}
+            onChange={(event) => void saveReminder({ ...reminder, enabled: event.target.checked })}
+          />
+          <span>Daily reminder</span>
+        </label>
+
+        {reminder.enabled && (
+          <label className="settings-screen__field">
+            <span className="settings-screen__field-label">Time</span>
+            <input
+              type="time"
+              className="settings-screen__input settings-screen__input--time"
+              value={toTimeValue(reminder)}
+              onChange={(event) => void saveReminder(fromTimeValue(event.target.value, reminder))}
+            />
+          </label>
+        )}
+
+        {!notificationsAvailable() && (
+          <p className="settings-screen__note">
+            This build runs in a browser, which cannot schedule local notifications. The
+            preference is saved and takes effect in the native app.
+          </p>
+        )}
+        {reminderStatus && <p className="settings-screen__note">{reminderStatus}</p>}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Import</h2>
+        <p className="settings-screen__note">
+          Paste a dump produced by Export. Merge layers it over what is here, keeping the higher
+          counts per word. Replace discards everything on this device first.
+        </p>
+        <textarea
+          className="settings-screen__textarea"
+          placeholder='{"schemaVersion": …}'
+          rows={4}
+          spellCheck={false}
+          value={importText}
+          onChange={(event) => {
+            setImportText(event.target.value);
+            setConfirmingReplace(false);
+          }}
+        />
+        <div className="settings-screen__row">
+          <button
+            type="button"
+            className="settings-screen__button"
+            disabled={busy || importText.trim() === ''}
+            onClick={() => void runImport('merge')}
+          >
+            Merge
+          </button>
+          {/* Two taps, and the second one says what it destroys. Replace cannot
+              be undone — there is no server to recover from (REQ-37). */}
+          <button
+            type="button"
+            className="settings-screen__button settings-screen__button--danger"
+            disabled={busy || importText.trim() === ''}
+            onClick={() => {
+              if (confirmingReplace) void runImport('replace');
+              else setConfirmingReplace(true);
+            }}
+          >
+            {confirmingReplace ? 'Erase everything and replace' : 'Replace…'}
+          </button>
+        </div>
+        {confirmingReplace && (
+          <p className="settings-screen__note">
+            This deletes every word and round on this device and cannot be undone. Export first
+            if you are not certain.
+          </p>
+        )}
+        {importDetail && (
+          <details className="settings-screen__details">
+            <summary>Why it was rejected</summary>
+            <pre className="settings-screen__raw">{importDetail}</pre>
+          </details>
+        )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">Algorithm and models</h2>
+        <p className="settings-screen__note">
+          Every value the app computes with. Each shows its compiled-in default; anything you
+          change can be put back individually.
+        </p>
+        <div className="settings-screen__row">
+          <button
+            type="button"
+            className="settings-screen__button"
+            disabled={changedCount === 0}
+            onClick={resetAll}
+          >
+            {changedCount === 0 ? 'All at defaults' : `Restore ${changedCount} to defaults`}
+          </button>
+        </div>
+
+        {CONFIG_FIELD_GROUPS.map((group) => (
+          <details key={group.id} className="settings-screen__group">
+            <summary className="settings-screen__group-summary">
+              {group.title}
+              {countChanged(group.fields) > 0 && (
+                <span className="settings-screen__badge">{countChanged(group.fields)}</span>
+              )}
+            </summary>
+            <p className="settings-screen__note">{group.blurb}</p>
+            {group.fields.map((field) => (
+              <ConfigFieldRow
+                key={field.id}
+                field={field}
+                value={readConfigValue(config, field.path) as ConfigValue}
+                defaultValue={readConfigValue(DEFAULT_APP_CONFIG, field.path) as ConfigValue}
+                overridden={hasOverride(overrides, field.path)}
+                onChange={(value) => setValue(field.path, value)}
+                onReset={() => resetValue(field.path)}
+              />
+            ))}
+          </details>
+        ))}
       </section>
     </div>
   );
