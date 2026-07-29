@@ -3,7 +3,7 @@ import type { Failure } from '@/ui/failure';
 import type { Round, RoundType } from '@/domain/types';
 import { useHomeStatus } from '@/ui/hooks/useHomeStatus';
 import { useRecentRounds } from '@/ui/hooks/useRecentRounds';
-import { HOME_ACTIONS, type HomeActionContext } from './homeActions';
+import { actionsRanked, type HomeActionContext } from './homeActions';
 import './HomeScreen.css';
 
 export interface HomeScreenProps {
@@ -106,33 +106,62 @@ export function HomeScreen({
         </div>
       </header>
 
+      {/* Cards due is the only figure that implies an action, so it carries the
+          weight; the rest are context and sit quietly beside it (REQ-49). */}
       <div className="home-screen__status" role="status">
-        <div className="home-screen__status-item">
-          <span className="home-screen__status-value">{status.cardsDue}</span>
-          <span className="home-screen__status-label">cards due</span>
-        </div>
-        <div className="home-screen__status-item">
-          <span className="home-screen__status-value">{status.undrilledBacklog}</span>
-          <span className="home-screen__status-label">undrilled backlog</span>
-        </div>
-        <div className="home-screen__status-item">
-          <span className="home-screen__status-value">{status.roundsCompleted}</span>
-          <span className="home-screen__status-label">rounds completed</span>
-        </div>
-        <div className="home-screen__status-item">
-          <span className="home-screen__status-value">{status.currentBatchSize}</span>
-          <span className="home-screen__status-label">current batch size</span>
-        </div>
+        <p className="home-screen__due">
+          <span className="home-screen__due-value">{status.cardsDue}</span>
+          <span className="home-screen__due-label">cards due</span>
+        </p>
+        <p className="home-screen__context">
+          {status.currentBatchSize} in batch · {status.undrilledBacklog} undrilled ·{' '}
+          {status.roundsCompleted} rounds
+        </p>
       </div>
 
-      <div className="home-screen__grid">
-        {HOME_ACTIONS.map((action) => {
+      {actionsRanked('primary').map((action) => (
+        <button
+          key={action.id}
+          type="button"
+          className="home-screen__action home-screen__action--primary"
+          aria-busy={isActionBusy(action.id, generating, busy)}
+          onClick={() => action.run(ctx)}
+        >
+          {isActionBusy(action.id, generating, busy) ? `${action.label}…` : action.label}
+        </button>
+      ))}
+
+      <section className="home-screen__reading">
+        <h2 className="home-screen__group-title">Read a round</h2>
+        <div className="home-screen__grid">
+          {actionsRanked('secondary').map((action) => {
+            const actionBusy = isActionBusy(action.id, generating, busy);
+            return (
+              <button
+                key={action.id}
+                type="button"
+                className="home-screen__action"
+                aria-busy={actionBusy}
+                onClick={() => action.run(ctx)}
+              >
+                <span className="home-screen__action-label">
+                  {actionBusy ? `${action.label}…` : action.label}
+                </span>
+                {action.hint && <span className="home-screen__action-hint">{action.hint}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="home-screen__tertiary">
+        {actionsRanked('tertiary').map((action) => {
           const actionBusy = isActionBusy(action.id, generating, busy);
           return (
             <button
               key={action.id}
               type="button"
-              className="home-screen__action"
+              className="home-screen__action-link"
               aria-busy={actionBusy}
               onClick={() => action.run(ctx)}
             >
@@ -201,7 +230,10 @@ export function HomeScreen({
                   className="home-screen__round-item"
                   onClick={() => onReplayRound(round)}
                 >
-                  {round.titleEn} — {round.topic} / {round.format}
+                  <span className="home-screen__round-title">{round.titleEn}</span>
+                  <span className="home-screen__round-meta">
+                    {round.topic} · {round.format}
+                  </span>
                 </button>
               </li>
             ))}

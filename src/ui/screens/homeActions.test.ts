@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   HOME_ACTIONS,
+  actionsRanked,
   startExploreRound,
   startReinforcementRound,
   startPureReinforcementRound,
@@ -52,16 +53,51 @@ describe('home actions', () => {
     expect(ctx.generateBatch).not.toHaveBeenCalled();
   });
 
-  it('exposes the six §7 actions in order (REQ-16)', () => {
+  it('exposes all six §7 actions (REQ-16)', () => {
     expect(HOME_ACTIONS).toHaveLength(6);
-    expect(HOME_ACTIONS.map((action) => action.id)).toEqual([
+    expect(new Set(HOME_ACTIONS.map((action) => action.id))).toEqual(
+      new Set([
+        'explore',
+        'reinforcement',
+        'pureReinforcement',
+        'backlog',
+        'generateBatch',
+        'studyBatch',
+      ]),
+    );
+  });
+
+  // REQ-49: ranked, but every action still on screen. Ranking is presentation,
+  // and the moment it starts removing actions it has become gating (REQ-13).
+  it('ranks the actions without dropping any', () => {
+    const ranked = [
+      ...actionsRanked('primary'),
+      ...actionsRanked('secondary'),
+      ...actionsRanked('tertiary'),
+    ];
+
+    expect(ranked).toHaveLength(HOME_ACTIONS.length);
+    expect(new Set(ranked.map((a) => a.id))).toEqual(new Set(HOME_ACTIONS.map((a) => a.id)));
+  });
+
+  it('keeps exactly one primary action, so the rank means something', () => {
+    expect(actionsRanked('primary')).toHaveLength(1);
+  });
+
+  // The four round types are one family; splitting them across ranks would put
+  // four ways of doing the same thing at different levels of the pyramid.
+  it('keeps the four round types at one rank, each explained', () => {
+    const rounds = actionsRanked('secondary');
+
+    expect(rounds.map((a) => a.id)).toEqual([
       'explore',
       'reinforcement',
       'pureReinforcement',
       'backlog',
-      'generateBatch',
-      'studyBatch',
     ]);
+    for (const action of rounds) {
+      expect(action.hint, action.id).toBeTruthy();
+    }
   });
 
   it('every action runs exactly one dispatch — no ordering dependency (REQ-16)', () => {

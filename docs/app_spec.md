@@ -510,17 +510,21 @@ Entry screen. Purpose: expose every action directly, orchestrate nothing.
 
 **Layout**
 - Header: app title, settings icon.
-- Status strip — four figures, no styling emphasis on any: cards due, undrilled backlog, rounds completed, current batch size.
-- Action grid — six buttons, equal visual weight, always enabled:
+- Status — cards due, undrilled backlog, rounds completed, current batch size. Cards due is the only one that implies an action, so it carries the weight; the rest are context and are set quietly beside it.
+- Actions — all six present and always enabled, ranked by how often they are reached for:
 
-| Button | Dispatches |
-|---|---|
-| Explore | new round, `roundType: 'explore'` |
-| Reinforcement | new round, `roundType: 'reinforcement'` |
-| Pure reinforcement | new round, `roundType: 'pureReinforcement'` |
-| Backlog clearing | new round, `roundType: 'backlog'` |
-| Generate new batch | build a ~40-card batch |
-| Study current batch | open drill session (batch + due cards) |
+`REQ-49` Rank the actions and the figures. Equal visual weight for everything was the earlier instruction here and it was wrong: when every element competes for attention nothing stands out, and the screen reads as noise. Deference is a real constraint (§5.1) and it applies to Home too — most screens have one primary action, a few secondary, and a couple of tertiary. Rank by expected frequency, never by hiding anything: exposing every action directly is the point of this screen, and ranking is not gating (REQ-13).
+
+| Button | Rank | Dispatches |
+|---|---|---|
+| Study current batch | primary | open drill session (batch + due cards) |
+| Explore | secondary | new round, `roundType: 'explore'` |
+| Reinforcement | secondary | new round, `roundType: 'reinforcement'` |
+| Pure reinforcement | secondary | new round, `roundType: 'pureReinforcement'` |
+| Backlog clearing | secondary | new round, `roundType: 'backlog'` |
+| Generate new batch | tertiary | build a ~40-card batch |
+
+The four round types are one family and read as one — a set of four ways to do the same thing, not four peers of "Study". The rank belongs to the action's own descriptor, so the view still never branches on which action it is rendering (REQ-E2).
 
 - Recent rounds list, tappable to re-read.
 

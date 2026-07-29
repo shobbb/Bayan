@@ -63,40 +63,51 @@
   color: var(--signal);
 }
 
+/* One figure implies an action, so one figure carries the weight (REQ-49).
+   The rules are gone: whitespace already separates this from what follows, and
+   a line that is not doing work is clutter. */
 .home-screen__status {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-7);
 }
 
-.home-screen__status-item {
+.home-screen__due {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
 }
 
-.home-screen__status-value {
+.home-screen__due-value {
   font-family: var(--font-english);
-  font-size: 1.4rem;
+  font-size: var(--text-figure-size);
+  line-height: 1;
   color: var(--ink);
 }
 
-.home-screen__status-label {
+.home-screen__due-label,
+.home-screen__context {
   font-family: var(--font-english);
-  font-size: var(--text-data-size);
+  font-size: var(--text-ui-label-size);
   color: var(--ink-muted);
 }
 
-/* Six actions, equal visual weight, two-column grid (§5.6) — no primary/secondary hierarchy. */
+.home-screen__context {
+  margin: var(--space-2) 0 0;
+}
+
+.home-screen__group-title {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  font-weight: 400;
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+/* Secondary: four ways to do one thing, so they read as one group. */
 .home-screen__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
-  margin-bottom: var(--space-5);
 }
 
 .home-screen__action {
@@ -113,9 +124,58 @@
   cursor: pointer;
 }
 
+.home-screen__action-label {
+  display: block;
+}
+
+.home-screen__action-hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
 .home-screen__action:hover {
   border-color: var(--signal);
   color: var(--signal);
+}
+
+/* Primary: the one action reached for daily (REQ-49). It gets the fill, which
+   is the only fill on the screen — that is what makes it read as primary
+   without needing to shout. */
+.home-screen__action--primary {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: var(--space-7);
+  background: var(--signal);
+  border-color: var(--signal);
+  color: var(--ground);
+  text-align: center;
+  font-size: 1rem;
+}
+
+.home-screen__action--primary:hover {
+  background: var(--signal);
+  color: var(--ground);
+  opacity: 0.9;
+}
+
+/* Tertiary: discoverable, unobtrusive, link-shaped. */
+.home-screen__tertiary {
+  margin: var(--space-5) 0 var(--space-7);
+}
+
+.home-screen__action-link {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
 }
 
 .home-screen__notice {
@@ -151,6 +211,18 @@
   font-family: var(--font-english);
   font-size: var(--text-ui-label-size);
   cursor: pointer;
+}
+
+.home-screen__round-title {
+  display: block;
+}
+
+.home-screen__round-meta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
 }
 
 .home-screen__round-item:hover {

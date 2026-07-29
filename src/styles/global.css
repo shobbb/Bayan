@@ -20,6 +20,10 @@
   --text-gloss-arabic-line: 1.9;
   --text-gloss-english-size: 1rem;
   --text-gloss-english-line: 1.4;
+  /* A single figure large enough to be read at a glance. Without a step this
+     far above the label size, every number on a screen carries equal weight
+     and the screen has no hierarchy at all. */
+  --text-figure-size: 2.4rem;
   --text-ui-label-size: 0.82rem;
   --text-ui-label-line: 1.3;
   --text-data-size: 0.75rem;

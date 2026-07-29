@@ -44,23 +44,68 @@ export function studyCurrentBatch(ctx: HomeActionContext): void {
   ctx.studyBatch();
 }
 
-/** A Home action as rendered in the §7 grid: a label and the function it runs. */
+/**
+ * How prominently an action is drawn (REQ-49). Ranked by how often it is
+ * reached for, never by how important it sounds.
+ *
+ * This lives on the descriptor rather than in the view so that ranking an
+ * action stays a fact about the action, and the view keeps mapping over the
+ * list without ever branching on an id (REQ-E2).
+ */
+export type ActionRank = 'primary' | 'secondary' | 'tertiary';
+
+/** A Home action as rendered in §7: a label, its rank, and the function it runs. */
 export interface HomeActionDescriptor {
   readonly id: string;
   readonly label: string;
+  readonly rank: ActionRank;
+  /** One line on what this round type does, shown with the secondary group. */
+  readonly hint?: string;
   run(ctx: HomeActionContext): void;
 }
 
 /**
- * Display order for the action grid (§7): six actions, equal visual weight,
- * always enabled (REQ-13). The view maps over this list — it never branches on
- * an action id (REQ-E2). Labels match the §7 table.
+ * The six actions (§7), always enabled (REQ-13). Ranking is not gating: every
+ * one of these is on screen and one tap away. Labels match the §7 table.
+ *
+ * The four round types are deliberately one rank — they are four ways to do the
+ * same thing, and drawing them as peers of "Study" is what made this screen
+ * read as six unrelated demands.
  */
 export const HOME_ACTIONS: readonly HomeActionDescriptor[] = [
-  { id: 'explore', label: 'Explore', run: startExploreRound },
-  { id: 'reinforcement', label: 'Reinforcement', run: startReinforcementRound },
-  { id: 'pureReinforcement', label: 'Pure reinforcement', run: startPureReinforcementRound },
-  { id: 'backlog', label: 'Backlog clearing', run: startBacklogRound },
-  { id: 'generateBatch', label: 'Generate new batch', run: generateNewBatch },
-  { id: 'studyBatch', label: 'Study current batch', run: studyCurrentBatch },
+  { id: 'studyBatch', label: 'Study', rank: 'primary', run: studyCurrentBatch },
+  {
+    id: 'explore',
+    label: 'Explore',
+    rank: 'secondary',
+    hint: 'Mostly new vocabulary',
+    run: startExploreRound,
+  },
+  {
+    id: 'reinforcement',
+    label: 'Reinforcement',
+    rank: 'secondary',
+    hint: 'Familiar words, a little new',
+    run: startReinforcementRound,
+  },
+  {
+    id: 'pureReinforcement',
+    label: 'Pure reinforcement',
+    rank: 'secondary',
+    hint: 'Nothing new at all',
+    run: startPureReinforcementRound,
+  },
+  {
+    id: 'backlog',
+    label: 'Backlog clearing',
+    rank: 'secondary',
+    hint: 'Words you have not seen in a while',
+    run: startBacklogRound,
+  },
+  { id: 'generateBatch', label: 'Generate new batch', rank: 'tertiary', run: generateNewBatch },
 ];
+
+/** Actions at a given rank, in declaration order. */
+export function actionsRanked(rank: ActionRank): readonly HomeActionDescriptor[] {
+  return HOME_ACTIONS.filter((action) => action.rank === rank);
+}
