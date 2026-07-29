@@ -5,14 +5,12 @@ import {
   setApiKey,
   clearApiKey,
   isUsingBuildTimeKey,
-} from '@/services/platform/storage';
-import { copyToClipboard, downloadFile } from '@/services/platform/files';
-import { exportState } from '@/services/interchange/exportState';
-import {
   getSupabaseCredentials,
   setSupabaseCredentials,
   clearSupabaseCredentials,
 } from '@/services/platform/storage';
+import { copyToClipboard, downloadFile } from '@/services/platform/files';
+import { exportState } from '@/services/interchange/exportState';
 import {
   backUpNow,
   restoreFromBackup,
