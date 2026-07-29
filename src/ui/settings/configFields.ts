@@ -156,6 +156,14 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
     ],
   },
   {
+    id: 'drill',
+    title: 'Study sessions',
+    blurb: 'How a study session is paced.',
+    fields: [
+      num(['algorithm', 'drill', 'roundSize'], 'Cards per round', 'How many cards between checkpoints. Everything answered is saved as you go, so a checkpoint is a place to stop rather than a place to be scored.', { min: 3, max: 50, step: 1 }),
+    ],
+  },
+  {
     id: 'generation',
     title: 'Round generation',
     blurb: 'Length and vocabulary mix of a generated round.',

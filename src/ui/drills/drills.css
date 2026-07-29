@@ -6,7 +6,8 @@
   min-height: calc(100vh - 120px);
 }
 
-.drill__prompt {
+.drill__prompt,
+.drill__card {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -22,8 +23,30 @@
   color: inherit;
 }
 
-.drill__prompt--tappable {
+.drill__prompt--tappable,
+.drill__card {
   cursor: pointer;
+}
+
+/* The card is a surface, not a container full of chrome (REQ-D1): a single
+   hairline and a radius, no fill, no shadow. It reads as a card because it
+   flips, not because it is drawn like one. */
+.drill__card {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  margin: var(--space-4) var(--space-5) 0;
+  width: auto;
+  transition: border-color var(--motion-drill-reveal) ease-out;
+}
+
+.drill__card--flipped {
+  border-color: var(--signal);
+}
+
+.drill__flip-hint {
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
 }
 
 /* REQ-38: the same face and treatment as the reading screen, so the script
@@ -74,14 +97,15 @@
   margin: 0;
 }
 
-/* Four grades, equal width, left to right (§10.2). */
-.drill__grades {
+/* Two responses, equal width (§10.2). Neither is styled as the right answer:
+   "still learning" is a normal outcome, not a failure state. */
+.drill__report {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
 }
 
-.drill__grade,
+.drill__report-button,
 .drill__option,
 .drill__advance,
 .drill__secondary {
@@ -173,4 +197,13 @@
 .drill__input:focus {
   outline: none;
   border-color: var(--signal);
+}
+
+.drill__report-button {
+  min-height: 56px;
+}
+
+.drill__report-button--known {
+  border-color: var(--signal);
+  color: var(--signal);
 }

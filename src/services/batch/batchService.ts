@@ -139,3 +139,15 @@ export async function recordAnswer(word: Word, grade: Grade, now = Date.now()): 
   const srs = activeScheduler.next(word.srs, grade, now);
   await upsertWords([{ ...word, srs, lastSeenAt: now }]);
 }
+
+/**
+ * REQ-46: puts a card back exactly as it was before its last response.
+ *
+ * Takes the pre-answer record rather than trying to invert the scheduler. SM-2
+ * is not injective — several prior states can lead to the same next state — so
+ * the only correct undo is the one that restores what was actually there, and
+ * the session already holds it.
+ */
+export async function undoAnswer(previous: Word): Promise<void> {
+  await upsertWords([previous]);
+}

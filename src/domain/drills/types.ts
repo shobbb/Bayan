@@ -24,6 +24,14 @@ export interface DrillItem {
   readonly correctIndex: number;
 }
 
+/**
+ * What a flashcard reports (§10.2, REQ-39): whether the word was known, and
+ * nothing about scheduling. The view never names a scheduler grade — the
+ * mapping lives in modes.ts, in one place, so changing how a self-report is
+ * scheduled does not mean touching a component.
+ */
+export type SelfReport = 'known' | 'stillLearning';
+
 export interface PrepareContext {
   /** The wider corpus, for drawing distractors. */
   corpus: readonly Word[];

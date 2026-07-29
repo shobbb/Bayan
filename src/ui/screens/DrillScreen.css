@@ -22,13 +22,7 @@
   cursor: pointer;
 }
 
-.drill-screen__count {
-  font-family: var(--font-english);
-  font-size: var(--text-data-size);
-  color: var(--ink-muted);
-}
-
-/* Thin bar, position in queue (§10.1). */
+/* Thin bar, position within the round (§10.1). */
 .drill-screen__bar {
   height: 2px;
   background: var(--rule);
@@ -80,4 +74,63 @@
   font-family: var(--font-arabic);
   font-size: 1.25rem;
   color: var(--ink);
+}
+
+/* Two running counts (§10.1). Plain numbers, no bars or badges — this is
+   information about the session, not a score to react to (REQ-15). */
+.drill-screen__counts {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-5) var(--space-3);
+  font-family: var(--font-english);
+}
+
+.drill-screen__count {
+  font-size: 1.4rem;
+  color: var(--ink-muted);
+}
+
+.drill-screen__count--known {
+  color: var(--signal);
+  text-align: end;
+}
+
+.drill-screen__count-label {
+  display: block;
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
+.drill-screen__position {
+  margin: var(--space-2) 0 0;
+  padding: 0 var(--space-5);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
+.drill-screen__undo {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.drill-screen__continue {
+  min-height: 48px;
+  margin: var(--space-4) 0;
+  padding: 0 var(--space-6);
+  background: transparent;
+  border: 1px solid var(--signal);
+  border-radius: var(--radius);
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
 }

@@ -30,6 +30,10 @@ export interface AlgorithmConfig {
     /** Max Levenshtein distance accepted as a typo rather than a miss (REQ-26). */
     maxLevenshteinDistance: number;
   };
+  drill: {
+    /** Cards between checkpoints in a study session (REQ-48). */
+    roundSize: number;
+  };
 }
 
 export const DEFAULT_ALGORITHM_CONFIG: AlgorithmConfig = {
@@ -48,5 +52,8 @@ export const DEFAULT_ALGORITHM_CONFIG: AlgorithmConfig = {
   },
   grading: {
     maxLevenshteinDistance: 2,
+  },
+  drill: {
+    roundSize: 10,
   },
 };

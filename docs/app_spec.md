@@ -588,23 +588,27 @@ Rationale for 13–16: the method is still under test. Hardcoding a flow would f
 
 Queue = current batch + all due SRS cards, interleaved. Modes rotate across the session so the learner sees each word through more than one retrieval path.
 
-Design the drill screens from the concrete behaviour below. Do not copy another product's visual design.
+**The interaction model is Quizlet's, not Anki's.** This is a deliberate choice and not a default: it is the app the learner actually uses, and a study loop they already have in their fingers costs nothing to learn. Concretely that means a card that flips, a two-way self-report, running counts of what is known versus still being learned, short rounds with a checkpoint between them, and a follow-up pass narrowed to what was missed. Where the two traditions disagree, follow Quizlet.
+
+The visual language is still §5's — cool neutrals, one signal colour, no gradients or shadows. Borrow the mechanics, not the styling.
 
 ### 10.1 Shared shell
 
-- Progress indicator: position in queue (e.g. `12 / 40`), thin bar.
+- Progress: position in the round, a thin bar, and a running count of `still learning` and `known` (§10.6).
 - Prompt occupies the upper half, centered, generous whitespace.
 - Response controls occupy the lower half, thumb-reachable.
 - Exit control returns to Home; partial progress is saved.
 - `REQ-38` Arabic prompt text uses the same typographic treatment as the reading screen (§8): same face, ~1.6rem minimum, `dir="rtl"`. Consistency matters — the learner should recognize the same script rendering in both contexts.
+- `REQ-46` Undo reverts the last response, restoring the card's prior `SrsState` exactly. A mistap must be fully reversible, as on the reading screen (REQ-19).
 
 ### 10.2 `FlashcardView`
 
 - **Front:** base forms on one line, example sentence below in a lighter weight. Arabic only.
-- Tap anywhere on the card to reveal.
+- Tap anywhere on the card to flip.
 - **Back:** English gloss, large and alone. Front content stays visible above it so the pairing is seen together.
-- Four grade buttons: `Again · Hard · Good · Easy`, left to right, equal width.
-- `REQ-39` Grades map directly to the scheduler. No intermediate "correct/incorrect" abstraction.
+- Two response buttons: `Still learning` and `Know it`. Nothing else.
+- `REQ-39` The self-report is two-way. A mode reports what happened — known or not — and the mapping onto scheduler grades lives in one place, not in the view. Four-way self-grading is Anki's model and is not used here: it asks the learner to predict a scheduling interval mid-recall, which is a worse signal than what the graded modes measure directly.
+- `REQ-47` The graded modes derive a finer grade from what the learner actually did — an exact answer, a typo-tolerated near miss, a wrong answer — rather than asking. Derived granularity is kept; self-reported granularity is not.
 
 ### 10.3 `MultipleChoiceView`
 
@@ -625,10 +629,18 @@ Design the drill screens from the concrete behaviour below. Do not copy another 
 
 ### 10.5 Session end
 
-- Summary: number correct, list of missed items with their glosses.
-- "Study again" restricted to the missed subset.
+- Summary: the two counts, and the missed items listed with their glosses.
+- "Keep reviewing" restarts on the missed subset alone, carrying the counts forward.
 - `REQ-27` Every response writes `SrsState` through `srs/scheduler.ts`. Use an established algorithm (FSRS preferred, SM-2 acceptable). Do not invent one.
 - No auto-advance to another activity. Return to Home.
+
+### 10.6 Rounds
+
+A long queue is presented as a sequence of short rounds with a checkpoint between them, rather than one unbroken run.
+
+- `REQ-48` Round length is a config value, not a literal.
+- A checkpoint shows the running counts and continues on command. It is a resting point, not a reward screen — no streaks, no congratulation, consistent with REQ-15.
+- Leaving at a checkpoint keeps everything already answered; nothing is scored only at the end.
 
 ---
 

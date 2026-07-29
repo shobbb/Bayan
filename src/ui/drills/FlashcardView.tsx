@@ -1,35 +1,40 @@
-import { useState } from 'react';
-import type { DrillItem } from '@/domain/drills/types';
-import type { Grade } from '@/domain/types';
+import { useEffect, useState } from 'react';
+import type { DrillItem, SelfReport } from '@/domain/drills/types';
 import './drills.css';
 
 export interface FlashcardViewProps {
   item: DrillItem;
-  onRespond: (grade: Grade) => void;
+  onRespond: (report: SelfReport) => void;
 }
 
-const GRADES: { grade: Grade; label: string }[] = [
-  { grade: 'again', label: 'Again' },
-  { grade: 'hard', label: 'Hard' },
-  { grade: 'good', label: 'Good' },
-  { grade: 'easy', label: 'Easy' },
-];
-
 /**
- * §10.2. Front is Arabic only; tapping reveals the gloss while the front stays
- * visible above it, so the pairing is seen together. The four grades map
- * straight to the scheduler with nothing in between (REQ-39).
+ * §10.2. Arabic on the front, tap to flip, then Still learning / Know it.
+ *
+ * The two buttons are the whole response. The view names neither a grade nor an
+ * interval — it reports whether the word was known and lets domain decide what
+ * that is worth (REQ-39), which is what keeps a scheduling change out of this
+ * file entirely.
+ *
+ * The gloss appears below the Arabic rather than replacing it: the pairing is
+ * the thing being learned, so both halves have to be on screen together.
  */
 export function FlashcardView({ item, onRespond }: FlashcardViewProps) {
-  const [revealed, setRevealed] = useState(false);
+  const [flipped, setFlipped] = useState(false);
+
+  // A new card always starts face down, including when the same component
+  // instance is reused for the next word in the queue.
+  useEffect(() => {
+    setFlipped(false);
+  }, [item.word.id, item.mode]);
 
   return (
     <div className="drill">
       <button
         type="button"
-        className="drill__prompt drill__prompt--tappable"
-        onClick={() => setRevealed(true)}
-        aria-label={revealed ? undefined : 'Reveal the translation'}
+        className={'drill__card' + (flipped ? ' drill__card--flipped' : '')}
+        onClick={() => setFlipped((current) => !current)}
+        aria-expanded={flipped}
+        aria-label={flipped ? 'Hide the translation' : 'Reveal the translation'}
       >
         <span dir="rtl" lang="ar" className="drill__arabic">
           {item.word.surface}
@@ -44,28 +49,34 @@ export function FlashcardView({ item, onRespond }: FlashcardViewProps) {
             {item.sentence}
           </span>
         )}
-        {revealed && <span className="drill__gloss">{item.word.gloss}</span>}
+
+        {flipped ? (
+          <span className="drill__gloss">{item.word.gloss}</span>
+        ) : (
+          <span className="drill__flip-hint">Tap to flip</span>
+        )}
       </button>
 
       <div className="drill__controls">
-        {revealed ? (
-          <div className="drill__grades">
-            {GRADES.map((entry) => (
-              <button
-                key={entry.grade}
-                type="button"
-                className="drill__grade"
-                onClick={() => {
-                  setRevealed(false);
-                  onRespond(entry.grade);
-                }}
-              >
-                {entry.label}
-              </button>
-            ))}
+        {flipped ? (
+          <div className="drill__report">
+            <button
+              type="button"
+              className="drill__report-button"
+              onClick={() => onRespond('stillLearning')}
+            >
+              Still learning
+            </button>
+            <button
+              type="button"
+              className="drill__report-button drill__report-button--known"
+              onClick={() => onRespond('known')}
+            >
+              Know it
+            </button>
           </div>
         ) : (
-          <p className="drill__hint">Tap the card to reveal.</p>
+          <p className="drill__hint">Answer it in your head, then flip.</p>
         )}
       </div>
     </div>

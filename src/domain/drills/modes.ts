@@ -10,6 +10,7 @@ import {
   type DrillModeLogic,
   type DrillOutcome,
   type PrepareContext,
+  type SelfReport,
 } from './types';
 
 const OPTION_COUNT = 4;
@@ -23,9 +24,21 @@ function baseItem(word: Word, ctx: PrepareContext, mode: DrillItem['mode']): Dri
 }
 
 /**
- * §10.2. The learner self-reports, so the four buttons map straight onto the
- * scheduler with no correct/incorrect abstraction in between (REQ-39).
+ * The one place a two-way self-report becomes a scheduler grade (REQ-39).
+ *
+ * Deliberately not four-way. Asking mid-recall whether a word was "hard" or
+ * "easy" is asking the learner to predict a scheduling interval, and the answer
+ * is noisier than what the graded modes measure directly — so the granularity
+ * that survives is the kind that is observed (REQ-47), not the kind that is
+ * self-reported. SM-2 already lengthens intervals on a run of `good`; a
+ * synthetic `easy` here would be second-guessing the scheduler with worse
+ * information than it has.
  */
+export function gradeForSelfReport(report: SelfReport): Grade {
+  return report === 'known' ? 'good' : 'again';
+}
+
+/** §10.2. Flip to reveal, then Still learning / Know it — nothing else. */
 export const flashcardMode: DrillModeLogic = {
   id: 'flashcard',
   label: 'Flashcard',
@@ -35,11 +48,10 @@ export const flashcardMode: DrillModeLogic = {
   },
 
   grade(response, item) {
-    const grade = response as Grade;
+    const report: SelfReport = response === 'known' ? 'known' : 'stillLearning';
     return {
-      grade,
-      // "Again" is the only self-report that means the word was not recalled.
-      correct: grade !== 'again',
+      grade: gradeForSelfReport(report),
+      correct: report === 'known',
       canonical: item.word.gloss,
     };
   },

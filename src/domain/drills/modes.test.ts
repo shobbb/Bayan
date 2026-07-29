@@ -48,18 +48,36 @@ describe('levenshtein', () => {
 describe('flashcard mode', () => {
   const mode = getDrillMode('flashcard');
 
-  it('passes the self-reported grade straight through (REQ-39)', () => {
+  // §10.2: the self-report is two-way, and the view never names a scheduler
+  // grade — the mapping lives in one place (REQ-39).
+  it('maps the two-way self-report onto scheduler grades', () => {
     const item = mode.prepare(word('a', 'book'), ctx());
 
-    expect(mode.grade('easy', item, ctx()).grade).toBe('easy');
-    expect(mode.grade('hard', item, ctx()).grade).toBe('hard');
+    expect(mode.grade('known', item, ctx()).grade).toBe('good');
+    expect(mode.grade('stillLearning', item, ctx()).grade).toBe('again');
   });
 
-  it('counts only "again" as not recalled', () => {
+  it('treats only "known" as recalled', () => {
     const item = mode.prepare(word('a', 'book'), ctx());
 
-    expect(mode.grade('again', item, ctx()).correct).toBe(false);
-    expect(mode.grade('hard', item, ctx()).correct).toBe(true);
+    expect(mode.grade('known', item, ctx()).correct).toBe(true);
+    expect(mode.grade('stillLearning', item, ctx()).correct).toBe(false);
+  });
+
+  // A response that is not a self-report is a bug in the caller, not a reason
+  // to credit the card — the safe reading is that it was not recalled.
+  it('treats an unrecognised response as not known', () => {
+    const item = mode.prepare(word('a', 'book'), ctx());
+
+    expect(mode.grade('easy', item, ctx()).correct).toBe(false);
+    expect(mode.grade(undefined, item, ctx()).grade).toBe('again');
+  });
+
+  it('shows the canonical gloss whichever way it went', () => {
+    const item = mode.prepare(word('a', 'book'), ctx());
+
+    expect(mode.grade('known', item, ctx()).canonical).toBe('book');
+    expect(mode.grade('stillLearning', item, ctx()).canonical).toBe('book');
   });
 });
 
