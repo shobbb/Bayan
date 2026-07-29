@@ -13,9 +13,17 @@ export interface ReadingScreenProps {
   onFinish: (notKnownIndices: number[]) => void;
 }
 
-// Approx GlossPanel height plus margin — keeps a freshly tapped word visible
-// above the fixed panel (REQ-D6).
-const GLOSS_PANEL_CLEARANCE_PX = 140;
+// Used only when the panel cannot be measured (no layout, as under jsdom).
+// Everywhere else the panel's real height is read from the DOM, so this file
+// cannot fall out of step with --gloss-panel-height.
+const FALLBACK_PANEL_HEIGHT_PX = 104;
+
+/** Lowest point a tapped word may occupy and still sit clear of the panel. */
+function visibleBottom(container: HTMLElement | null): number {
+  const panel = container?.querySelector<HTMLElement>('.gloss-panel');
+  const height = panel?.getBoundingClientRect().height || FALLBACK_PANEL_HEIGHT_PX;
+  return window.innerHeight - height - 24; // one space-5 of breathing room
+}
 
 /**
  * Reading is a page (REQ-D1): the interface disappears, no cards or
@@ -68,8 +76,7 @@ export function ReadingScreen({
       );
       if (target) {
         const rect = target.getBoundingClientRect();
-        const viewportBottom = window.innerHeight - GLOSS_PANEL_CLEARANCE_PX;
-        if (rect.bottom > viewportBottom) {
+        if (rect.bottom > visibleBottom(containerRef.current)) {
           target.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
       }

@@ -2,8 +2,11 @@
   min-height: 100%;
   max-width: 640px;
   margin: 0 auto;
-  /* Generous horizontal margins (§5.6); bottom padding clears the fixed GlossPanel. */
-  padding: var(--space-6) var(--space-5) 140px;
+  /* Generous horizontal margins (§5.6); bottom padding clears the fixed
+     GlossPanel. Derived from the panel's own height token so the two cannot
+     drift apart. */
+  padding: var(--space-6) var(--space-5)
+    calc(var(--gloss-panel-height) + env(safe-area-inset-bottom, 0px) + var(--space-5));
 }
 
 .reading-screen__header {

@@ -3,7 +3,11 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 96px;
+  /* The inset extends the panel rather than being subtracted from it. Folding
+     it into a fixed height left roughly half a line of content box on a phone
+     with a home indicator, and `overflow: hidden` took the difference off the
+     top — which is exactly where Arabic keeps its diacritics (§5.2). */
+  height: calc(var(--gloss-panel-height) + env(safe-area-inset-bottom, 0px));
   padding: var(--space-4) var(--space-5);
   padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   background: var(--ground);

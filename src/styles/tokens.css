@@ -27,6 +27,15 @@
   /* Border radius (REQ-D7): 0 or 4px. Nothing more. */
   --radius: 4px;
 
+  /**
+   * Height of the GlossPanel's content box (§5.5 requires a fixed height).
+   * The safe-area inset is added on top of this rather than being absorbed by
+   * it, so the usable box is identical on every device — folding the inset in
+   * is what clipped the diacritics off vowelled Arabic on a phone with a home
+   * indicator. Everything that has to clear the panel derives from this.
+   */
+  --gloss-panel-height: 104px;
+
   /* Motion (§5.7) */
   --motion-gloss-fade: 120ms;
   --motion-tap-wash: 100ms;

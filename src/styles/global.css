@@ -10,9 +10,14 @@
   --text-reading-body-size: 1.85rem;
   --text-reading-body-line: 2.45;
   --text-reading-title-size: 2.1rem;
-  --text-reading-title-line: 1.4;
+  /* Same reason as the gloss line height below: at 1.4 a title that wrapped
+     drove its second line straight through the first line's diacritics. */
+  --text-reading-title-line: 1.75;
   --text-gloss-arabic-size: 1.3rem;
-  --text-gloss-arabic-line: 1.6;
+  /* Stacked marks (shadda over a vowel, a kasra under it) reach well past the
+     nominal em box, so gloss Arabic needs more leading than its point size
+     suggests — 1.6 clipped them against the line above (§5.2). */
+  --text-gloss-arabic-line: 1.9;
   --text-gloss-english-size: 1rem;
   --text-gloss-english-line: 1.4;
   --text-ui-label-size: 0.82rem;
