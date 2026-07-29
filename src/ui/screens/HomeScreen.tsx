@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { Failure } from '@/ui/failure';
 import type { Round, RoundType } from '@/domain/types';
 import { useHomeStatus } from '@/ui/hooks/useHomeStatus';
 import { useRecentRounds } from '@/ui/hooks/useRecentRounds';
@@ -12,8 +13,8 @@ export interface HomeScreenProps {
   onOpenSettings: () => void;
   /** The round type currently being generated, or null when idle. */
   generating: RoundType | null;
-  /** Advisory text from the last failed attempt (REQ-13). */
-  failure: string | null;
+  /** Advisory from the last failed attempt (REQ-13). */
+  failure: Failure | null;
   /** Non-round work in flight, so its action can show progress. */
   busy: 'batch' | 'study' | null;
   /** Informational result of the last completed action. */
@@ -24,11 +25,25 @@ export interface HomeScreenProps {
   refreshToken: number;
 }
 
-/** The two non-round actions report progress through their own busy key. */
-function busyKeyFor(actionId: string): 'batch' | 'study' | null {
-  if (actionId === 'generateBatch') return 'batch';
-  if (actionId === 'studyBatch') return 'study';
-  return null;
+/**
+ * The two non-round actions report progress through their own busy key; the
+ * four round actions report through `generating`. Comparing a round action's
+ * (absent) busy key against an idle `busy` is null === null, which read as
+ * "in progress" and left all four round buttons permanently showing a
+ * trailing ellipsis and aria-busy="true".
+ */
+const BUSY_KEY_BY_ACTION: Readonly<Record<string, 'batch' | 'study'>> = {
+  generateBatch: 'batch',
+  studyBatch: 'study',
+};
+
+function isActionBusy(
+  actionId: string,
+  generating: RoundType | null,
+  busy: 'batch' | 'study' | null,
+): boolean {
+  const key = BUSY_KEY_BY_ACTION[actionId];
+  return key !== undefined ? busy === key : generating === actionId;
 }
 
 /**
@@ -111,19 +126,20 @@ export function HomeScreen({
       </div>
 
       <div className="home-screen__grid">
-        {HOME_ACTIONS.map((action) => (
-          <button
-            key={action.id}
-            type="button"
-            className="home-screen__action"
-            aria-busy={generating === action.id || busy === busyKeyFor(action.id)}
-            onClick={() => action.run(ctx)}
-          >
-            {generating === action.id || busy === busyKeyFor(action.id)
-              ? `${action.label}…`
-              : action.label}
-          </button>
-        ))}
+        {HOME_ACTIONS.map((action) => {
+          const actionBusy = isActionBusy(action.id, generating, busy);
+          return (
+            <button
+              key={action.id}
+              type="button"
+              className="home-screen__action"
+              aria-busy={actionBusy}
+              onClick={() => action.run(ctx)}
+            >
+              {actionBusy ? `${action.label}…` : action.label}
+            </button>
+          );
+        })}
       </div>
 
       {generating !== null && (
@@ -139,12 +155,31 @@ export function HomeScreen({
       )}
 
       {failure && !generating && (
-        <p className="home-screen__notice" role="status">
-          {failure}{' '}
-          <button type="button" className="home-screen__notice-action" onClick={onOpenSettings}>
-            Open Settings
-          </button>
-        </p>
+        <div className="home-screen__notice" role="status">
+          <p className="home-screen__notice-text">
+            {failure.message}
+            {failure.settingsWillHelp && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="home-screen__notice-action"
+                  onClick={onOpenSettings}
+                >
+                  Open Settings
+                </button>
+              </>
+            )}
+          </p>
+          {/* REQ-17: the raw response stays reachable, but folded away — it is
+              for diagnosing a bad generation, not for reading mid-session. */}
+          {failure.detail && (
+            <details className="home-screen__notice-details">
+              <summary>What came back</summary>
+              <pre className="home-screen__notice-raw">{failure.detail}</pre>
+            </details>
+          )}
+        </div>
       )}
 
       {notice && (

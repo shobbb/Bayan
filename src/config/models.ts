@@ -30,9 +30,23 @@ export type ModelRoutes = Record<QueryKind, ModelRoute>;
  */
 const CHEAPEST_MODEL = 'claude-haiku-4-5';
 
+/**
+ * maxTokens is a ceiling, not a reservation — billing follows what the model
+ * actually emits, so a generous ceiling costs nothing on a short response and
+ * is the difference between working and not on a long one.
+ *
+ * Sizing is measured, not guessed. A 40-word transcribed round serializes to
+ * ~2,990 characters of JSON, i.e. ~75 characters per glossed word once
+ * segments carry text + gloss + forms. At the 140-word ceiling in
+ * config/generation.ts that is ~10,500 characters, and fully vowelled Arabic
+ * tokenizes far worse than English — comfortably past 4,000 tokens, which is
+ * where round generation was silently truncating mid-JSON and surfacing as a
+ * schema failure.
+ */
 export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
-  roundGeneration: { model: CHEAPEST_MODEL, maxTokens: 4000, temperature: 0.8 },
-  sentenceGeneration: { model: CHEAPEST_MODEL, maxTokens: 3000, temperature: 0.7 },
-  distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 1000, temperature: 0.9 },
-  diacritization: { model: CHEAPEST_MODEL, maxTokens: 4000, temperature: 0.2 },
+  roundGeneration: { model: CHEAPEST_MODEL, maxTokens: 16000, temperature: 0.8 },
+  // ~40 cards x one vowelled sentence, plus the echoed word for matching.
+  sentenceGeneration: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.7 },
+  distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 2000, temperature: 0.9 },
+  diacritization: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
 };

@@ -22,12 +22,42 @@ import {
 export class LlmValidationError extends Error {
   readonly rawResponse: string;
   readonly issues: z.ZodIssue[];
+  /** The last attempt ran out of output budget, so rawResponse is cut off. */
+  readonly truncated: boolean;
 
-  constructor(message: string, rawResponse: string, issues: z.ZodIssue[]) {
+  constructor(message: string, rawResponse: string, issues: z.ZodIssue[], truncated = false) {
     super(message);
     this.name = 'LlmValidationError';
     this.rawResponse = rawResponse;
     this.issues = issues;
+    this.truncated = truncated;
+  }
+
+  /**
+   * Operator-facing detail for REQ-17 ("the raw response is available for
+   * inspection"). Without this the raw text is attached to an error nobody
+   * ever reads, and every distinct failure reads as the same one sentence.
+   */
+  describe(): string {
+    const parts: string[] = [];
+    if (this.truncated) {
+      parts.push(
+        'The response was cut off because it hit the model output limit ' +
+          '(max_tokens). Raise maxTokens for this route, or lower the round ' +
+          'word count.',
+      );
+    }
+    if (this.issues.length > 0) {
+      const listed = this.issues
+        .slice(0, 5)
+        .map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`);
+      parts.push(`Schema issues:\n${listed.join('\n')}`);
+    } else if (!this.truncated) {
+      parts.push('The response was not valid JSON.');
+    }
+    const tail = this.rawResponse.slice(-400);
+    if (tail) parts.push(`Response ends:\n…${tail}`);
+    return parts.join('\n\n');
   }
 }
 
@@ -47,20 +77,27 @@ async function generateAndValidate<T>(
 ): Promise<T> {
   let lastRaw = '';
   let lastIssues: z.ZodIssue[] = [];
+  let lastTruncated = false;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const raw = await client.complete({
+    const completion = await client.complete({
       model: route.model,
       maxTokens: route.maxTokens,
       temperature: route.temperature,
       prompt,
       apiKey,
     });
-    lastRaw = raw;
+    lastRaw = completion.text;
+    lastTruncated = completion.truncated;
+
+    // A truncated response is a budget problem, not a compliance problem.
+    // Retrying spends another full generation to arrive at the same cut-off,
+    // so stop and say what actually went wrong.
+    if (completion.truncated) break;
 
     let parsed: unknown;
     try {
-      parsed = extractJson(raw);
+      parsed = extractJson(completion.text);
     } catch {
       lastIssues = [];
       continue;
@@ -71,7 +108,14 @@ async function generateAndValidate<T>(
     lastIssues = result.error.issues;
   }
 
-  throw new LlmValidationError('LLM response failed schema validation', lastRaw, lastIssues);
+  throw new LlmValidationError(
+    lastTruncated
+      ? 'LLM response was truncated at the output limit'
+      : 'LLM response failed schema validation',
+    lastRaw,
+    lastIssues,
+    lastTruncated,
+  );
 }
 
 /** §8 generation flow, step 2: llm.generateRound(plan) -> validated { titleAr, titleEn, segments }. */

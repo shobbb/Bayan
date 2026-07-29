@@ -14,8 +14,20 @@ export interface LlmCompleteParams {
   apiKey: string;
 }
 
+export interface LlmCompletion {
+  text: string;
+  /**
+   * The provider stopped because the output budget ran out, so `text` is cut
+   * off mid-stream. Provider-neutral on purpose (REQ-E10) — every provider has
+   * some form of this, and the callers only need to know the text is partial.
+   * Worth distinguishing because truncated JSON fails to parse and is
+   * otherwise indistinguishable from a model that simply answered badly.
+   */
+  truncated: boolean;
+}
+
 export interface LlmClient {
-  complete(params: LlmCompleteParams): Promise<string>;
+  complete(params: LlmCompleteParams): Promise<LlmCompletion>;
 }
 
 export class LlmRequestError extends Error {
@@ -35,6 +47,7 @@ interface AnthropicContentBlock {
 
 interface AnthropicMessagesResponse {
   content?: AnthropicContentBlock[];
+  stop_reason?: string | null;
 }
 
 /** Anthropic Messages API. One concrete LlmClient implementation among possibly several. */
@@ -67,6 +80,6 @@ export const anthropicClient: LlmClient = {
     const data = (await response.json()) as AnthropicMessagesResponse;
     const text = data.content?.find((block) => block.type === 'text')?.text;
     if (!text) throw new LlmRequestError('LLM response contained no text content');
-    return text;
+    return { text, truncated: data.stop_reason === 'max_tokens' };
   },
 };

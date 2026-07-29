@@ -176,3 +176,35 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+.home-screen__notice-text {
+  margin: 0;
+}
+
+/* Diagnostics, folded away by default (REQ-17). Reachable when a generation
+   goes wrong, invisible the rest of the time. */
+.home-screen__notice-details {
+  margin-top: var(--space-2);
+}
+
+.home-screen__notice-details > summary {
+  color: var(--signal);
+  cursor: pointer;
+  /* A 44px target would leave a gap under the advisory it belongs to, so pad
+     the row instead of stretching the summary itself. */
+  padding: var(--space-2) 0;
+}
+
+.home-screen__notice-raw {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--mark-seen);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  white-space: pre-wrap;
+  word-break: break-word;
+}

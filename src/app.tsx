@@ -5,10 +5,10 @@ import { ReadingScreen } from '@/ui/screens/ReadingScreen';
 import { StatsScreen } from '@/ui/screens/StatsScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
-import { createRound, finishRound, MissingApiKeyError } from '@/services/rounds/roundService';
+import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
 import type { QueueEntry } from '@/domain/drills/session';
-import { LlmValidationError } from '@/services/llm/generate';
+import { describeFailure, type Failure } from '@/ui/failure';
 import type { Round, RoundType, Word } from '@/domain/types';
 
 /**
@@ -29,23 +29,13 @@ type Screen =
       sentences: Readonly<Record<string, string>>;
     };
 
-function describeFailure(error: unknown): string {
-  if (error instanceof MissingApiKeyError) return error.message;
-  // REQ-17: a schema failure surfaces as a user-facing error with the raw
-  // response available for inspection — it is attached to the thrown error.
-  if (error instanceof LlmValidationError) {
-    return 'The model returned a response that did not match the expected shape. Try again.';
-  }
-  return error instanceof Error ? error.message : 'Round generation failed.';
-}
-
 function AppScreens() {
   const config = useConfig();
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [generating, setGenerating] = useState<RoundType | null>(null);
   const [busy, setBusy] = useState<'batch' | 'study' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   // Bumped after anything that writes to the corpus, so Home re-reads its
   // status strip instead of showing figures from when it first mounted.
   const [refreshToken, setRefreshToken] = useState(0);
@@ -65,7 +55,11 @@ function AppScreens() {
   // REQ-I6: history-only rounds carry no segments and are not re-readable.
   const handleReplayRound = useCallback((round: Round) => {
     if (round.segments.length === 0) {
-      setFailure('That round is history only — its text was not stored.');
+      setFailure({
+        message: 'That round is history only — its text was not stored.',
+        detail: null,
+        settingsWillHelp: false,
+      });
       return;
     }
     setFailure(null);
