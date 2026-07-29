@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useConfig } from '@/ui/context/ConfigContext';
-import { getApiKey, setApiKey, clearApiKey } from '@/services/platform/storage';
+import {
+  getApiKey,
+  setApiKey,
+  clearApiKey,
+  isUsingBuildTimeKey,
+} from '@/services/platform/storage';
 import { copyToClipboard, downloadFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
 import './SettingsScreen.css';
@@ -28,14 +33,16 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const [draft, setDraft] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fromBuild, setFromBuild] = useState(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getApiKey().then((key) => {
+    Promise.all([getApiKey(), isUsingBuildTimeKey()]).then(([key, buildProvided]) => {
       if (cancelled) return;
       setStored(key);
+      setFromBuild(buildProvided);
       setLoading(false);
     });
     return () => {
@@ -48,6 +55,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
     if (!trimmed) return;
     await setApiKey(trimmed);
     setStored(trimmed);
+    setFromBuild(false);
     setDraft('');
     setStatus('Key saved on this device.');
   }
@@ -69,8 +77,11 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   async function handleClear() {
     await clearApiKey();
-    setStored(null);
-    setStatus('Key removed.');
+    // A build-time key may still be in play once the device key is gone.
+    const [key, buildProvided] = await Promise.all([getApiKey(), isUsingBuildTimeKey()]);
+    setStored(key);
+    setFromBuild(buildProvided);
+    setStatus('Key removed from this device.');
   }
 
   return (
@@ -93,8 +104,16 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
         ) : (
           <>
             <p className="settings-screen__current">
-              {stored ? `Current key: ${mask(stored)}` : 'No key set — rounds cannot be generated.'}
+              {stored
+                ? `Current key: ${mask(stored)}${fromBuild ? ' (from this build)' : ''}`
+                : 'No key set — rounds cannot be generated.'}
             </p>
+            {fromBuild && (
+              <p className="settings-screen__note">
+                Supplied by the deployment, not this device. Anyone who can load this site can
+                read it, so keep the site access-controlled. Saving a key below overrides it.
+              </p>
+            )}
 
             <input
               type="password"
@@ -114,7 +133,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
               >
                 Save key
               </button>
-              {stored && (
+              {stored && !fromBuild && (
                 <button
                   type="button"
                   className="settings-screen__button"
