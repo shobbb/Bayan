@@ -6,6 +6,7 @@ import { StatsScreen } from '@/ui/screens/StatsScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
 import { LibraryScreen } from '@/ui/screens/LibraryScreen';
+import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
@@ -185,6 +186,13 @@ function AppScreens() {
         titleAr={article.titleAr}
         titleEn={article.titleEn ?? ''}
         initialNotKnown={flaggedIndices}
+        media={
+          <ArticleMedia
+            imageUrl={article.imageUrl}
+            videoUrl={article.videoUrl}
+            title={article.titleEn ?? article.titleAr}
+          />
+        }
         attribution={{ label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }}
         onFinish={(notKnownIndices) => handleFinishArticle(article, segments, notKnownIndices)}
       />

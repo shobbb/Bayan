@@ -65,7 +65,7 @@ function ArticleCard({
       {article.titleEn && <span className="library__card-en">{article.titleEn}</span>}
       <span className="library__card-meta">
         {levelLabel(article.level)}
-        {article.hasVideo && ' · video'}
+        {article.videoUrl && ' · video'}
         {readAt !== null && ' · read'}
       </span>
     </button>

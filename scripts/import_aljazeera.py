@@ -43,7 +43,11 @@ PHRASE_ROW = re.compile(
 )
 OG_IMAGE = re.compile(r'property="og:image"\s+content="([^"]+)"')
 YOUTUBE = re.compile(r'(?:youtube\.com/embed/|youtu\.be/)([A-Za-z0-9_-]{6,})')
-BRIGHTCOVE = re.compile(r'players\.brightcove\.net/(\d+)/')
+IFRAME_SRC = re.compile(r'<iframe[^>]*\ssrc="([^"]+)"', re.I)
+# Only these two hosts carry lessons' video. The site also embeds its own
+# interactive exercises in iframes — 391 of them across this dump — and those
+# are not video and must not be mistaken for it.
+VIDEO_HOSTS = ('players.brightcove.net', 'www.youtube.com', 'youtube.com', 'youtu.be')
 
 # "(جَمْعُ بائِع)" is the plural of a listed singular -> a forms note.
 # "(=خُضْراوات)" is a synonym, which is a different thing and is not forms.
@@ -86,6 +90,15 @@ def parse_pairs(block: str):
         if term and text(gloss):
             out.append({'term': term, 'gloss': text(gloss), 'forms': forms})
     return out
+
+
+def video_url(raw: str):
+    """The lesson's video embed, as the publisher's own iframe src."""
+    for src in IFRAME_SRC.findall(raw):
+        unescaped = H.unescape(src)
+        if any(host in unescaped for host in VIDEO_HOSTS):
+            return unescaped
+    return None
 
 
 def thumbnail(raw: str):
@@ -139,7 +152,7 @@ def parse_article(path: Path, level: str, manifest: dict):
         'vowelled': 'formilized' in bodies,
         'paragraphs': paragraphs,
         'imageUrl': thumbnail(raw),
-        'hasVideo': bool(YOUTUBE.search(raw) or BRIGHTCOVE.search(raw)),
+        'videoUrl': video_url(raw),
         'vocab': parse_pairs(blocks.get('1', '')),
         'expressions': parse_pairs(blocks.get('2', '')),
     }
@@ -174,6 +187,7 @@ def main(dump: Path, out: Path):
     print(f'articles written : {len(articles)}   (skipped {skipped} with no body text)')
     print(f'fully vowelled   : {sum(a["vowelled"] for a in articles)}')
     print(f'with a thumbnail : {sum(bool(a["imageUrl"]) for a in articles)}')
+    print(f'with a video     : {sum(bool(a["videoUrl"]) for a in articles)}')
     print(f'publisher glosses: {pairs}')
     print(f'asset size       : {out.stat().st_size / 1024:.0f} KB')
 

@@ -37,7 +37,8 @@ export interface Article {
   paragraphs: string[];
   /** Remote publisher image, or null when none could be derived. */
   imageUrl: string | null;
-  hasVideo: boolean;
+  /** The publisher's own video embed URL, or null. Brightcove or YouTube. */
+  videoUrl: string | null;
   vocab: ArticleGloss[];
   expressions: ArticleGloss[];
 }

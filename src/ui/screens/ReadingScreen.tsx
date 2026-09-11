@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
 import type { Segment } from '@/domain/types';
@@ -19,6 +19,12 @@ export interface ReadingScreenProps {
   attribution?: { label: string; url: string } | null;
   /** Flags carried over from a previous read of the same text. */
   initialNotKnown?: readonly number[];
+  /**
+   * Rendered between the title and the text. Typed as a node rather than as an
+   * image and a video URL so this screen stays ignorant of where its text came
+   * from — generated rounds pass nothing.
+   */
+  media?: ReactNode;
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -46,6 +52,7 @@ export function ReadingScreen({
   onFinish,
   attribution = null,
   initialNotKnown,
+  media = null,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -123,6 +130,8 @@ export function ReadingScreen({
           </p>
         )}
       </header>
+
+      {media}
 
       <ArabicText
         segments={segments}

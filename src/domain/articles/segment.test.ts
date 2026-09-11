@@ -16,7 +16,7 @@ function article(overrides: Partial<Article> = {}): Article {
     vowelled: true,
     paragraphs: ['الْكِتَابُ جَدِيدٌ.'],
     imageUrl: null,
-    hasVideo: false,
+    videoUrl: null,
     vocab: [],
     expressions: [],
     ...overrides,

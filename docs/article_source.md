@@ -40,6 +40,8 @@ From 325 saved pages (elementary + intermediate):
 | Articles with body text | 284 |
 | Bodies fully vowelled | 274 |
 | Articles with a derivable thumbnail | 236 |
+| Articles with a video embed | 50 |
+| Articles with neither image nor video | 0 |
 | Publisher gloss pairs | 3,577 |
 | Articles with no body at all | 41 — all video lessons, no transcript |
 
@@ -80,7 +82,9 @@ container.
   alone loses 78 of 325.
 - Numeric article ids observed run 21786–21995, and other URL families exist
   (`/en/asktheteacher/pages/…`), so id-range enumeration is unsafe.
-- Only 93 of 325 carry video, not "most".
+- Only 91 of 325 carry video, not "most" — and of the 284 with body text, 50
+  do. The site embeds its own interactive exercises in iframes too (391 of
+  them), so an iframe is not evidence of video; match on the host.
 - All `og:image` URLs are served over `http://`, which a page on `https://`
   refuses as mixed content. Rewrite the scheme.
 
@@ -92,10 +96,18 @@ container.
 `src/assets/articles/articles.json`, which ships as a build asset.
 
 `REQ-A4` The app never crawls. Articles are static third-party content, so they
-are converted offline and bundled. This keeps the reader working offline
-(REQ-D4), means no request leaves the device to a third party while reading,
-and removes pagination, rate limiting and crawl idempotency from the app
-entirely.
+are converted offline and bundled. This removes pagination, rate limiting and
+crawl idempotency from the app entirely, and means the text itself is always
+available offline (REQ-D4).
+
+`REQ-A9` Text is bundled; the publisher's images and video are not, and are
+referenced at their original URLs. Two consequences to be honest about: media
+does not work offline, and loading it is a request to a third party. The image
+loads with the article and falls back to a plain surface when it fails. The
+video does **not** load until the reader taps play — a heavy player frame on
+every article open would be wasteful when most readings never watch it, and
+silently contacting a video host the moment a page of Arabic appears is not
+something reading should do unasked.
 
 `REQ-A5` The bundle is imported dynamically so it is code-split. It is roughly a
 megabyte and only the library and reader need it.

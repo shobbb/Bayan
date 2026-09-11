@@ -1,0 +1,57 @@
+/* The publisher's own image and video, sitting above the text as they do on
+   the original page. Square corners and no shadow: this is a picture on a
+   page, not a card (REQ-D1, REQ-D7). */
+.article-media {
+  margin: 0 0 var(--space-6);
+}
+
+.article-media__image,
+.article-media__frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--mark-seen);
+}
+
+.article-media__image {
+  object-fit: cover;
+}
+
+/* A video with no derivable still. A plain tinted surface carries the play
+   control rather than a stretched or invented image. */
+.article-media__image--blank {
+  background: var(--mark-seen);
+}
+
+.article-media__play {
+  display: block;
+  position: relative;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.article-media__play-badge {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-start: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Comfortably past the 44px floor (§5.9) while still reading as a badge
+     rather than a panel. */
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--ground);
+}
+
+.article-media__play:hover .article-media__play-badge {
+  opacity: 0.9;
+}
