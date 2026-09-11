@@ -1,0 +1,163 @@
+/* Third-party material, so it reads as a shelf rather than as the app's own
+   generated work — the one place in Bayan where images appear at all. */
+.library {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-5) var(--space-7);
+}
+
+.library__header {
+  margin-bottom: var(--space-5);
+}
+
+.library__back {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.library__intro {
+  margin-bottom: var(--space-5);
+}
+
+.library__title {
+  font-family: var(--font-english);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+}
+
+.library__source,
+.library__context,
+.library__note {
+  margin: 0;
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+}
+
+.library__source a {
+  color: var(--signal);
+}
+
+.library__context {
+  margin-top: var(--space-1);
+  font-size: var(--text-data-size);
+}
+
+.library__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.library__chip {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  cursor: pointer;
+}
+
+.library__chip--on {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.library__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5) var(--space-3);
+}
+
+.library__card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: start;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.library__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--mark-seen);
+  margin-bottom: var(--space-3);
+}
+
+/* Where no publisher image exists, the title carries the tile. Arabic at a
+   real size (§5.2), clipped rather than shrunk below the legible floor. */
+.library__image--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  overflow: hidden;
+}
+
+/* Clamped rather than shrunk: Arabic below 1.6rem stops being legible once it
+   carries diacritics (§5.2), so a long title loses its last line instead of
+   its vowelling. */
+.library__fallback-title {
+  font-family: var(--font-arabic);
+  font-size: 1.6rem;
+  line-height: 1.9;
+  text-align: center;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.library__card-title {
+  display: block;
+  font-family: var(--font-arabic);
+  font-size: 1.15rem;
+  line-height: 1.9;
+  color: var(--ink);
+}
+
+.library__card-en {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.library__card-meta {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
+.library__card:hover .library__card-en,
+.library__card:hover .library__card-title {
+  color: var(--signal);
+}

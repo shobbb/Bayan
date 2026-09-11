@@ -1,0 +1,57 @@
+/**
+ * Third-party reading material (§2.2 additions). An Article is not a Round: it
+ * is not generated, not planned by the selector, and carries no target words,
+ * so it is deliberately a separate type rather than a Round with empty fields.
+ *
+ * Concretely, feeding articles to the bandit would be wrong in both directions
+ * — their level/series taxonomy is not in config/categories.ts, so scoreArms
+ * would silently drop the observations, and mapping them onto configured
+ * topics would let publisher-written text set difficulty rewards for arms that
+ * plan generated text. Articles therefore never reach domain/selector.
+ *
+ * What they do share is the corpus: reading one writes Words through exactly
+ * the same ingestion path a round uses, so vocabulary, SRS and stats are global
+ * and a word learned here is the same word everywhere else.
+ */
+
+/** A publisher-supplied gloss. Higher trust than a generated one (§4.2). */
+export interface ArticleGloss {
+  /** Vowelled Arabic term or phrase, as printed. */
+  term: string;
+  gloss: string;
+  /** From a "(جَمْعُ x)" note, where the publisher gave one. */
+  forms: string | null;
+}
+
+export interface Article {
+  id: string;
+  /** Publisher's level label, lowercased: 'elementary' | 'intermediate' | … */
+  level: string;
+  series: 'languageofmedia' | 'generallanguage' | 'other';
+  /** Canonical page on the publisher's site, for the required backlink (§5.2). */
+  sourceUrl: string;
+  titleAr: string;
+  titleEn: string | null;
+  /** True when the body came from the publisher's fully vowelled variant. */
+  vowelled: boolean;
+  paragraphs: string[];
+  /** Remote publisher image, or null when none could be derived. */
+  imageUrl: string | null;
+  hasVideo: boolean;
+  vocab: ArticleGloss[];
+  expressions: ArticleGloss[];
+}
+
+export interface ArticleSource {
+  name: string;
+  nameAr: string;
+  homeUrl: string;
+}
+
+export interface ArticleBundle {
+  source: ArticleSource;
+  articles: Article[];
+}
+
+/** Where a segment's gloss came from, so editorial glosses are not overwritten. */
+export type GlossSource = 'publisher' | 'corpus' | null;

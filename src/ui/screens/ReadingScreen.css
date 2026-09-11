@@ -51,3 +51,20 @@
   border-color: var(--signal);
   color: var(--signal);
 }
+
+/* Attribution for text the app did not write. Quiet, but always present and
+   always a link back to the original. */
+.reading-screen__attribution {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
+.reading-screen__attribution a {
+  color: var(--ink-muted);
+}
+
+.reading-screen__attribution a:hover {
+  color: var(--signal);
+}

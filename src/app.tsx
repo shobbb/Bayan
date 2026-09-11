@@ -5,8 +5,12 @@ import { ReadingScreen } from '@/ui/screens/ReadingScreen';
 import { StatsScreen } from '@/ui/screens/StatsScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
+import { LibraryScreen } from '@/ui/screens/LibraryScreen';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
+import { openArticle, finishArticle } from '@/services/articles/articleService';
+import type { Article } from '@/domain/articles/types';
+import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
 import { describeFailure, type Failure } from '@/ui/failure';
 import type { Round, RoundType, Word } from '@/domain/types';
@@ -21,7 +25,14 @@ type Screen =
   | { name: 'home' }
   | { name: 'stats' }
   | { name: 'settings' }
+  | { name: 'library' }
   | { name: 'reading'; round: Round }
+  | {
+      name: 'article';
+      article: Article;
+      segments: ResolvedSegment[];
+      flaggedIndices: number[];
+    }
   | {
       name: 'drill';
       queue: QueueEntry[];
@@ -39,6 +50,7 @@ function AppScreens() {
   // Bumped after anything that writes to the corpus, so Home re-reads its
   // status strip instead of showing figures from when it first mounted.
   const [refreshToken, setRefreshToken] = useState(0);
+  const [openingArticle, setOpeningArticle] = useState<string | null>(null);
 
   const handleStartRound = useCallback(
     (roundType: RoundType) => {
@@ -114,6 +126,30 @@ function AppScreens() {
       .finally(() => setBusy(null));
   }, []);
 
+  // Articles are third-party reading material, not generated rounds: they never
+  // reach the selector. What they do share is the corpus — finishing one writes
+  // Words through the same ingestion a round uses.
+  const handleOpenArticle = useCallback((id: string) => {
+    setFailure(null);
+    setOpeningArticle(id);
+    openArticle(id)
+      .then(({ article, segments, flaggedIndices }) =>
+        setScreen({ name: 'article', article, segments, flaggedIndices }),
+      )
+      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .finally(() => setOpeningArticle(null));
+  }, []);
+
+  const handleFinishArticle = useCallback(
+    (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
+      void finishArticle(article, segments, notKnownIndices).then(() =>
+        setRefreshToken((n) => n + 1),
+      );
+      setScreen({ name: 'home' }); // REQ-14
+    },
+    [],
+  );
+
   const handleBackHome = useCallback(() => {
     setFailure(null);
     setNotice(null);
@@ -129,6 +165,30 @@ function AppScreens() {
 
   if (screen.name === 'stats') {
     return <StatsScreen onBack={handleBackHome} onReplayRound={handleReplayRound} />;
+  }
+
+  if (screen.name === 'library') {
+    return (
+      <LibraryScreen
+        onBack={handleBackHome}
+        onOpenArticle={handleOpenArticle}
+        opening={openingArticle}
+      />
+    );
+  }
+
+  if (screen.name === 'article') {
+    const { article, segments, flaggedIndices } = screen;
+    return (
+      <ReadingScreen
+        segments={segments}
+        titleAr={article.titleAr}
+        titleEn={article.titleEn ?? ''}
+        initialNotKnown={flaggedIndices}
+        attribution={{ label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }}
+        onFinish={(notKnownIndices) => handleFinishArticle(article, segments, notKnownIndices)}
+      />
+    );
   }
 
   if (screen.name === 'settings') {
@@ -163,6 +223,7 @@ function AppScreens() {
       onStartRound={handleStartRound}
       onReplayRound={handleReplayRound}
       onOpenStats={() => setScreen({ name: 'stats' })}
+      onOpenLibrary={() => setScreen({ name: 'library' })}
       onOpenSettings={handleOpenSettings}
       generating={generating}
       busy={busy}

@@ -10,6 +10,7 @@ export interface HomeScreenProps {
   onStartRound: (roundType: RoundType) => void;
   onReplayRound: (round: Round) => void;
   onOpenStats: () => void;
+  onOpenLibrary: () => void;
   onOpenSettings: () => void;
   /** The round type currently being generated, or null when idle. */
   generating: RoundType | null;
@@ -57,6 +58,7 @@ export function HomeScreen({
   onStartRound,
   onReplayRound,
   onOpenStats,
+  onOpenLibrary,
   onOpenSettings,
   generating,
   failure,
@@ -152,6 +154,14 @@ export function HomeScreen({
             );
           })}
         </div>
+
+        {/* The other way to read. Grouped with the round types rather than
+            with the batch actions, because it is the same activity from a
+            different source — but a link, not a fifth button: it opens a
+            library rather than starting something. */}
+        <button type="button" className="home-screen__action-link" onClick={onOpenLibrary}>
+          Or browse published articles →
+        </button>
       </section>
 
       <div className="home-screen__tertiary">

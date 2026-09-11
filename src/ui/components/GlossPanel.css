@@ -94,3 +94,8 @@
   font-size: var(--text-gloss-english-size);
   color: var(--ink-muted);
 }
+
+.gloss-panel__english--empty {
+  color: var(--ink-muted);
+  font-style: italic;
+}

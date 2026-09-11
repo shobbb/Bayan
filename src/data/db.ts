@@ -11,11 +11,24 @@ export interface SettingsRecord {
   value: unknown;
 }
 
+/**
+ * Per-article progress. Only progress is stored — the articles themselves ship
+ * as a build asset, so there is nothing here to migrate when the content
+ * changes and nothing to re-download when the app is reinstalled.
+ */
+export interface ArticleReadRecord {
+  id: string;
+  readAt: number;
+  /** Segment indices flagged "didn't know" on the last read. */
+  flaggedIndices: number[];
+}
+
 export class BayanDB extends Dexie {
   words!: Table<Word, WordId>;
   rounds!: Table<Round, string>;
   batches!: Table<Batch, string>;
   settings!: Table<SettingsRecord, string>;
+  articleReads!: Table<ArticleReadRecord, string>;
 
   constructor() {
     super('bayan');
@@ -24,6 +37,11 @@ export class BayanDB extends Dexie {
       rounds: 'id, trackId, createdAt, topic, format, roundType',
       batches: 'id, createdAt',
       settings: 'key',
+    });
+    // v2 adds article progress. Dexie carries the v1 stores forward untouched,
+    // so an existing corpus is not rewritten by this upgrade.
+    this.version(2).stores({
+      articleReads: 'id, readAt',
     });
   }
 }

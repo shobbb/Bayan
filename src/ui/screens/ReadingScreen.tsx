@@ -11,6 +11,14 @@ export interface ReadingScreenProps {
   titleEn?: string;
   /** Receives the segment indices flagged “didn’t know”, which carry the unclear signal. */
   onFinish: (notKnownIndices: number[]) => void;
+  /**
+   * Attribution for third-party text, rendered under the title and linking
+   * back to the original. Required for anything the app did not write, and
+   * absent for generated rounds, which need none.
+   */
+  attribution?: { label: string; url: string } | null;
+  /** Flags carried over from a previous read of the same text. */
+  initialNotKnown?: readonly number[];
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -36,6 +44,8 @@ export function ReadingScreen({
   titleAr = DEMO_TITLE_AR,
   titleEn = DEMO_TITLE_EN,
   onFinish,
+  attribution = null,
+  initialNotKnown,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -43,7 +53,9 @@ export function ReadingScreen({
   //  - notKnownIndices words explicitly flagged "didn't know"; a persistent
   //                    highlight that survives tapping other words.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [notKnownIndices, setNotKnownIndices] = useState<Set<number>>(new Set());
+  const [notKnownIndices, setNotKnownIndices] = useState<Set<number>>(
+    () => new Set(initialNotKnown ?? []),
+  );
   const [glossItem, setGlossItem] = useState<GlossPanelItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +115,13 @@ export function ReadingScreen({
           {titleAr}
         </h1>
         <p className="reading-screen__title-en">{titleEn}</p>
+        {attribution && (
+          <p className="reading-screen__attribution">
+            <a href={attribution.url} target="_blank" rel="noreferrer noopener">
+              {attribution.label}
+            </a>
+          </p>
+        )}
       </header>
 
       <ArabicText

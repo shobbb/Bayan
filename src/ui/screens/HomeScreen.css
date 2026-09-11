@@ -280,3 +280,7 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.home-screen__reading .home-screen__action-link {
+  margin-top: var(--space-3);
+}

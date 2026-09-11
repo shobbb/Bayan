@@ -35,7 +35,17 @@ export function GlossPanel({ item, isNotKnown, onToggleNotKnown }: GlossPanelPro
               <span className="gloss-panel__arabic">{item.arabic}</span>
               {item.forms && <span className="gloss-panel__forms">{item.forms}</span>}
             </div>
-            <div className="gloss-panel__english">{item.gloss}</div>
+            {/* Publisher articles gloss only what their editors thought hard,
+                so most words arrive with an empty gloss. The word is still
+                tracked and still flaggable — say that rather than showing a
+                blank row that reads as a rendering fault. */}
+            {item.gloss ? (
+              <div className="gloss-panel__english">{item.gloss}</div>
+            ) : (
+              <div className="gloss-panel__english gloss-panel__english--empty">
+                No translation yet
+              </div>
+            )}
           </div>
           <button
             type="button"
