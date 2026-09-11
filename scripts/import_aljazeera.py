@@ -101,7 +101,10 @@ def video_url(raw: str):
     return None
 
 
-def thumbnail(raw: str):
+BRIGHTCOVE_VIDEO_ID = re.compile(r'players\.brightcove\.net/\d+/[^/]+/index\.html\?videoId=(\d+)')
+
+
+def thumbnail(raw: str, posters: dict):
     """Article image, or a video still where one can be derived. None otherwise."""
     og = OG_IMAGE.search(raw)
     if og:
@@ -110,13 +113,20 @@ def thumbnail(raw: str):
         return re.sub(r'^http://', 'https://', og.group(1))
     tube = YOUTUBE.search(raw)
     if tube:
+        # YouTube serves a still straight from the video id, no API needed.
         return f'https://img.youtube.com/vi/{tube.group(1)}/hqdefault.jpg'
-    # Brightcove stills need an API call to resolve, so there is nothing to
-    # derive here; the app draws its own tile instead of inventing a URL.
+
+    # Brightcove stills are not derivable from a video id — they come from the
+    # Playback API, which scripts/fetch_brightcove_posters.py resolves into
+    # posters.json. Absent that file the app draws its own title tile rather
+    # than inventing a URL that would 404.
+    brightcove = BRIGHTCOVE_VIDEO_ID.search(raw)
+    if brightcove:
+        return posters.get(brightcove.group(1))
     return None
 
 
-def parse_article(path: Path, level: str, manifest: dict):
+def parse_article(path: Path, level: str, manifest: dict, posters: dict):
     raw = path.read_text(encoding='utf-8', errors='replace')
     clean = STRIP_SCRIPTS.sub('', raw)
 
@@ -151,7 +161,7 @@ def parse_article(path: Path, level: str, manifest: dict):
         'titleEn': title_en,
         'vowelled': 'formilized' in bodies,
         'paragraphs': paragraphs,
-        'imageUrl': thumbnail(raw),
+        'imageUrl': thumbnail(raw, posters),
         'videoUrl': video_url(raw),
         'vocab': parse_pairs(blocks.get('1', '')),
         'expressions': parse_pairs(blocks.get('2', '')),
@@ -159,6 +169,12 @@ def parse_article(path: Path, level: str, manifest: dict):
 
 
 def main(dump: Path, out: Path):
+    # Optional: resolved Brightcove stills, keyed by video id. Produced by
+    # scripts/fetch_brightcove_posters.py, which needs network access this
+    # import does not.
+    posters_path = out.parent / 'posters.json'
+    posters = json.loads(posters_path.read_text(encoding='utf-8')) if posters_path.exists() else {}
+
     articles, skipped = [], 0
     for level_dir in sorted(d for d in dump.iterdir() if d.is_dir()):
         manifest_path = level_dir / 'manifest.json'
@@ -166,7 +182,7 @@ def main(dump: Path, out: Path):
         if manifest_path.exists():
             manifest = {e['title']: e for e in json.loads(manifest_path.read_text(encoding='utf-8'))}
         for path in sorted(level_dir.glob('*.html')):
-            article = parse_article(path, level_dir.name, manifest)
+            article = parse_article(path, level_dir.name, manifest, posters)
             if article:
                 articles.append(article)
             else:
@@ -188,6 +204,8 @@ def main(dump: Path, out: Path):
     print(f'fully vowelled   : {sum(a["vowelled"] for a in articles)}')
     print(f'with a thumbnail : {sum(bool(a["imageUrl"]) for a in articles)}')
     print(f'with a video     : {sum(bool(a["videoUrl"]) for a in articles)}')
+    print(f'brightcove stills: {len(posters)} supplied' if posters
+          else 'brightcove stills: none (run fetch_brightcove_posters.py to add them)')
     print(f'publisher glosses: {pairs}')
     print(f'asset size       : {out.stat().st_size / 1024:.0f} KB')
 

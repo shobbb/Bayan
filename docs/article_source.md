@@ -149,5 +149,10 @@ Filling them is the obvious next step and has a hook already (`needsEnrichment`)
 - `robots.txt` and terms of use have **not** been checked. The current design
   does not crawl, which makes this much less pressing, but redistribution of
   bundled text is a separate question from crawling and is unresolved.
-- Brightcove video stills cannot be derived without an API call, so 48 articles
-  fall back to a title tile.
+- Brightcove video stills cannot be derived from a video id: they come from the
+  Playback API, and the saved HTML cannot supply them because the poster is set
+  by the player's own JavaScript at runtime. 48 articles fall back to a title
+  tile until `scripts/fetch_brightcove_posters.py` is run — it resolves them to
+  URLs in `posters.json`, which the importer merges if present and ignores if
+  not. YouTube needs none of this: `img.youtube.com` serves a still from the
+  video id, so those articles already have one.
