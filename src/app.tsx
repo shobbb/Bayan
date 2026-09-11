@@ -184,7 +184,6 @@ function AppScreens() {
       <ReadingScreen
         segments={segments}
         titleAr={article.titleAr}
-        titleEn={article.titleEn ?? ''}
         initialNotKnown={flaggedIndices}
         media={
           <ArticleMedia
@@ -220,7 +219,6 @@ function AppScreens() {
       <ReadingScreen
         segments={round.segments}
         titleAr={round.titleAr}
-        titleEn={round.titleEn}
         onFinish={(notKnownIndices) => handleFinishReading(round, notKnownIndices)}
       />
     );

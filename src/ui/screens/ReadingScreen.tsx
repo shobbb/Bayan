@@ -2,13 +2,12 @@ import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
 import type { Segment } from '@/domain/types';
-import { DEMO_SEGMENTS, DEMO_TITLE_AR, DEMO_TITLE_EN } from './demoRound';
+import { DEMO_SEGMENTS, DEMO_TITLE_AR } from './demoRound';
 import './ReadingScreen.css';
 
 export interface ReadingScreenProps {
   segments?: Segment[];
   titleAr?: string;
-  titleEn?: string;
   /** Receives the segment indices flagged “didn’t know”, which carry the unclear signal. */
   onFinish: (notKnownIndices: number[]) => void;
   /**
@@ -48,7 +47,6 @@ function visibleBottom(container: HTMLElement | null): number {
 export function ReadingScreen({
   segments = DEMO_SEGMENTS,
   titleAr = DEMO_TITLE_AR,
-  titleEn = DEMO_TITLE_EN,
   onFinish,
   attribution = null,
   initialNotKnown,
@@ -117,11 +115,13 @@ export function ReadingScreen({
 
   return (
     <div className="reading-screen" ref={containerRef}>
+      {/* Arabic only. An English title beside it is read first and instead,
+          which costs the reader the one bit of comprehension the headline was
+          going to give them. */}
       <header className="reading-screen__header">
         <h1 dir="rtl" lang="ar" className="reading-screen__title-ar">
           {titleAr}
         </h1>
-        <p className="reading-screen__title-en">{titleEn}</p>
         {attribution && (
           <p className="reading-screen__attribution">
             <a href={attribution.url} target="_blank" rel="noreferrer noopener">

@@ -202,7 +202,8 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
                                 className="stats-screen__appearance"
                                 onClick={() => onReplayRound(round)}
                               >
-                                {round.titleEn} — {round.topic} / {round.format}
+                                <span dir="rtl" lang="ar">{round.titleAr}</span>
+                                {` — ${round.topic} / ${round.format}`}
                               </button>
                             ))
                           )}

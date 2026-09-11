@@ -240,7 +240,9 @@ export function HomeScreen({
                   className="home-screen__round-item"
                   onClick={() => onReplayRound(round)}
                 >
-                  <span className="home-screen__round-title">{round.titleEn}</span>
+                  <span dir="rtl" lang="ar" className="home-screen__round-title">
+                    {round.titleAr}
+                  </span>
                   <span className="home-screen__round-meta">
                     {round.topic} · {round.format}
                   </span>

@@ -215,6 +215,10 @@
 
 .home-screen__round-title {
   display: block;
+  font-family: var(--font-arabic);
+  font-size: 1.15rem;
+  /* Enough to clear stacked marks (§5.2) — these titles are fully vowelled. */
+  line-height: 1.9;
 }
 
 .home-screen__round-meta {

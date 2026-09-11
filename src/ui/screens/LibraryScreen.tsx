@@ -62,7 +62,6 @@ function ArticleCard({
           {article.titleAr}
         </span>
       )}
-      {article.titleEn && <span className="library__card-en">{article.titleEn}</span>}
       <span className="library__card-meta">
         {levelLabel(article.level)}
         {article.videoUrl && ' · video'}

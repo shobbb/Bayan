@@ -22,13 +22,6 @@
   margin: 0 0 var(--space-2);
 }
 
-.reading-screen__title-en {
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  color: var(--ink-muted);
-  margin: 0;
-}
-
 .reading-screen__finish-row {
   display: flex;
   justify-content: center;
