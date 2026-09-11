@@ -32,10 +32,6 @@ import {
 } from '@/services/sync/backupService';
 import './SettingsScreen.css';
 
-export interface SettingsScreenProps {
-  onBack: () => void;
-}
-
 /** Shows enough of the key to recognise it, never enough to read it back. */
 function mask(key: string): string {
   return key.length <= 12 ? '••••' : `${key.slice(0, 7)}…${key.slice(-4)}`;
@@ -67,7 +63,7 @@ function fromTimeValue(value: string, fallback: DailyReminder): DailyReminder {
  * never IndexedDB or localStorage (REQ-P4), and is sent nowhere but the model
  * provider.
  */
-export function SettingsScreen({ onBack }: SettingsScreenProps) {
+export function SettingsScreen() {
   const config = useConfig();
   const { overrides, setValue, resetValue, resetAll } = useConfigEditor();
   const [stored, setStored] = useState<string | null>(null);
@@ -247,11 +243,8 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
   const changedCount = countChanged(CONFIG_FIELDS);
 
   return (
-    <div className="settings-screen">
+    <div className="settings-screen has-bottom-nav">
       <header className="settings-screen__header">
-        <button type="button" className="settings-screen__back" onClick={onBack}>
-          ← Home
-        </button>
         <h1 className="settings-screen__title">Settings</h1>
       </header>
 

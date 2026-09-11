@@ -18,7 +18,6 @@ import type { Round } from '@/domain/types';
 import './StatsScreen.css';
 
 export interface StatsScreenProps {
-  onBack: () => void;
   onReplayRound: (round: Round) => void;
 }
 
@@ -60,7 +59,7 @@ function formatDate(timestamp: number): string {
  * Read-only (§11). Every figure comes from domain/stats/metrics.ts — this
  * component formats and arranges, it never computes a metric (REQ-44).
  */
-export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
+export function StatsScreen({ onReplayRound }: StatsScreenProps) {
   const { words, rounds, loading } = useStats();
   const [sort, setSort] = useState<BreakdownSort>('missRate');
   const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>('all');
@@ -85,11 +84,8 @@ export function StatsScreen({ onBack, onReplayRound }: StatsScreenProps) {
   }, [rounds, group]);
 
   return (
-    <div className="stats-screen">
+    <div className="stats-screen has-bottom-nav">
       <header className="stats-screen__header">
-        <button type="button" className="stats-screen__back" onClick={onBack}>
-          ← Home
-        </button>
         <h1 className="stats-screen__title">Stats</h1>
       </header>
 

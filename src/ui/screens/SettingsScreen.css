@@ -12,21 +12,6 @@
   margin-bottom: var(--space-5);
 }
 
-.settings-screen__back {
-  min-height: 44px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--ink-muted);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
-}
-
-.settings-screen__back:hover {
-  color: var(--signal);
-}
-
 .settings-screen__title {
   font-family: var(--font-english);
   font-size: 1.4rem;

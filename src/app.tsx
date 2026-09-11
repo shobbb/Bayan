@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { ConfigProvider, useConfig } from '@/ui/context/ConfigContext';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { ReadingScreen } from '@/ui/screens/ReadingScreen';
@@ -7,6 +7,7 @@ import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
 import { LibraryScreen } from '@/ui/screens/LibraryScreen';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
+import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
@@ -23,10 +24,9 @@ import type { Round, RoundType, Word } from '@/domain/types';
  * far (§2.0.1).
  */
 type Screen =
-  | { name: 'home' }
-  | { name: 'stats' }
-  | { name: 'settings' }
-  | { name: 'library' }
+  // The destinations, which are exactly the bottom-nav tabs. Anything with a
+  // payload below is an activity: reached from a destination, and not a tab.
+  | { name: NavTab }
   | { name: 'reading'; round: Round }
   | {
       name: 'article';
@@ -159,22 +159,36 @@ function AppScreens() {
     setScreen({ name: 'home' });
   }, []);
 
+  const handleNavigate = useCallback((tab: NavTab) => {
+    setFailure(null);
+    setNotice(null);
+    // Anything that writes to the corpus may have happened since these screens
+    // last read it, so they re-read on every arrival.
+    setRefreshToken((n) => n + 1);
+    setScreen({ name: tab });
+  }, []);
+
   const handleOpenSettings = useCallback(() => {
     setFailure(null);
     setScreen({ name: 'settings' });
   }, []);
 
+  // The four destinations share the bar; reading and drilling do not (§5.1).
+  const withNav = (tab: NavTab, view: ReactNode) => (
+    <>
+      {view}
+      <BottomNav active={tab} onNavigate={handleNavigate} />
+    </>
+  );
+
   if (screen.name === 'stats') {
-    return <StatsScreen onBack={handleBackHome} onReplayRound={handleReplayRound} />;
+    return withNav('stats', <StatsScreen onReplayRound={handleReplayRound} />);
   }
 
   if (screen.name === 'library') {
-    return (
-      <LibraryScreen
-        onBack={handleBackHome}
-        onOpenArticle={handleOpenArticle}
-        opening={openingArticle}
-      />
+    return withNav(
+      'library',
+      <LibraryScreen onOpenArticle={handleOpenArticle} opening={openingArticle} />,
     );
   }
 
@@ -185,6 +199,7 @@ function AppScreens() {
         segments={segments}
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
+        onExit={{ label: 'Articles', run: () => setScreen({ name: 'library' }) }}
         media={
           <ArticleMedia
             imageUrl={article.imageUrl}
@@ -199,7 +214,7 @@ function AppScreens() {
   }
 
   if (screen.name === 'settings') {
-    return <SettingsScreen onBack={handleBackHome} />;
+    return withNav('settings', <SettingsScreen />);
   }
 
   if (screen.name === 'drill') {
@@ -219,17 +234,17 @@ function AppScreens() {
       <ReadingScreen
         segments={round.segments}
         titleAr={round.titleAr}
+        onExit={{ label: 'Home', run: handleBackHome }}
         onFinish={(notKnownIndices) => handleFinishReading(round, notKnownIndices)}
       />
     );
   }
 
-  return (
+  return withNav(
+    'home',
     <HomeScreen
       onStartRound={handleStartRound}
       onReplayRound={handleReplayRound}
-      onOpenStats={() => setScreen({ name: 'stats' })}
-      onOpenLibrary={() => setScreen({ name: 'library' })}
       onOpenSettings={handleOpenSettings}
       generating={generating}
       busy={busy}

@@ -1,0 +1,50 @@
+/* Bottom navigation. A single hairline and the ground colour — no fill, no
+   shadow, no blur (REQ-D1, §5.3). The active tab is marked with --signal,
+   which is the app's one colour for "this is current" (REQ-D2). */
+.bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--ground);
+  border-top: 1px solid var(--rule);
+  /* The inset extends the bar rather than being eaten by it, so the tabs keep
+     their full target height above the home indicator — the same mistake the
+     gloss panel made. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 52px;
+  padding: var(--space-2) 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  cursor: pointer;
+}
+
+.bottom-nav__tab--on {
+  color: var(--signal);
+}
+
+.bottom-nav__label {
+  font-size: var(--text-data-size);
+  line-height: 1;
+}
+
+/**
+ * Every screen that shows the bar has to clear it. Set here rather than in each
+ * screen's own stylesheet so the bar's height and the clearance cannot drift
+ * apart — the gloss panel needed exactly this fix.
+ */
+.has-bottom-nav {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}

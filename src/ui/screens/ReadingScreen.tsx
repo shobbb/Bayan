@@ -24,6 +24,14 @@ export interface ReadingScreenProps {
    * from — generated rounds pass nothing.
    */
   media?: ReactNode;
+  /**
+   * Leaves without recording the reading. Rounds are already persisted by the
+   * time they are shown (REQ-32 covers a round read but never finished), so
+   * backing out of one costs only this session's flags; backing out of an
+   * article discards the reading entirely, since nothing is written until
+   * Finish. Either way it is what a back control is expected to do.
+   */
+  onExit?: { label: string; run: () => void };
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -51,6 +59,7 @@ export function ReadingScreen({
   attribution = null,
   initialNotKnown,
   media = null,
+  onExit,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -115,6 +124,14 @@ export function ReadingScreen({
 
   return (
     <div className="reading-screen" ref={containerRef}>
+      {/* Finish is at the far end of the text, which is no use to someone who
+          wants out after two paragraphs. */}
+      {onExit && (
+        <button type="button" className="reading-screen__exit" onClick={onExit.run}>
+          ← {onExit.label}
+        </button>
+      )}
+
       {/* Arabic only. An English title beside it is read first and instead,
           which costs the reader the one bit of comprehension the headline was
           going to give them. */}

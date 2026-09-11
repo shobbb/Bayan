@@ -4,7 +4,6 @@ import { listLibrary, type LibraryEntry } from '@/services/articles/articleServi
 import './LibraryScreen.css';
 
 export interface LibraryScreenProps {
-  onBack: () => void;
   onOpenArticle: (id: string) => void;
   /** Set while an article is being prepared, so its card can show progress. */
   opening: string | null;
@@ -76,7 +75,7 @@ function ArticleCard({
  * so it is always clear whose text is on screen. Every card carries the level
  * it was published at, and the reader carries the attribution and backlink.
  */
-export function LibraryScreen({ onBack, onOpenArticle, opening }: LibraryScreenProps) {
+export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [source, setSource] = useState<ArticleSource | null>(null);
   const [level, setLevel] = useState<string>('all');
@@ -111,13 +110,7 @@ export function LibraryScreen({ onBack, onOpenArticle, opening }: LibraryScreenP
   const readCount = (entries ?? []).filter((entry) => entry.readAt !== null).length;
 
   return (
-    <div className="library">
-      <header className="library__header">
-        <button type="button" className="library__back" onClick={onBack}>
-          ← Home
-        </button>
-      </header>
-
+    <div className="library has-bottom-nav">
       <div className="library__intro">
         <h1 className="library__title">Articles</h1>
         {source && (

@@ -9,6 +9,21 @@
     calc(var(--gloss-panel-height) + env(safe-area-inset-bottom, 0px) + var(--space-5));
 }
 
+/* The one piece of chrome the reading page keeps. Small, top-start, and quiet:
+   a way out that does not compete with the text (§5.1). */
+.reading-screen__exit {
+  display: inline-block;
+  min-height: 44px;
+  margin-bottom: var(--space-2);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
 .reading-screen__header {
   text-align: center;
   margin-bottom: var(--space-6);

@@ -509,9 +509,24 @@ This is the highest-risk component in the app. Without it the same word accumula
 Entry screen. Purpose: expose every action directly, orchestrate nothing.
 
 **Layout**
-- Header: app title, settings icon.
+- Header: app title. Stats and Settings are reached from the bottom navigation,
+  not from here.
 - Status — cards due, undrilled backlog, rounds completed, current batch size. Cards due is the only one that implies an action, so it carries the weight; the rest are context and are set quietly beside it.
 - Actions — all six present and always enabled, ranked by how often they are reached for:
+
+`REQ-50` Four destinations — Home, Articles, Stats, Settings — share a bottom
+navigation bar. Reading and drilling do not show it: those are the two screens
+where the interface is supposed to disappear (§5.1), the reader already owns the
+bottom edge with its gloss panel, and a tab bar there invites leaving
+mid-sentence. Destinations get a bar; activities get a way back. A destination
+reachable from the bar carries no second control that does the same thing — one
+navigation, not two.
+
+`REQ-51` Every activity has an exit that is not its completion control. "Finish"
+sits at the end of the text and records the reading; the exit leaves without
+recording. Backing out of a round costs only that session's flags, since the
+round is already persisted when it is shown (REQ-32); backing out of an article
+discards the reading, since nothing is written until Finish.
 
 `REQ-49` Rank the actions and the figures. Equal visual weight for everything was the earlier instruction here and it was wrong: when every element competes for attention nothing stands out, and the screen reads as noise. Deference is a real constraint (§5.1) and it applies to Home too — most screens have one primary action, a few secondary, and a couple of tertiary. Rank by expected frequency, never by hiding anything: exposing every action directly is the point of this screen, and ranking is not gating (REQ-13).
 
