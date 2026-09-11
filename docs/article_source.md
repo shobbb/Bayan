@@ -39,7 +39,7 @@ From 325 saved pages (elementary + intermediate):
 |---|---|
 | Articles with body text | 284 |
 | Bodies fully vowelled | 274 |
-| Articles with a derivable thumbnail | 236 |
+| Articles with a thumbnail | 284 — all of them, once Brightcove stills are resolved |
 | Articles with a video embed | 50 |
 | Articles with neither image nor video | 0 |
 | Publisher gloss pairs | 3,577 |
@@ -101,7 +101,9 @@ crawl idempotency from the app entirely, and means the text itself is always
 available offline (REQ-D4).
 
 `REQ-A9` Text is bundled; the publisher's images and video are not, and are
-referenced at their original URLs. Two consequences to be honest about: media
+referenced at their original URLs. Every article has a thumbnail — the article
+image where the publisher set one, otherwise the video's own still — so the
+title-tile fallback in the library now only appears when an image fails to load. Two consequences to be honest about: media
 does not work offline, and loading it is a request to a third party. The image
 loads with the article and falls back to a plain surface when it fails. The
 video does **not** load until the reader taps play — a heavy player frame on
@@ -149,10 +151,10 @@ Filling them is the obvious next step and has a hook already (`needsEnrichment`)
 - `robots.txt` and terms of use have **not** been checked. The current design
   does not crawl, which makes this much less pressing, but redistribution of
   bundled text is a separate question from crawling and is unresolved.
-- Brightcove video stills cannot be derived from a video id: they come from the
-  Playback API, and the saved HTML cannot supply them because the poster is set
-  by the player's own JavaScript at runtime. 48 articles fall back to a title
-  tile until `scripts/fetch_brightcove_posters.py` is run — it resolves them to
-  URLs in `posters.json`, which the importer merges if present and ignores if
-  not. YouTube needs none of this: `img.youtube.com` serves a still from the
-  video id, so those articles already have one.
+- Brightcove stills are resolved and checked in. They cannot be derived from a
+  video id — they come from the Playback API, and the saved HTML cannot supply
+  them because the player sets the poster from its own JavaScript at runtime —
+  so `scripts/fetch_brightcove_posters.py` resolves them into
+  `posters.json`, which the importer merges. Re-run it if the dump gains
+  articles. YouTube needs none of this: `img.youtube.com` serves a still
+  straight from the video id.
