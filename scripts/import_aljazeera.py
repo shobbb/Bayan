@@ -32,6 +32,41 @@ from pathlib import Path
 from urllib.parse import unquote as UNQUOTE
 
 STRIP_SCRIPTS = re.compile(r'(?is)<(script|style)[^>]*>.*?</\1>')
+
+# Text the page carries but never shows. It sits inside the body container, so
+# stripping tags alone leaves it in the reading text: one article ended with
+# "6122168460001 85d19f50-f070-… video", which is a Brightcove asset id, its
+# video GUID and its poster GUID, parked in display:none table cells.
+#
+# Two independent nets, because either alone would be a guess about markup that
+# is not ours: the region the publisher itself marks rs_skip / id="skip", and
+# anything inline-styled out of sight.
+SKIP_BLOCK_OPEN = re.compile(r'(?i)<div\b[^>]*(?:class="[^"]*\brs_skip\b[^"]*"|id="skip")[^>]*>')
+HIDDEN_CELL = re.compile(
+    r'(?is)<(td|span|p)\b[^>]*style="[^"]*display\s*:\s*none[^"]*"[^>]*>.*?</\1>'
+)
+DIV_TAG = re.compile(r'(?i)<(/?)div\b[^>]*>')
+
+
+def strip_hidden(markup: str) -> str:
+    """Remove regions the page hides, outermost first."""
+    while True:
+        opening = SKIP_BLOCK_OPEN.search(markup)
+        if not opening:
+            break
+        # Scanned rather than matched with a regex: these blocks hold nested
+        # divs, and a non-greedy `.*?</div>` would stop at the first inner close
+        # and leave the rest of the block — including the ids — in the text.
+        depth = 0
+        end = len(markup)
+        for tag in DIV_TAG.finditer(markup, opening.start()):
+            depth += -1 if tag.group(1) else 1
+            if depth == 0:
+                end = tag.end()
+                break
+        markup = markup[: opening.start()] + markup[end:]
+
+    return HIDDEN_CELL.sub('', markup)
 H1 = re.compile(r'<h1[^>]*>(.*?)(?:<span class="lang">(.*?)</span>)?</h1>', re.S)
 # Two body containers ship on every lesson: the plain one, and a hidden fully
 # vowelled one the page's tashkeel toggle swaps in. The vowelled one is what
@@ -171,7 +206,7 @@ def read_metadata(path: Path) -> dict:
 
 def parse_article(path: Path, level: str, manifest: list, metadata: dict, posters: dict):
     raw = path.read_text(encoding='utf-8', errors='replace')
-    clean = STRIP_SCRIPTS.sub('', raw)
+    clean = strip_hidden(STRIP_SCRIPTS.sub('', raw))
 
     heading = H1.search(clean)
     if not heading:

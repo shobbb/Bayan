@@ -84,6 +84,11 @@ container.
 - **Titles are not unique, and the manifest is not keyed by one.** Two pairs of
   articles share a title exactly. The manifest is positional: entry *N-1*
   belongs to `NNNN_*.html`, which holds for all 325 files.
+- **The body container holds text the page never shows.** Four articles carry a
+  Brightcove asset id, a video GUID and a poster GUID in `display:none` table
+  cells, inside the body itself — so stripping tags alone puts
+  `6122168460001 85d19f50-… video` at the end of the article. Stripping
+  `<script>`/`<style>` is not enough; hidden text has to go too (REQ-A17).
 - Paragraphs are `<p>` on some articles and `<div>` on others; keying on `<p>`
   alone loses 78 of 325.
 - Numeric article ids observed run 21786–21995, and other URL families exist
@@ -168,6 +173,15 @@ something reading should do unasked.
 
 `REQ-A5` The bundle is imported dynamically so it is code-split. It is roughly a
 megabyte and only the library and reader need it.
+
+`REQ-A17` Hidden text is removed before the body is read, by two independent
+nets: the region the publisher marks `rs_skip` / `id="skip"`, and any element
+inline-styled `display:none`. The skip region is scanned with a depth counter
+rather than matched with a regex — it contains nested `<div>`s, and a non-greedy
+match to the first `</div>` leaves most of the block, ids included, in the text.
+Neither net alone is trustworthy, since both are assumptions about markup that
+is not ours. The reader renders every word it is given as vocabulary, so
+anything that reaches the body is something the learner is asked to read.
 
 ---
 
