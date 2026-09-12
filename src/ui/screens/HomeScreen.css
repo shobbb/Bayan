@@ -162,8 +162,16 @@
   opacity: 0.9;
 }
 
-/* Tertiary: discoverable, unobtrusive, link-shaped. */
+/* Tertiary: discoverable, unobtrusive, link-shaped.
+
+   Laid out as a row rather than left to flow: these are buttons, so they carry
+   no word spacing between them, and a second one arriving turned the pair into
+   a single unbroken run of blue reading "Generate new batchBack up now". */
 .home-screen__tertiary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-5);
   margin: var(--space-5) 0 var(--space-7);
 }
 
@@ -179,6 +187,8 @@
 }
 
 .home-screen__synced {
+  /* Full-width so it drops onto its own line under the row it describes. */
+  flex-basis: 100%;
   margin: var(--space-1) 0 0;
   font-family: var(--font-english);
   font-size: var(--text-data-size);
