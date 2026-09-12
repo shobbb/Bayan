@@ -8,7 +8,13 @@
 import type { AppConfig } from '@/config';
 import { selectBatch } from '@/domain/batch/selectBatch';
 import { activeScheduler } from '@/domain/srs/scheduler';
-import { buildSessionQueue, type QueueEntry } from '@/domain/drills/session';
+import type { QueueEntry } from '@/domain/drills/session';
+import {
+  STUDY_SOURCES,
+  getStudySource,
+  type StudySourceContext,
+  type StudySourceId,
+} from '@/domain/drills/studySources';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { Batch, Grade, Word, WordId } from '@/domain/types';
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -139,21 +145,52 @@ export async function generateBatch(
 export interface DrillSession {
   batch: Batch | null;
   queue: QueueEntry[];
-  corpus: Word[];
+  corpus: readonly Word[];
 }
 
-/** Queue = current batch + all due cards, interleaved (§10). */
-export async function startDrillSession(now = Date.now()): Promise<DrillSession> {
-  const [words, batch] = await Promise.all([listWords(DEFAULT_TRACK_ID), getLatestBatch()]);
+/** What each study source would offer right now, for the chooser on Home. */
+export async function studyOptions(
+  config: AppConfig,
+  now = Date.now(),
+): Promise<Array<{ id: StudySourceId; label: string; hint: string; count: number }>> {
+  const ctx = await studyContext(config, now);
+  return STUDY_SOURCES.map((source) => ({
+    id: source.id,
+    label: source.label,
+    hint: source.hint(ctx),
+    count: source.build(ctx).length,
+  }));
+}
 
-  const queue = buildSessionQueue({
-    batchWordIds: batch?.wordIds ?? [],
+async function studyContext(config: AppConfig, now: number): Promise<StudySourceContext> {
+  const [words, batch] = await Promise.all([listWords(DEFAULT_TRACK_ID), getLatestBatch()]);
+  return {
     words,
+    batchWordIds: batch?.wordIds ?? [],
     scheduler: activeScheduler,
     now,
-  });
+    markedWithinDays: config.algorithm.drill.markedWithinDays,
+  };
+}
 
-  return { batch: batch ?? null, queue, corpus: words };
+/**
+ * Builds a session from the chosen source (§10).
+ *
+ * The source decides which words; the spacing sort in domain/drills decides
+ * their order. Nothing here does either.
+ */
+export async function startDrillSession(
+  sourceId: StudySourceId,
+  config: AppConfig,
+  now = Date.now(),
+): Promise<DrillSession> {
+  const [ctx, batch] = await Promise.all([studyContext(config, now), getLatestBatch()]);
+
+  return {
+    batch: batch ?? null,
+    queue: getStudySource(sourceId).build(ctx),
+    corpus: ctx.words,
+  };
 }
 
 /**

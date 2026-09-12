@@ -167,6 +167,7 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
     blurb: 'How a study session is paced.',
     fields: [
       num(['algorithm', 'drill', 'roundSize'], 'Cards per round', 'How many cards between checkpoints. Everything answered is saved as you go, so a checkpoint is a place to stop rather than a place to be scored.', { min: 3, max: 50, step: 1 }),
+      num(['algorithm', 'drill', 'markedWithinDays'], 'Marked recently means', 'How far back the “Marked recently” study option reaches, in days. 7 is this week. Separate from the batch setting above: this narrows what a session studies, not what a new batch is built from.', { min: 1, max: 365, step: 1 }),
     ],
   },
   {

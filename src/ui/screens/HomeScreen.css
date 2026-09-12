@@ -186,6 +186,56 @@
   opacity: 0.9;
 }
 
+/* The choice of what to study, revealed under the action that asked for it.
+   It sits in the space the primary button's own margin was holding, so opening
+   it does not shove the rest of the screen down a block. */
+.home-screen__study {
+  display: grid;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-5)) 0 var(--space-7);
+}
+
+.home-screen__study-option {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  text-align: start;
+  cursor: pointer;
+}
+
+.home-screen__study-option:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.home-screen__study-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.home-screen__study-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.home-screen__study-hint,
+.home-screen__study-empty {
+  display: block;
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
 /* Tertiary: discoverable, unobtrusive, link-shaped.
 
    Laid out as a row rather than left to flow: these are buttons, so they carry

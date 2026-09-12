@@ -41,6 +41,21 @@ export interface BuildQueueOptions {
 }
 
 /**
+ * Assigns each word its retrieval mode from its position in the rotation, so
+ * consecutive cards exercise different paths rather than repeating one.
+ *
+ * Separate from queue building because the order is decided upstream — by the
+ * batch/due interleave here, or by the spacing sort a study source applies
+ * (see studySources.ts) — and the mode rotation is the same either way.
+ */
+export function withModes(words: readonly Word[]): QueueEntry[] {
+  return words.map((word, index) => ({
+    word,
+    mode: MODE_ROTATION[index % MODE_ROTATION.length]!,
+  }));
+}
+
+/**
  * Builds the session queue. A word appears once; its mode comes from its
  * position in the rotation, so consecutive cards exercise different retrieval
  * paths rather than repeating one.
@@ -62,10 +77,7 @@ export function buildSessionQueue({
     (word) => !batchIds.has(word.id) && word.srs !== null && scheduler.isDue(word.srs, now),
   );
 
-  return interleave(batch, due).map((word, index) => ({
-    word,
-    mode: MODE_ROTATION[index % MODE_ROTATION.length]!,
-  }));
+  return withModes(interleave(batch, due));
 }
 
 export interface SessionSummary {

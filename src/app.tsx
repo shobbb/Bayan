@@ -9,7 +9,8 @@ import { LibraryScreen } from '@/ui/screens/LibraryScreen';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
-import { generateBatch, startDrillSession } from '@/services/batch/batchService';
+import { generateBatch, startDrillSession, studyOptions } from '@/services/batch/batchService';
+import type { StudySourceId } from '@/domain/drills/studySources';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { enrichArticle } from '@/services/articles/enrichGlosses';
@@ -40,7 +41,7 @@ type Screen =
   | {
       name: 'drill';
       queue: QueueEntry[];
-      corpus: Word[];
+      corpus: readonly Word[];
       sentences: Readonly<Record<string, string>>;
     };
 
@@ -57,6 +58,11 @@ function AppScreens() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
+  // The study choice: which sources are on offer, and whether it is open.
+  const [studyOpen, setStudyOpen] = useState(false);
+  const [studyChoices, setStudyChoices] = useState<
+    Awaited<ReturnType<typeof studyOptions>> | null
+  >(null);
   // Kept apart from the Home advisory above. Enrichment is run from the reader,
   // and raising its outcome into state only Home renders is how a failed
   // translation came to look like a control that does nothing.
@@ -134,25 +140,45 @@ function AppScreens() {
       .finally(() => setBusy(null));
   }, [config]);
 
+  // Studying starts with a choice of what to study, so the primary action opens
+  // that choice. The counts are read fresh each time it opens: they move with
+  // every reading and every answered card, and a stale one would be choosing
+  // between two numbers that are no longer true.
   const handleStudyBatch = useCallback(() => {
     setFailure(null);
+    setNotice(null);
+    setStudyOpen((open) => !open);
+    setStudyChoices(null);
     setBusy('study');
-    startDrillSession()
-      .then((session) => {
-        if (session.queue.length === 0) {
-          setNotice('Nothing to drill yet — generate a batch first.');
-          return;
-        }
-        setScreen({
-          name: 'drill',
-          queue: session.queue,
-          corpus: session.corpus,
-          sentences: session.batch?.exampleSentences ?? {},
-        });
-      })
+    studyOptions(config)
+      .then(setStudyChoices)
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setBusy(null));
-  }, []);
+  }, [config]);
+
+  const handleChooseStudy = useCallback(
+    (sourceId: StudySourceId) => {
+      setFailure(null);
+      setBusy('study');
+      startDrillSession(sourceId, config)
+        .then((session) => {
+          if (session.queue.length === 0) {
+            setNotice('Nothing to drill there yet.');
+            return;
+          }
+          setStudyOpen(false);
+          setScreen({
+            name: 'drill',
+            queue: session.queue,
+            corpus: session.corpus,
+            sentences: session.batch?.exampleSentences ?? {},
+          });
+        })
+        .catch((error: unknown) => setFailure(describeFailure(error)))
+        .finally(() => setBusy(null));
+    },
+    [config],
+  );
 
   // The whole corpus as one blob (§13). Not automatic: writing over the only
   // backup is not something to do on a timer, and REQ-15 rules out background
@@ -230,6 +256,7 @@ function AppScreens() {
   const handleNavigate = useCallback((tab: NavTab) => {
     setFailure(null);
     setNotice(null);
+    setStudyOpen(false);
     // Anything that writes to the corpus may have happened since these screens
     // last read it, so they re-read on every arrival.
     setRefreshToken((n) => n + 1);
@@ -327,6 +354,9 @@ function AppScreens() {
       notice={notice}
       onGenerateBatch={handleGenerateBatch}
       onStudyBatch={handleStudyBatch}
+      studyOptions={studyChoices}
+      studyOpen={studyOpen}
+      onChooseStudy={handleChooseStudy}
       onSyncNow={handleSyncNow}
       lastBackupAt={lastBackupAt}
       refreshToken={refreshToken}

@@ -18,7 +18,7 @@ import './DrillScreen.css';
 
 export interface DrillScreenProps {
   queue: QueueEntry[];
-  corpus: Word[];
+  corpus: readonly Word[];
   sentences: Readonly<Record<string, string>>;
   onExit: () => void;
 }

@@ -39,6 +39,12 @@ export interface AlgorithmConfig {
   drill: {
     /** Cards between checkpoints in a study session (REQ-48). */
     roundSize: number;
+    /**
+     * Window for the "Marked recently" study option, in days. 7 is "this week".
+     * Distinct from batch.markedWithinDays: that one narrows which words a new
+     * batch is built from, this one narrows what a session studies.
+     */
+    markedWithinDays: number;
   };
 }
 
@@ -62,5 +68,6 @@ export const DEFAULT_ALGORITHM_CONFIG: AlgorithmConfig = {
   },
   drill: {
     roundSize: 10,
+    markedWithinDays: 7,
   },
 };

@@ -16,7 +16,11 @@ export interface HomeActionContext {
   startRound: (roundType: RoundType) => void;
   /** Build a ~40-card batch from the current corpus (§9). */
   generateBatch: () => void;
-  /** Open a drill session over the current batch plus due cards (§10). */
+  /**
+   * Offer the study sources (§10). Studying starts from a choice of what to
+   * study, so this opens that choice rather than starting a session — which
+   * source to run is decided in domain/drills, not here.
+   */
   studyBatch: () => void;
 }
 

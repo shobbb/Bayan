@@ -624,6 +624,28 @@ exist; a corpus full of flagged article vocabulary must never be described as
 
 Queue = current batch + all due SRS cards, interleaved. Modes rotate across the session so the learner sees each word through more than one retrieval path.
 
+`REQ-58` Studying begins with a choice of **what** to study. The primary action
+opens that choice rather than starting a session; the sources live in a registry
+(`domain/drills/studySources.ts`), so adding a way to study is adding a
+descriptor and no view ever branches on which one was picked (REQ-E2). Two
+today: **Last batch**, the batch interleaved with anything due, and **Marked
+recently**, words flagged "didn't know" inside a configured window.
+
+`REQ-59` A source decides *which* words; it never decides their order. Every
+source hands its selection to the same spacing sort — overdue first, most
+overdue leading, then never drilled with the most-missed leading, then not yet
+due with the soonest leading. The two options are one scheduler seen through two
+windows, not two study algorithms.
+
+`REQ-60` A narrow source stays narrow. "Marked recently" is not interleaved with
+the due pile: choosing it is a statement about what to study, and folding
+everything due back in would make the choice meaningless.
+
+`REQ-61` Each option states its count before it is chosen, read fresh every time
+the choice opens. The counts move with every reading and every answered card,
+and choosing between two stale numbers is choosing between two things that are
+no longer true.
+
 **The interaction model is Quizlet's, not Anki's.** This is a deliberate choice and not a default: it is the app the learner actually uses, and a study loop they already have in their fingers costs nothing to learn. Concretely that means a card that flips, a two-way self-report, running counts of what is known versus still being learned, short rounds with a checkpoint between them, and a follow-up pass narrowed to what was missed. Where the two traditions disagree, follow Quizlet.
 
 The visual language is still §5's — cool neutrals, one signal colour, no gradients or shadows. Borrow the mechanics, not the styling.

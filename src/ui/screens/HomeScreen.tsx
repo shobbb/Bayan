@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Failure } from '@/ui/failure';
+import type { StudySourceId } from '@/domain/drills/studySources';
 import type { Round, RoundType } from '@/domain/types';
 import { useHomeStatus } from '@/ui/hooks/useHomeStatus';
 import { useRecentRounds } from '@/ui/hooks/useRecentRounds';
@@ -21,6 +22,15 @@ export interface HomeScreenProps {
   notice: string | null;
   onGenerateBatch: () => void;
   onStudyBatch: () => void;
+  /**
+   * The study sources with their live counts, or null while they load. Studying
+   * begins with a choice of what to study; the primary action opens that choice
+   * rather than starting a session.
+   */
+  studyOptions: ReadonlyArray<{ id: StudySourceId; label: string; hint: string; count: number }> | null;
+  /** Whether the choice is open, and how to start one of them. */
+  studyOpen: boolean;
+  onChooseStudy: (id: StudySourceId) => void;
   onSyncNow: () => void;
   /** When this device last wrote to remote storage, or null if never. */
   lastBackupAt: number | null;
@@ -76,6 +86,9 @@ export function HomeScreen({
   notice,
   onGenerateBatch,
   onStudyBatch,
+  studyOptions,
+  studyOpen,
+  onChooseStudy,
   onSyncNow,
   lastBackupAt,
   refreshToken,
@@ -138,15 +151,45 @@ export function HomeScreen({
       </div>
 
       {actionsRanked('primary').map((action) => (
-        <button
-          key={action.id}
-          type="button"
-          className="home-screen__action home-screen__action--primary"
-          aria-busy={isActionBusy(action.id, generating, busy)}
-          onClick={() => action.run(ctx)}
-        >
-          {isActionBusy(action.id, generating, busy) ? `${action.label}…` : action.label}
-        </button>
+        <div key={action.id}>
+          <button
+            type="button"
+            className="home-screen__action home-screen__action--primary"
+            aria-busy={isActionBusy(action.id, generating, busy)}
+            aria-expanded={studyOpen}
+            onClick={() => action.run(ctx)}
+          >
+            {isActionBusy(action.id, generating, busy) ? `${action.label}…` : action.label}
+          </button>
+
+          {/* Revealed in place rather than on a screen of its own: it is one
+              choice between two, and a whole navigation step to make it would
+              cost more than it explains. */}
+          {studyOpen && (
+            <div className="home-screen__study" role="group" aria-label="What to study">
+              {studyOptions === null ? (
+                <p className="home-screen__study-empty">Counting…</p>
+              ) : (
+                studyOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className="home-screen__study-option"
+                    onClick={() => onChooseStudy(option.id)}
+                  >
+                    <span className="home-screen__study-label">
+                      {option.label}
+                      {/* The count is the thing being chosen between, so it is
+                          stated rather than left to be discovered by tapping. */}
+                      <span className="home-screen__study-count">{option.count}</span>
+                    </span>
+                    <span className="home-screen__study-hint">{option.hint}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       ))}
 
       <section className="home-screen__reading">
