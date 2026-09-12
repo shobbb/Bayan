@@ -1,0 +1,23 @@
+/* Sits inline in a meta line, so it matches its weight and only the colour
+   sets it apart. No pill, no fill: a filled badge on every card in a grid of
+   284 would be the loudest thing on the screen (§5.1). */
+.difficulty {
+  font-family: var(--font-english);
+  font-weight: 500;
+}
+
+.difficulty--1 {
+  color: var(--difficulty-1);
+}
+.difficulty--2 {
+  color: var(--difficulty-2);
+}
+.difficulty--3 {
+  color: var(--difficulty-3);
+}
+.difficulty--4 {
+  color: var(--difficulty-4);
+}
+.difficulty--5 {
+  color: var(--difficulty-5);
+}

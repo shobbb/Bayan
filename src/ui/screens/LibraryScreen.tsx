@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Article, ArticleSource } from '@/domain/articles/types';
+import { DifficultyLabel } from '@/ui/components/DifficultyLabel';
 import { listLibrary, type LibraryEntry } from '@/services/articles/articleService';
 import './LibraryScreen.css';
 
@@ -62,11 +63,12 @@ function ArticleCard({
           {article.titleAr}
         </span>
       )}
-      {/* Length is the one fact that decides whether there is time for this
-          right now, so it earns a place next to the level. Difficulty does not
-          print here: it is a rank within the library, not a property of the
-          article, and a bare "4/5" on a card reads as the second thing. */}
+      {/* Difficulty leads: it is what decides whether to open this at all, and
+          it is the only coloured thing on the card. Length comes next, being
+          the other half of "have I got time for this right now". */}
       <span className="library__card-meta">
+        <DifficultyLabel level={article.difficulty} />
+        {article.difficulty !== null && ' · '}
         {capitalize(article.level)}
         {article.wordCount !== null && ` · ${article.wordCount} words`}
         {article.videoUrl && ' · video'}

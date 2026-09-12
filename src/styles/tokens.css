@@ -15,6 +15,23 @@
   --mark-new: #e8dff0;
   --signal: #2e5e8c;
 
+  /**
+   * The five difficulty steps. A separate ramp from --signal, which REQ-D2
+   * reserves for what is interactive — these say something about the text and
+   * are not touchable.
+   *
+   * Colour is reinforcement here, never the carrier: the label reads "Very
+   * easy", so the scale survives being seen in greyscale or not at all. That
+   * matters, because a green-to-red ramp is the classic red/green trap and
+   * these five are not separable by lightness alone. Every value clears 4.5:1
+   * against its own ground.
+   */
+  --difficulty-1: #1f7a4d;
+  --difficulty-2: #4f6b1e;
+  --difficulty-3: #8a6114;
+  --difficulty-4: #b0501c;
+  --difficulty-5: #b12f2a;
+
   /* Spacing scale (§5.6) — nothing off-scale. */
   --space-1: 4px;
   --space-2: 8px;
@@ -54,6 +71,11 @@
     --mark-seen: #22303f;
     --mark-new: #2e2740;
     --signal: #6fa3d6;
+    --difficulty-1: #5fc48d;
+    --difficulty-2: #a8c25c;
+    --difficulty-3: #dcae4c;
+    --difficulty-4: #f08a52;
+    --difficulty-5: #f0736c;
   }
 }
 
@@ -66,6 +88,11 @@
   --mark-seen: #22303f;
   --mark-new: #2e2740;
   --signal: #6fa3d6;
+  --difficulty-1: #5fc48d;
+  --difficulty-2: #a8c25c;
+  --difficulty-3: #dcae4c;
+  --difficulty-4: #f08a52;
+  --difficulty-5: #f0736c;
 }
 
 :root[data-theme='light'] {
@@ -76,6 +103,11 @@
   --mark-seen: #dce4ee;
   --mark-new: #e8dff0;
   --signal: #2e5e8c;
+  --difficulty-1: #1f7a4d;
+  --difficulty-2: #4f6b1e;
+  --difficulty-3: #8a6114;
+  --difficulty-4: #b0501c;
+  --difficulty-5: #b12f2a;
 }
 
 @media (prefers-reduced-motion: reduce) {

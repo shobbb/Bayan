@@ -113,11 +113,22 @@ own ladder: **50 articles filed under elementary/intermediate are published as
 Introductory**, a level the two-way crawl had nowhere to put. The library's
 ladder is introductory → elementary → intermediate.
 
-`REQ-A14` `difficulty` is a rank, not a score. It is a quintile of the share of
-each article's vocabulary that was unknown *to one learner at one moment*, so it
-orders the library well and means nothing in absolute terms. It sorts the
-library and is deliberately not printed on a card, where a bare "4/5" would read
-as a property of the text.
+`REQ-A14` `difficulty` shows as a word, not a number: very easy, easy, medium,
+hard, very hard. It is a quintile of the share of each article's vocabulary that
+was unknown *to one learner at one moment*, so it ranks these articles against
+each other and means nothing in absolute terms — which is the case for naming
+the steps rather than printing "4/5", a figure that invites being read as a
+measurement of the text.
+
+The library is **not** sorted by it. Every card states its own step, so
+reordering the grid underneath the reader answers a question they can already
+see the answer to.
+
+`REQ-A14a` The step is colour-coded and never colour-carried. The five hues are
+their own ramp in `tokens.css`, kept clear of `--signal`, which REQ-D2 reserves
+for what is interactive; each clears 4.5:1 against its own ground in both
+themes. The word is always written out, because a green-to-red ramp is the
+classic red/green trap and these five are not separable by lightness alone.
 
 `REQ-A15` The corpus-relative columns are not imported. `unknown`,
 `coverage_pct` and `unknown_per_100` are a snapshot against one corpus: the app
