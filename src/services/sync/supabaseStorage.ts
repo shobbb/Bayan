@@ -39,6 +39,34 @@ function authHeaders(config: SupabaseBackupConfig): Record<string, string> {
   };
 }
 
+/**
+ * True when a failed response is really "there is nothing stored here".
+ *
+ * Supabase Storage does not answer a missing object with HTTP 404. It answers
+ * **400**, carrying the real status in the body:
+ *
+ *   {"statusCode":"404","error":"not_found","message":"Object not found","code":"NoSuchKey"}
+ *
+ * Checking the HTTP status alone therefore turns an empty bucket into a hard
+ * error — which is every first-ever backup, since the upload reads before it
+ * writes to protect an existing dump. The body is the authority here.
+ *
+ * Deliberately narrow: only a body that actually says not-found counts. A 403
+ * from a missing storage policy is a different problem and must keep throwing,
+ * or a misconfigured bucket would look like an empty one.
+ */
+function isObjectMissing(status: number, body: string): boolean {
+  if (status === 404) return true;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed !== 'object' || parsed === null) return false;
+    const { statusCode, error, code } = parsed as Record<string, unknown>;
+    return statusCode === '404' || statusCode === 404 || error === 'not_found' || code === 'NoSuchKey';
+  } catch {
+    return false;
+  }
+}
+
 /** Uploads the dump, replacing any previous one at the same path. */
 export async function putBackup(config: SupabaseBackupConfig, json: string): Promise<void> {
   const response = await fetch(objectUrl(config), {
@@ -69,15 +97,13 @@ export async function getBackup(config: SupabaseBackupConfig): Promise<string | 
     headers: { ...authHeaders(config), 'cache-control': 'no-cache' },
   });
 
-  if (response.status === 404) return null;
+  if (response.ok) return response.text();
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new RemoteBackupError(
-      `Backup download failed (${response.status}): ${body}`,
-      response.status,
-    );
-  }
+  const body = await response.text().catch(() => '');
+  if (isObjectMissing(response.status, body)) return null;
 
-  return response.text();
+  throw new RemoteBackupError(
+    `Backup download failed (${response.status}): ${body}`,
+    response.status,
+  );
 }
