@@ -42,37 +42,58 @@ function ArticleCard({
 
   return (
     <button type="button" className="library__card" aria-busy={busy} onClick={onOpen}>
-      {showImage ? (
-        <img
-          className="library__image"
-          src={article.imageUrl ?? undefined}
-          alt=""
-          loading="lazy"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <div className="library__image library__image--fallback">
-          <span dir="rtl" lang="ar" className="library__fallback-title">
-            {article.titleAr}
-          </span>
-        </div>
-      )}
+      <span className="library__thumb">
+        {showImage ? (
+          <img
+            className="library__image"
+            src={article.imageUrl ?? undefined}
+            alt=""
+            loading="lazy"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <span className="library__image library__image--fallback" />
+        )}
 
-      {showImage && (
-        <span dir="rtl" lang="ar" className="library__card-title">
-          {article.titleAr}
-        </span>
-      )}
+        {/* Carries a video and already read are both states of the article, not
+            descriptions of it, and both were pushing the meta line to a second
+            row. On the tile they cost no line at all. */}
+        {article.videoUrl && (
+          <span className="library__badge library__badge--video" title="Has video">
+            <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 1.6 10 6l-7 4.4z" fill="currentColor" />
+            </svg>
+            <span className="library__badge-text">Has video</span>
+          </span>
+        )}
+        {readAt !== null && (
+          <span className="library__badge library__badge--read" title="Read">
+            <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+              <path
+                d="M2 6.3 4.6 9 10 3.2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="library__badge-text">Read</span>
+          </span>
+        )}
+      </span>
+
+      <span dir="rtl" lang="ar" className="library__card-title">
+        {article.titleAr}
+      </span>
       {/* Difficulty leads: it is what decides whether to open this at all, and
-          it is the only coloured thing on the card. Length comes next, being
-          the other half of "have I got time for this right now". */}
+          it is the only coloured thing on the card. Length is the other half of
+          "have I got time for this now". The level is not here — it is a filter
+          above, and it was answering the same question as the difficulty. */}
       <span className="library__card-meta">
         <DifficultyLabel level={article.difficulty} />
-        {article.difficulty !== null && ' · '}
-        {capitalize(article.level)}
-        {article.wordCount !== null && ` · ${article.wordCount} words`}
-        {article.videoUrl && ' · video'}
-        {readAt !== null && ' · read'}
+        {article.difficulty !== null && article.wordCount !== null && ' · '}
+        {article.wordCount !== null && `${article.wordCount} words`}
       </span>
     </button>
   );

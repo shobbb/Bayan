@@ -90,10 +90,19 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, 1fr), not 1fr: a plain 1fr floors at min-content, and a title
+     that must not wrap has a min-content width of the whole title. That let
+     each column size to its longest headline, so the two columns came out
+     different widths, their fixed-ratio tiles came out different heights, and
+     the grid pushed the page into scrolling sideways. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-5) var(--space-3);
 }
 
+/* Every card is the same height, by construction rather than by a fixed one:
+   a tile of fixed ratio, then exactly one line of title and one of meta. A
+   title that wrapped to two lines pushed its own row out of step with the
+   column beside it, and the grid read as broken rather than as varied. */
 .library__card {
   display: block;
   width: 100%;
@@ -105,6 +114,12 @@
   color: var(--ink);
 }
 
+.library__thumb {
+  display: block;
+  position: relative;
+  margin-bottom: var(--space-3);
+}
+
 .library__image {
   display: block;
   width: 100%;
@@ -113,41 +128,61 @@
   object-fit: cover;
   border-radius: var(--radius);
   background: var(--mark-seen);
-  margin-bottom: var(--space-3);
 }
 
-/* Where no publisher image exists, the title carries the tile. Arabic at a
-   real size (§5.2), clipped rather than shrunk below the legible floor. */
-.library__image--fallback {
-  display: flex;
+/* On the tile, over a photograph of anything, so it carries its own ground
+   rather than trusting the image behind it. */
+.library__badge {
+  position: absolute;
+  bottom: var(--space-2);
+  inset-inline-start: var(--space-2);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.62);
+  color: #fff;
+}
+
+.library__badge--read {
+  inset-inline-start: auto;
+  inset-inline-end: var(--space-2);
+}
+
+/* The glyph is the whole control visually; the word is what a screen reader
+   gets, since "play triangle" is not a fact about the article. */
+.library__badge-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A plain surface, nothing more. This used to carry the article's title,
+   from when a third of these had no thumbnail to show; every article has one
+   now (REQ-A9), so this is purely what a failed image load leaves behind — and
+   setting the title in it meant the title line below had to be blanked to
+   avoid printing it twice, which left a hole in the card. */
+.library__image--fallback {
   overflow: hidden;
 }
 
-/* Clamped rather than shrunk: Arabic below 1.6rem stops being legible once it
-   carries diacritics (§5.2), so a long title loses its last line instead of
-   its vowelling. */
-.library__fallback-title {
-  font-family: var(--font-arabic);
-  font-size: 1.6rem;
-  line-height: 1.9;
-  text-align: center;
-  color: var(--ink);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-
+/* One line, cut with an ellipsis rather than wrapped or shrunk: Arabic below
+   this size stops being legible once it carries diacritics (§5.2), and the
+   tile above already identifies the article. */
 .library__card-title {
   display: block;
   font-family: var(--font-arabic);
   font-size: 1.15rem;
   line-height: 1.9;
   color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .library__card-meta {
@@ -156,6 +191,12 @@
   font-family: var(--font-english);
   font-size: var(--text-data-size);
   color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Same reason as the title: the one article with no metadata row has nothing
+     to say here, and must not therefore be a shorter card. */
+  min-height: calc(var(--text-data-size) * var(--text-data-line));
 }
 
 .library__card:hover .library__card-title {
