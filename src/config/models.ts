@@ -9,6 +9,7 @@ export type QueryKind =
   | 'roundGeneration' // story/article + glosses + diacritics
   | 'sentenceGeneration' // batched example sentences for cards
   | 'distractorGeneration' // multiple-choice wrong answers
+  | 'wordGlossing' // translations for words met in published text
   | 'diacritization'; // optional: re-vowel existing text
 
 export interface ModelRoute {
@@ -48,5 +49,8 @@ export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
   // ~40 cards x one vowelled sentence, plus the echoed word for matching.
   sentenceGeneration: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.7 },
   distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 2000, temperature: 0.9 },
+  // ~100 words a call, each answering with a gloss, forms and a part of speech.
+  // Low temperature: a gloss is a lookup, not a composition.
+  wordGlossing: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
   diacritization: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
 };

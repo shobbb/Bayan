@@ -7,14 +7,18 @@ import { z } from 'zod';
 import type { ModelRoute } from '@/config/models';
 import { anthropicClient, type LlmClient } from './client';
 import {
+  llmGlossesResponseSchema,
   llmRoundResponseSchema,
   llmSentencesResponseSchema,
+  type LlmGlossesResponse,
   type LlmRoundResponse,
   type LlmSentencesResponse,
 } from './schemas';
 import {
+  buildGlossPrompt,
   buildRoundGenerationPrompt,
   buildSentenceGenerationPrompt,
+  type GlossPromptParams,
   type RoundPromptParams,
   type SentencePromptParams,
 } from './prompts';
@@ -140,4 +144,16 @@ export async function generateSentences(
 ): Promise<LlmSentencesResponse> {
   const prompt = buildSentenceGenerationPrompt(params);
   return generateAndValidate(client, route, apiKey, prompt, llmSentencesResponseSchema, maxRetries);
+}
+
+/** Batched glosses for words met in reading but never translated (REQ-A10). */
+export async function generateGlosses(
+  params: GlossPromptParams,
+  route: ModelRoute,
+  apiKey: string,
+  maxRetries: number,
+  client: LlmClient = anthropicClient,
+): Promise<LlmGlossesResponse> {
+  const prompt = buildGlossPrompt(params);
+  return generateAndValidate(client, route, apiKey, prompt, llmGlossesResponseSchema, maxRetries);
 }

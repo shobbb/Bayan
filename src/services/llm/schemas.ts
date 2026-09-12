@@ -36,5 +36,24 @@ export const llmSentencesResponseSchema = z.object({
   sentences: z.array(llmSentenceSchema),
 });
 
+/**
+ * Batched glosses for words met in reading (§ article source, REQ-A8). Keyed by
+ * the echoed word for the same reason sentences are: a positional join would
+ * silently mispair a reordered or partial response.
+ */
+export const llmGlossSchema = z.object({
+  word: z.string().min(1),
+  gloss: z.string().min(1),
+  forms: z.string().nullable().optional(),
+  partOfSpeech: z.enum(['verb', 'noun', 'adjective', 'particle', 'phrase']).nullable().optional(),
+});
+
+export const llmGlossesResponseSchema = z.object({
+  glosses: z.array(llmGlossSchema),
+});
+
+export type LlmGloss = z.infer<typeof llmGlossSchema>;
+export type LlmGlossesResponse = z.infer<typeof llmGlossesResponseSchema>;
+
 export type LlmSentence = z.infer<typeof llmSentenceSchema>;
 export type LlmSentencesResponse = z.infer<typeof llmSentencesResponseSchema>;

@@ -139,9 +139,30 @@ flaggable, and counted as seen, and lands it in the corpus with
 way — the publisher glosses only what its editors thought hard — so dropping
 them would mean most of what is read never counts as read.
 
-**Measured coverage**: 7.7% from publisher glosses alone; 40% once the learner's
-existing corpus is layered in. The remaining 60% are tracked but untranslated.
-Filling them is the obvious next step and has a hook already (`needsEnrichment`).
+`REQ-A10` Words fused to a proclitic resolve through it. Arabic writes wa- (and),
+fa-, bi-, li- and ka- with no space, so "وَفِي" arrives as a single token and
+misses a lookup that would have found "فِي" — 13% of the untranslated
+occurrences were this, not missing vocabulary. Stripping is only ever
+*attempted*: the stripped form is used solely when it resolves to something
+already known, because the same letters are ordinary root letters and وزير is
+not wa- + زير. Identity is untouched; "وَفِي" still enters the corpus as its own
+form, which is what REQ-29 says the app counts.
+
+`REQ-A11` Everything still untranslated is filled on request, per article, by a
+batched model call. Results go to a **gloss cache**, not the corpus: a `Word`
+means the learner has seen this, with counts and SRS state attached, so
+translating an article's vocabulary before it is read would file thousands of
+words as seen that were not. Reading is still what creates a `Word`.
+
+`REQ-A12` Enrichment is never automatic. It spends the reader's own API key, so
+it is offered and asked for (REQ-15). It is scoped to the article in front of
+them rather than the library — 8,000 words up front is not a request anyone
+made — and the cache is shared, so a word translated in one article is already
+translated in the next.
+
+**Measured coverage**: 7.7% from publisher glosses alone; 47% once the learner's
+corpus and proclitic resolution are layered in. A median article leaves 52
+distinct forms blank, which is one model call to fill.
 
 ---
 

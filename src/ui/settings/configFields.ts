@@ -83,6 +83,11 @@ const QUERY_KINDS: ReadonlyArray<{ kind: QueryKind; label: string; help: string 
     help: 'Writes one example sentence per card, batched into a single call.',
   },
   {
+    kind: 'wordGlossing',
+    label: 'Word glossing',
+    help: 'Translates words met in published articles that the publisher did not gloss. Batched, and only for the article being read.',
+  },
+  {
     kind: 'distractorGeneration',
     label: 'Distractor generation',
     help: 'Writes the wrong answers for multiple choice.',

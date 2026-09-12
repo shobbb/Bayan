@@ -45,6 +45,40 @@ function phraseKey(words: readonly string[], profile: LanguageProfile): string {
 }
 
 /**
+ * Single-letter words fused to the front of the next word: wa- (and), fa- (so),
+ * bi- (with), li- (for), ka- (like). Arabic writes them with no space, so
+ * "وَفِي" arrives as one token and misses a lookup that would have found "فِي".
+ *
+ * Stripping is only ever *attempted* — the stripped form is used solely when it
+ * resolves to something already known. That matters because the same letters
+ * are ordinary root letters: وزير (minister) is not wa- + زير, and a rule that
+ * stripped unconditionally would mangle it. Requiring a hit makes the
+ * distinction for us.
+ *
+ * Identity is untouched. "وَفِي" still enters the corpus as its own form, which
+ * is what REQ-29 says the app counts — forms, not lemmas. This only decides
+ * which gloss to show it.
+ */
+const PROCLITICS = ['و', 'ف', 'ب', 'ل', 'ك'] as const;
+const DEFINITE_ARTICLE = 'ال';
+/** Below this the remainder is too short to be a word rather than a fragment. */
+const MIN_STEM_LENGTH = 2;
+
+function candidateKeys(key: WordId): WordId[] {
+  const out: WordId[] = [key];
+  for (const proclitic of PROCLITICS) {
+    if (!key.startsWith(proclitic)) continue;
+    const stem = key.slice(proclitic.length);
+    if (stem.length < MIN_STEM_LENGTH) continue;
+    out.push(stem as WordId);
+    if (stem.startsWith(DEFINITE_ARTICLE) && stem.length - DEFINITE_ARTICLE.length >= MIN_STEM_LENGTH) {
+      out.push(stem.slice(DEFINITE_ARTICLE.length) as WordId);
+    }
+  }
+  return out;
+}
+
+/**
  * Indexes the publisher's lists by normalized phrase.
  *
  * Expressions are added after vocabulary so that when the same key appears in
@@ -123,7 +157,13 @@ export function articleToSegments(article: Article, ctx: SegmentContext): Resolv
         const window = tokens.slice(cursor, cursor + span);
         if (!window.every(isWord)) continue;
 
-        const entry = byPhrase.get(phraseKey(window, profile));
+        const entry =
+          byPhrase.get(phraseKey(window, profile)) ??
+          (span === 1
+            ? candidateKeys(phraseKey(window, profile) as WordId)
+                .map((key) => byPhrase.get(key))
+                .find(Boolean)
+            : undefined);
         if (!entry) continue;
 
         segments.push({
@@ -138,7 +178,10 @@ export function articleToSegments(article: Article, ctx: SegmentContext): Resolv
       }
       if (matched) continue;
 
-      const corpus = known.get(profile.normalize(token));
+      // Exact first, then with a proclitic peeled off — never the other way
+      // round, so a word that really does start with these letters wins.
+      const keys = candidateKeys(profile.normalize(token));
+      const corpus = keys.map((key) => known.get(key)).find(Boolean);
       if (corpus) {
         segments.push({
           text: token,

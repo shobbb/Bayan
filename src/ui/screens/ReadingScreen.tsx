@@ -32,6 +32,12 @@ export interface ReadingScreenProps {
    * Finish. Either way it is what a back control is expected to do.
    */
   onExit?: { label: string; run: () => void };
+  /**
+   * Offered when the text contains words nothing has a translation for. Not
+   * automatic: it is a paid model call on the reader's key, so it is asked for
+   * rather than spent on their behalf (REQ-15).
+   */
+  enrich?: { count: number; busy: boolean; run: () => void } | null;
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -60,6 +66,7 @@ export function ReadingScreen({
   initialNotKnown,
   media = null,
   onExit,
+  enrich = null,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -149,6 +156,21 @@ export function ReadingScreen({
       </header>
 
       {media}
+
+      {enrich && enrich.count > 0 && (
+        <p className="reading-screen__enrich">
+          <button
+            type="button"
+            className="reading-screen__enrich-action"
+            aria-busy={enrich.busy}
+            onClick={enrich.run}
+          >
+            {enrich.busy
+              ? `Translating ${enrich.count} words…`
+              : `Translate ${enrich.count} untranslated words`}
+          </button>
+        </p>
+      )}
 
       <ArabicText
         segments={segments}

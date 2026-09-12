@@ -23,12 +23,30 @@ export interface ArticleReadRecord {
   flaggedIndices: number[];
 }
 
+/**
+ * Translations for words met in published articles.
+ *
+ * Kept out of the `words` table on purpose: a Word is something the learner has
+ * actually seen, with counts and SRS state attached, and filling in an article's
+ * vocabulary ahead of reading it would file thousands of words as seen that
+ * were not. This is a lookup, not corpus membership.
+ */
+export interface GlossRecord {
+  id: WordId;
+  gloss: string;
+  forms: string | null;
+  /** Where it came from, so a generated gloss never overwrites an editorial one. */
+  source: 'generated';
+  createdAt: number;
+}
+
 export class BayanDB extends Dexie {
   words!: Table<Word, WordId>;
   rounds!: Table<Round, string>;
   batches!: Table<Batch, string>;
   settings!: Table<SettingsRecord, string>;
   articleReads!: Table<ArticleReadRecord, string>;
+  glosses!: Table<GlossRecord, WordId>;
 
   constructor() {
     super('bayan');
@@ -42,6 +60,9 @@ export class BayanDB extends Dexie {
     // so an existing corpus is not rewritten by this upgrade.
     this.version(2).stores({
       articleReads: 'id, readAt',
+    });
+    this.version(3).stores({
+      glosses: 'id, createdAt',
     });
   }
 }

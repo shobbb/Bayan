@@ -10,7 +10,8 @@
  * up in stats exactly as one met in a generated round does. Articles never
  * reach domain/selector — see domain/articles/types.ts for why.
  */
-import { articleToSegments, type ResolvedSegment } from '@/domain/articles/segment';
+import type { ResolvedSegment } from '@/domain/articles/segment';
+import { resegment, untranslatedIds } from './enrichGlosses';
 import type { Article, ArticleBundle, ArticleSource } from '@/domain/articles/types';
 import { ingestRoundWords } from '@/domain/rounds/ingest';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
@@ -57,6 +58,8 @@ export interface OpenedArticle {
   segments: ResolvedSegment[];
   /** Indices flagged on the previous read, so a reopened article keeps them. */
   flaggedIndices: number[];
+  /** Distinct forms here that still have no translation anywhere. */
+  untranslated: number;
 }
 
 /**
@@ -67,24 +70,22 @@ export interface OpenedArticle {
  * today, and a segmentation cached at import would never know.
  */
 export async function openArticle(id: string): Promise<OpenedArticle> {
-  const [bundle, words, previous] = await Promise.all([
-    loadArticles(),
-    listWords(DEFAULT_TRACK_ID),
-    getArticleRead(id),
-  ]);
+  const [bundle, previous] = await Promise.all([loadArticles(), getArticleRead(id)]);
 
   const article = bundle.articles.find((candidate) => candidate.id === id);
   if (!article) throw new Error('That article is not in the library.');
 
-  const known = new Map<WordId, { gloss: string; forms: string | null }>();
-  for (const word of words) {
-    if (word.gloss) known.set(word.id, { gloss: word.gloss, forms: word.forms });
-  }
+  // Segmented on open rather than at import time, because gloss resolution
+  // consults the learner's corpus and the gloss cache — a word learned or
+  // translated yesterday should be glossed today, and a segmentation cached at
+  // import would never know.
+  const segments = await resegment(article);
 
   return {
     article,
-    segments: articleToSegments(article, { profile: modernStandardArabicProfile, known }),
+    segments,
     flaggedIndices: previous?.flaggedIndices ?? [],
+    untranslated: untranslatedIds(segments).length,
   };
 }
 

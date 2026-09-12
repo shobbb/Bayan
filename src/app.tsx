@@ -12,6 +12,7 @@ import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
+import { enrichArticle } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
@@ -34,6 +35,7 @@ type Screen =
       article: Article;
       segments: ResolvedSegment[];
       flaggedIndices: number[];
+      untranslated: number;
     }
   | {
       name: 'drill';
@@ -54,6 +56,7 @@ function AppScreens() {
   // status strip instead of showing figures from when it first mounted.
   const [refreshToken, setRefreshToken] = useState(0);
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
+  const [enriching, setEnriching] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,12 +165,34 @@ function AppScreens() {
     setFailure(null);
     setOpeningArticle(id);
     openArticle(id)
-      .then(({ article, segments, flaggedIndices }) =>
-        setScreen({ name: 'article', article, segments, flaggedIndices }),
+      .then(({ article, segments, flaggedIndices, untranslated }) =>
+        setScreen({ name: 'article', article, segments, flaggedIndices, untranslated }),
       )
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setOpeningArticle(null));
   }, []);
+
+  // REQ-A10: asked for, never automatic — it is a model call on the reader's
+  // own key, and REQ-15 rules out spending it unprompted.
+  const handleEnrich = useCallback(() => {
+    if (screen.name !== 'article') return;
+    const { article, segments, flaggedIndices } = screen;
+    setFailure(null);
+    setEnriching(true);
+    enrichArticle(article, segments, config)
+      .then(({ result, segments: filled }) => {
+        setScreen({
+          name: 'article',
+          article,
+          segments: filled,
+          flaggedIndices,
+          untranslated: result.requested - result.filled,
+        });
+        setNotice(`Translated ${result.filled} of ${result.requested} words.`);
+      })
+      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .finally(() => setEnriching(false));
+  }, [screen, config]);
 
   const handleFinishArticle = useCallback(
     (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
@@ -228,6 +253,7 @@ function AppScreens() {
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
         onExit={{ label: 'Articles', run: () => setScreen({ name: 'library' }) }}
+        enrich={{ count: screen.untranslated, busy: enriching, run: handleEnrich }}
         media={
           <ArticleMedia
             imageUrl={article.imageUrl}

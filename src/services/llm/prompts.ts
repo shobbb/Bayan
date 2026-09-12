@@ -82,3 +82,37 @@ export function buildSentenceGenerationPrompt(params: SentencePromptParams): str
     `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
   ].join('\n\n');
 }
+
+
+const BASE_GLOSS_INSTRUCTIONS = `You are glossing Arabic words for a language learner's vocabulary tracker.
+
+For each supplied word, give a short English gloss. Every gloss must:
+- be 1-3 words, the way a dictionary or an interlinear gloss would put it,
+- translate the word AS GIVEN, keeping its inflection: a plural stays plural, a past-tense verb stays past tense, a word carrying a prefixed conjunction keeps it ("and the house"),
+- be the reading most likely in ordinary Modern Standard Arabic prose, when the word is ambiguous out of context.
+
+Also give, where it applies:
+- "forms": the word's principal parts, e.g. "كَتَبَ / يَكْتُبُ / كِتَابَة" for a verb or "جَانِب / جَوَانِب" for a noun. Use null for particles, pronouns and proper nouns.
+- "partOfSpeech": one of verb, noun, adjective, particle, phrase. Use null if none fits.
+
+A proper noun is glossed as itself in English ("Qatar", "Al Jazeera").
+
+Respond with strict JSON only, no prose before or after and no markdown code fence:
+{ "glosses": [ { "word": string, "gloss": string, "forms": string | null, "partOfSpeech": string | null } ] }
+
+Echo each word back exactly as supplied so the glosses can be matched to it.`;
+
+export interface GlossPromptParams {
+  /** Surface forms to gloss, exactly as they appear in the text. */
+  words: string[];
+  /** LanguageProfile.promptGuidance for the active track. */
+  languageGuidance: string;
+}
+
+export function buildGlossPrompt(params: GlossPromptParams): string {
+  return [
+    BASE_GLOSS_INSTRUCTIONS,
+    params.languageGuidance,
+    `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
+  ].join('\n\n');
+}

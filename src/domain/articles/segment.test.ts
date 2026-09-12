@@ -154,6 +154,55 @@ describe('articleToSegments', () => {
     expect(segments[0]!.glossSource).toBeNull();
   });
 
+  // Arabic fuses wa- (and), fa-, bi-, li-, ka- onto the next word with no
+  // space, so "وَفِي" arrives as one token. 13% of the untranslated words in the
+  // article corpus were this, not missing vocabulary.
+  it('resolves a gloss through a fused proclitic', () => {
+    const segments = articleToSegments(article({ paragraphs: ['وَفِي'] }), corpus({ 'فِي': 'in' }));
+
+    expect(segments[0]!.gloss).toBe('in');
+    expect(segments[0]!.text).toBe('وَفِي');
+  });
+
+  it('strips a proclitic and the article together', () => {
+    const segments = articleToSegments(
+      article({ paragraphs: ['فَالْكُلُّ'] }),
+      corpus({ 'كُلّ': 'every' }),
+    );
+
+    expect(segments[0]!.gloss).toBe('every');
+  });
+
+  // The same letters are ordinary root letters, so stripping must never be
+  // unconditional: وزير is not wa- + زير.
+  it('never strips when the stripped form is not a known word', () => {
+    const segments = articleToSegments(
+      article({ paragraphs: ['وَزِير'] }),
+      corpus({ 'كِتَاب': 'book' }),
+    );
+
+    expect(segments[0]!.gloss).toBe('');
+  });
+
+  it('prefers the whole word over its stripped form', () => {
+    const segments = articleToSegments(
+      article({ paragraphs: ['وَزِير'] }),
+      corpus({ 'وَزِير': 'minister', 'زِير': 'jar' }),
+    );
+
+    expect(segments[0]!.gloss).toBe('minister');
+  });
+
+  it('resolves a publisher term through a proclitic too', () => {
+    const segments = articleToSegments(
+      article({ paragraphs: ['وَفَوَاكِه'], vocab: [{ term: 'فَوَاكِه', gloss: 'fruits', forms: null }] }),
+      NO_CORPUS,
+    );
+
+    expect(segments[0]!.gloss).toBe('fruits');
+    expect(segments[0]!.glossSource).toBe('publisher');
+  });
+
   it('leaves Latin text and digits out of the corpus entirely', () => {
     const segments = articleToSegments(
       article({ paragraphs: ['كَأْسِ الْعَالَمِ 2018 فِي رُوسْيَا Reuters'] }),

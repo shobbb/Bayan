@@ -24,6 +24,22 @@
   cursor: pointer;
 }
 
+.reading-screen__enrich {
+  margin: 0 0 var(--space-5);
+  text-align: center;
+}
+
+.reading-screen__enrich-action {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
 .reading-screen__header {
   text-align: center;
   margin-bottom: var(--space-6);
