@@ -768,6 +768,27 @@ must not break the external tooling's round trip (REQ-I1). Translations matter
 most here — they cost money to produce, so a dump that dropped them would make
 the reader buy them again, article by article.
 
+### 13.1 Build-time credentials
+
+Every credential can be supplied at build time as well as entered on-device.
+Vite inlines these into the bundle, so **anyone who can fetch the built assets
+can read them** — they are for hosted builds behind access control, never for a
+public deployment.
+
+| Variable | Falls back to | Effect if unset |
+|---|---|---|
+| `VITE_ANTHROPIC_API_KEY` | Settings → API key | Generation and enrichment fail with an advisory naming Settings |
+| `VITE_SUPABASE_URL` | Settings → Supabase URL | Backup and restore are unconfigured |
+| `VITE_SUPABASE_ANON_KEY` | Settings → Supabase key | Backup and restore are unconfigured |
+| `VITE_SUPABASE_BUCKET` | — | Defaults to `bayan` |
+
+`REQ-55` A value stored on the device always wins over the build-time one, and
+the build-time path is confined to `services/platform/storage.ts`. Nothing above
+that module branches on where a credential came from, so a native build — which
+has no such variable and must use Keychain / EncryptedSharedPreferences
+(REQ-P4) — needs no separate code path. Never use the `service_role` key: the
+anon key is the only Supabase credential that may be inlined.
+
 ---
 
 ## 14. STATE INTERCHANGE
