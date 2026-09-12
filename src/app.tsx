@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ConfigProvider, useConfig } from '@/ui/context/ConfigContext';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { ReadingScreen } from '@/ui/screens/ReadingScreen';
@@ -11,6 +11,7 @@ import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession } from '@/services/batch/batchService';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
+import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
@@ -45,13 +46,24 @@ function AppScreens() {
   const config = useConfig();
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [generating, setGenerating] = useState<RoundType | null>(null);
-  const [busy, setBusy] = useState<'batch' | 'study' | null>(null);
+  const [busy, setBusy] = useState<'batch' | 'study' | 'sync' | null>(null);
+  const [lastBackupAt, setLastBackupAt] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   // Bumped after anything that writes to the corpus, so Home re-reads its
   // status strip instead of showing figures from when it first mounted.
   const [refreshToken, setRefreshToken] = useState(0);
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getLastBackupAt().then((at) => {
+      if (!cancelled) setLastBackupAt(at);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshToken]);
 
   const handleStartRound = useCallback(
     (roundType: RoundType) => {
@@ -126,6 +138,22 @@ function AppScreens() {
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setBusy(null));
   }, []);
+
+  // The whole corpus as one blob (§13). Not automatic: writing over the only
+  // backup is not something to do on a timer, and REQ-15 rules out background
+  // work the learner did not ask for.
+  const handleSyncNow = useCallback(() => {
+    setFailure(null);
+    setNotice(null);
+    setBusy('sync');
+    backUpNow(config.categories)
+      .then((result) => {
+        setNotice(`Backed up ${result.words} words and ${result.rounds} rounds.`);
+        setRefreshToken((n) => n + 1);
+      })
+      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .finally(() => setBusy(null));
+  }, [config]);
 
   // Articles are third-party reading material, not generated rounds: they never
   // reach the selector. What they do share is the corpus — finishing one writes
@@ -251,6 +279,8 @@ function AppScreens() {
       notice={notice}
       onGenerateBatch={handleGenerateBatch}
       onStudyBatch={handleStudyBatch}
+      onSyncNow={handleSyncNow}
+      lastBackupAt={lastBackupAt}
       refreshToken={refreshToken}
       failure={failure}
     />

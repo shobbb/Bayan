@@ -749,7 +749,22 @@ Composes the above per round type:
 - **Export**: full JSON dump of all stores, written via the Filesystem plugin and shareable via the Share sheet.
 - **Import**: restore from dump, with a destructive-action confirmation.
 
-`REQ-37` Export/import is the only backup path. There is no server. Surface it prominently, not buried.
+`REQ-37` Export/import is the backup path of record. Surface it prominently, not buried.
+
+`REQ-52` Remote backup writes the whole state as one blob to object storage, not
+as rows. It is a backup, not sync: last-writer-wins over the entire corpus, so
+two devices would clobber each other. Row-level sync is a different design and
+is not this one.
+
+`REQ-53` Backing up is never automatic. Writing over the only copy of the corpus
+is not something to do on a timer, and REQ-15 rules out background work the
+learner did not ask for. The control says when it last ran — a backup control
+that cannot answer that is not worth trusting.
+
+`REQ-54` The dump is complete, including state that lives outside words and
+rounds. Article progress is carried as an optional field; the schema version
+stays at 1 because the addition is purely additive and must not break the
+external tooling's round trip (REQ-I1).
 
 ---
 

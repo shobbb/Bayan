@@ -178,6 +178,14 @@
   cursor: pointer;
 }
 
+.home-screen__synced {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
 .home-screen__notice {
   font-family: var(--font-english);
   font-size: var(--text-ui-label-size);

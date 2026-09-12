@@ -106,4 +106,39 @@ describe('buildStateExport', () => {
   it('names dumps by timestamp', () => {
     expect(exportFilename(0)).toBe('bayan-state-1970-01-01-00-00-00.json');
   });
+
+  // Article progress is the only learner state that lives outside words and
+  // rounds, so a dump without it silently loses which articles were read.
+  it('carries article progress, so a restore keeps what was read', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42, [
+      { id: 'a1', readAt: 42, flaggedIndices: [3, 7] },
+    ]);
+
+    expect(state.articleReads).toEqual([{ id: 'a1', readAt: 42, flaggedIndices: [3, 7] }]);
+  });
+
+  it('round-trips article progress through the schema', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42, [
+      { id: 'a1', readAt: 42, flaggedIndices: [1] },
+    ]);
+    const parsed = parseStateExport(JSON.parse(serializeStateExport(state)));
+
+    expect(parsed.ok).toBe(true);
+    expect(parsed.ok && parsed.value.articleReads).toEqual([
+      { id: 'a1', readAt: 42, flaggedIndices: [1] },
+    ]);
+  });
+
+  // Optional on purpose: the schema version stays at 1 so dumps written before
+  // this field existed, and the external tooling that produced them, still
+  // validate (REQ-I1).
+  it('accepts a dump written before article progress existed', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42);
+    const withoutField: Record<string, unknown> = { ...state };
+    delete withoutField.articleReads;
+    const parsed = parseStateExport(withoutField);
+
+    expect(parsed.ok).toBe(true);
+    expect(parsed.ok && parsed.value.articleReads).toBeUndefined();
+  });
 });

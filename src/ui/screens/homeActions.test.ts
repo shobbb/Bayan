@@ -8,6 +8,7 @@ import {
   startBacklogRound,
   generateNewBatch,
   studyCurrentBatch,
+  syncNow,
 } from './homeActions';
 
 function makeContext() {
@@ -15,6 +16,7 @@ function makeContext() {
     startRound: vi.fn(),
     generateBatch: vi.fn(),
     studyBatch: vi.fn(),
+    syncNow: vi.fn(),
   };
 }
 
@@ -37,6 +39,16 @@ describe('home actions', () => {
     }
   });
 
+  it('syncNow dispatches only the backup', () => {
+    const ctx = makeContext();
+    syncNow(ctx);
+
+    expect(ctx.syncNow).toHaveBeenCalledTimes(1);
+    expect(ctx.startRound).not.toHaveBeenCalled();
+    expect(ctx.generateBatch).not.toHaveBeenCalled();
+    expect(ctx.studyBatch).not.toHaveBeenCalled();
+  });
+
   it('generateNewBatch dispatches only the batch build', () => {
     const ctx = makeContext();
     generateNewBatch(ctx);
@@ -53,8 +65,8 @@ describe('home actions', () => {
     expect(ctx.generateBatch).not.toHaveBeenCalled();
   });
 
-  it('exposes all six §7 actions (REQ-16)', () => {
-    expect(HOME_ACTIONS).toHaveLength(6);
+  it('exposes every §7 action (REQ-16)', () => {
+    expect(HOME_ACTIONS).toHaveLength(7);
     expect(new Set(HOME_ACTIONS.map((action) => action.id))).toEqual(
       new Set([
         'explore',
@@ -63,6 +75,7 @@ describe('home actions', () => {
         'backlog',
         'generateBatch',
         'studyBatch',
+        'syncNow',
       ]),
     );
   });
@@ -104,11 +117,10 @@ describe('home actions', () => {
     for (const action of HOME_ACTIONS) {
       const ctx = makeContext();
       action.run(ctx);
-      const totalCalls =
-        ctx.startRound.mock.calls.length +
-        ctx.generateBatch.mock.calls.length +
-        ctx.studyBatch.mock.calls.length;
-      expect(totalCalls).toBe(1);
+      // Summed across the whole context rather than a hand-written list, so a
+      // new dispatch is covered the moment it is added.
+      const totalCalls = Object.values(ctx).reduce((sum, fn) => sum + fn.mock.calls.length, 0);
+      expect(totalCalls, action.id).toBe(1);
     }
   });
 });

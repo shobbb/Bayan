@@ -13,9 +13,18 @@ import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/language
 import { applyImport } from '@/data/interchangeRepository';
 import { exportState } from '@/services/interchange/exportState';
 import { getSupabaseCredentials } from '@/services/platform/storage';
+import { getSetting, setSetting } from '@/data/settingsRepository';
+import { markArticleRead } from '@/data/articleReadRepository';
 import { getBackup, putBackup, type SupabaseBackupConfig } from './supabaseStorage';
 
 const BACKUP_PATH = 'state/latest.json';
+
+/** When this device last wrote to the blob, so the sync control can say so. */
+export const LAST_BACKUP_SETTING_KEY = 'lastBackupAt';
+
+export async function getLastBackupAt(): Promise<number | null> {
+  return getSetting<number>(LAST_BACKUP_SETTING_KEY);
+}
 
 export class BackupNotConfiguredError extends Error {
   constructor() {
@@ -99,6 +108,7 @@ export async function backUpNow(
   }
 
   await putBackup(config, dump.json);
+  await setSetting(LAST_BACKUP_SETTING_KEY, Date.now());
   return { words: dump.wordCount, rounds: dump.roundCount };
 }
 
@@ -129,5 +139,12 @@ export async function restoreFromBackup(): Promise<BackupResult> {
   );
 
   await applyImport({ words: plan.words, rounds: plan.rounds }, DEFAULT_TRACK_ID, true);
+
+  // Article progress rides along in the dump. Restored after the corpus so a
+  // failed import does not leave read marks for words that are not there.
+  for (const read of parsed.value.articleReads ?? []) {
+    await markArticleRead(read);
+  }
+
   return { words: plan.report.totalWords, rounds: plan.report.totalRounds };
 }

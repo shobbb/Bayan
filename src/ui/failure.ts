@@ -7,6 +7,10 @@
  */
 import { MissingApiKeyError } from '@/services/rounds/roundService';
 import { LlmValidationError } from '@/services/llm/generate';
+import {
+  BackupNotConfiguredError,
+  BackupWouldShrinkError,
+} from '@/services/sync/backupService';
 
 export interface Failure {
   /** One sentence, always shown. */
@@ -20,6 +24,20 @@ export interface Failure {
 export function describeFailure(error: unknown): Failure {
   if (error instanceof MissingApiKeyError) {
     return { message: error.message, detail: null, settingsWillHelp: true };
+  }
+
+  // Both backup failures are fixed in Settings — one by entering credentials,
+  // the other by the deliberate "Back up anyway" that lives beside Restore.
+  // The shrink guard is a refusal, not a fault, so it says what it protected.
+  if (error instanceof BackupNotConfiguredError) {
+    return { message: error.message, detail: null, settingsWillHelp: true };
+  }
+  if (error instanceof BackupWouldShrinkError) {
+    return {
+      message: `${error.message} Use "Back up anyway" in Settings if that is what you want.`,
+      detail: null,
+      settingsWillHelp: true,
+    };
   }
 
   // REQ-17: a schema failure surfaces as a user-facing error with the raw

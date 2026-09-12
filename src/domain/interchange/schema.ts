@@ -72,6 +72,19 @@ export const interchangeRoundSchema = z.object({
   notes: z.string().nullable(),
 });
 
+/**
+ * Per-article progress. Optional, and the schema version stays at 1: this is
+ * purely additive, so a dump written before it existed still validates and a
+ * dump carrying it still parses in the external tooling, which ignores keys it
+ * does not know. Bumping the version would break that round trip for a field
+ * nothing outside the app reads (REQ-I1).
+ */
+export const interchangeArticleReadSchema = z.object({
+  id: z.string(),
+  readAt: z.number(),
+  flaggedIndices: z.array(z.number()),
+});
+
 export const stateExportSchema = z.object({
   schemaVersion: z.literal(1),
   exportedAt: z.number(),
@@ -80,11 +93,13 @@ export const stateExportSchema = z.object({
   rounds: z.array(interchangeRoundSchema),
   categories: z.object({ topics: z.array(z.string()), formats: z.array(z.string()) }),
   config: z.unknown().nullable(),
+  articleReads: z.array(interchangeArticleReadSchema).optional(),
 });
 
 export type StateExport = z.infer<typeof stateExportSchema>;
 export type InterchangeWord = z.infer<typeof interchangeWordSchema>;
 export type InterchangeRound = z.infer<typeof interchangeRoundSchema>;
+export type InterchangeArticleRead = z.infer<typeof interchangeArticleReadSchema>;
 
 export interface ValidationFailure {
   path: string;

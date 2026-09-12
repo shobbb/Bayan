@@ -16,11 +16,14 @@ export interface HomeScreenProps {
   /** Advisory from the last failed attempt (REQ-13). */
   failure: Failure | null;
   /** Non-round work in flight, so its action can show progress. */
-  busy: 'batch' | 'study' | null;
+  busy: 'batch' | 'study' | 'sync' | null;
   /** Informational result of the last completed action. */
   notice: string | null;
   onGenerateBatch: () => void;
   onStudyBatch: () => void;
+  onSyncNow: () => void;
+  /** When this device last wrote to remote storage, or null if never. */
+  lastBackupAt: number | null;
   /** Bumped whenever the corpus changes, so the status strip re-reads. */
   refreshToken: number;
 }
@@ -32,15 +35,26 @@ export interface HomeScreenProps {
  * "in progress" and left all four round buttons permanently showing a
  * trailing ellipsis and aria-busy="true".
  */
-const BUSY_KEY_BY_ACTION: Readonly<Record<string, 'batch' | 'study'>> = {
+const BUSY_KEY_BY_ACTION: Readonly<Record<string, 'batch' | 'study' | 'sync'>> = {
   generateBatch: 'batch',
   studyBatch: 'study',
+  syncNow: 'sync',
 };
+
+/** Coarse on purpose — a backup's exact minute is not information. */
+function relativeTime(timestamp: number, now = Date.now()): string {
+  const days = Math.floor((now - timestamp) / 86_400_000);
+  if (days >= 2) return `${days} days ago`;
+  if (days === 1) return 'yesterday';
+  const hours = Math.floor((now - timestamp) / 3_600_000);
+  if (hours >= 1) return `${hours}h ago`;
+  return 'just now';
+}
 
 function isActionBusy(
   actionId: string,
   generating: RoundType | null,
-  busy: 'batch' | 'study' | null,
+  busy: 'batch' | 'study' | 'sync' | null,
 ): boolean {
   const key = BUSY_KEY_BY_ACTION[actionId];
   return key !== undefined ? busy === key : generating === actionId;
@@ -63,6 +77,8 @@ export function HomeScreen({
   notice,
   onGenerateBatch,
   onStudyBatch,
+  onSyncNow,
+  lastBackupAt,
   refreshToken,
 }: HomeScreenProps) {
   const status = useHomeStatus(refreshToken);
@@ -73,8 +89,9 @@ export function HomeScreen({
       startRound: onStartRound,
       generateBatch: onGenerateBatch,
       studyBatch: onStudyBatch,
+      syncNow: onSyncNow,
     }),
-    [onStartRound, onGenerateBatch, onStudyBatch],
+    [onStartRound, onGenerateBatch, onStudyBatch, onSyncNow],
   );
 
   return (
@@ -146,6 +163,13 @@ export function HomeScreen({
             </button>
           );
         })}
+        {/* A backup control that cannot say when it last ran is not worth
+            trusting, so it says. */}
+        <p className="home-screen__synced">
+          {lastBackupAt === null
+            ? 'Never backed up'
+            : `Last backed up ${relativeTime(lastBackupAt)}`}
+        </p>
       </div>
 
       {generating !== null && (
