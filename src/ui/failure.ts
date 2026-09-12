@@ -19,9 +19,46 @@ export interface Failure {
   detail: string | null;
   /** Whether Settings is where the fix is, so the link only shows when true. */
   settingsWillHelp: boolean;
+  /** Whether reloading is the fix, which is true only for a stale build. */
+  reloadWillHelp?: boolean;
+}
+
+/**
+ * A code-split chunk that is no longer on the server.
+ *
+ * Every deploy renames the hashed chunks, so a page opened before one asks for
+ * a filename that has since been replaced. It surfaces whenever a chunk is
+ * needed for the first time rather than at load — the Capacitor Preferences web
+ * implementation is one, and nothing touches it until an API key is read, which
+ * can be hours into a session.
+ *
+ * The browsers word it differently and none of them say what it means: Safari
+ * "Importing a module script failed", Chrome "Failed to fetch dynamically
+ * imported module", Firefox "error loading dynamically imported module".
+ */
+function isStaleBuild(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    /importing a module script failed/i.test(message) ||
+    /failed to fetch dynamically imported module/i.test(message) ||
+    /error loading dynamically imported module/i.test(message) ||
+    /dynamically imported module.*(failed|error)/i.test(message)
+  );
 }
 
 export function describeFailure(error: unknown): Failure {
+  // Checked first: this arrives as an ordinary Error from whatever call
+  // happened to need the chunk, so it would otherwise be reported as a failure
+  // of that feature rather than of the build the page is running.
+  if (isStaleBuild(error)) {
+    return {
+      message: 'The app was updated while this page was open, so part of it could not load.',
+      detail: error instanceof Error ? error.message : String(error),
+      settingsWillHelp: false,
+      reloadWillHelp: true,
+    };
+  }
+
   if (error instanceof MissingApiKeyError) {
     return { message: error.message, detail: null, settingsWillHelp: true };
   }

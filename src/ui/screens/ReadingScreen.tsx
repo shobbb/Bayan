@@ -211,6 +211,20 @@ export function ReadingScreen({
                     </button>
                   </>
                 )}
+                {/* Offered, not done for them — a reload here costs every flag
+                    made since the article was opened. */}
+                {enrich.failure.reloadWillHelp && (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      className="reading-screen__enrich-settings"
+                      onClick={() => window.location.reload()}
+                    >
+                      Reload
+                    </button>
+                  </>
+                )}
               </p>
               {/* REQ-17: reachable, folded away — diagnostics, not reading. */}
               {enrich.failure.detail && (

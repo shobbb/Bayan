@@ -13,6 +13,7 @@ import { generateBatch, startDrillSession, studyOptions } from '@/services/batch
 import type { StudySourceId } from '@/domain/drills/studySources';
 import { openArticle, finishArticle } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
+import { warmPlatformPlugins } from '@/services/platform/storage';
 import { enrichArticle } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
@@ -68,6 +69,12 @@ function AppScreens() {
   // translation came to look like a control that does nothing.
   const [enrichFailure, setEnrichFailure] = useState<Failure | null>(null);
   const [enrichNotice, setEnrichNotice] = useState<string | null>(null);
+
+  // Fetches the code-split Capacitor plugin chunks now, while this page is
+  // known to match what the server is serving. See warmPlatformPlugins.
+  useEffect(() => {
+    void warmPlatformPlugins();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

@@ -85,6 +85,18 @@
   color: var(--signal);
 }
 
+.library__note-action {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .library__grid {
   list-style: none;
   margin: 0;

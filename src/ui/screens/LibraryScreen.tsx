@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Article, ArticleSource } from '@/domain/articles/types';
 import { DifficultyLabel } from '@/ui/components/DifficultyLabel';
+import { describeFailure, type Failure } from '@/ui/failure';
 import { listLibrary, type LibraryEntry } from '@/services/articles/articleService';
 import './LibraryScreen.css';
 
@@ -109,7 +110,11 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
   const [source, setSource] = useState<ArticleSource | null>(null);
   const [level, setLevel] = useState<string>('all');
   const [topic, setTopic] = useState<string>('all');
-  const [failure, setFailure] = useState<string | null>(null);
+  // The library is where a stale build is most likely to be met: the article
+  // bundle is a megabyte, so it is code-split and fetched the moment this
+  // screen opens. Described rather than shown raw, so "Importing a module
+  // script failed" arrives as something the reader can act on.
+  const [failure, setFailure] = useState<Failure | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +125,7 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
         setSource(library.source);
       })
       .catch((error: unknown) => {
-        if (!cancelled) setFailure(error instanceof Error ? error.message : 'Could not load the library.');
+        if (!cancelled) setFailure(describeFailure(error));
       });
     return () => {
       cancelled = true;
@@ -211,7 +216,23 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
         </div>
       )}
 
-      {failure && <p className="library__note">{failure}</p>}
+      {failure && (
+        <p className="library__note">
+          {failure.message}
+          {failure.reloadWillHelp && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="library__note-action"
+                onClick={() => window.location.reload()}
+              >
+                Reload
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {!entries && !failure && <p className="library__note">Loading…</p>}
       {entries && shown.length === 0 && (
         <p className="library__note">Nothing matches those two filters.</p>

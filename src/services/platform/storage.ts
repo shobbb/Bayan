@@ -31,6 +31,29 @@ export async function isUsingBuildTimeKey(): Promise<boolean> {
   return !value && buildTimeApiKey() !== null;
 }
 
+/**
+ * Loads the Preferences plugin while the page is known to be fresh.
+ *
+ * Capacitor code-splits each plugin's web implementation and fetches it on
+ * first use. Nothing here is touched at boot — settings live in IndexedDB, not
+ * Preferences — so the first fetch was whenever an API key was first read,
+ * which can be hours into a session. By then a deploy may have renamed the
+ * hashed chunk, and the import fails inside whatever feature happened to ask
+ * for it: "Importing a module script failed", raised against Translate.
+ *
+ * Loading it up front does not make the page immune to a deploy, but it moves
+ * the failure to the one moment when reloading costs nothing.
+ */
+export async function warmPlatformPlugins(): Promise<void> {
+  try {
+    await Preferences.get({ key: API_KEY_STORAGE_KEY });
+  } catch {
+    // Warming is an optimisation. A device that cannot read Preferences has a
+    // real problem, but it is not this function's to report — the call that
+    // actually needs a key will surface it.
+  }
+}
+
 export async function getApiKey(): Promise<string | null> {
   const { value } = await Preferences.get({ key: API_KEY_STORAGE_KEY });
   // A key stored on the device always wins, so entering one overrides the build.

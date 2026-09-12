@@ -260,6 +260,20 @@ export function HomeScreen({
                 </button>
               </>
             )}
+            {/* Never reloaded for them: a reload throws away anything unsaved
+                on screen, so it stays the reader's call. */}
+            {failure.reloadWillHelp && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="home-screen__notice-action"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload
+                </button>
+              </>
+            )}
           </p>
           {/* REQ-17: the raw response stays reachable, but folded away — it is
               for diagnosing a bad generation, not for reading mid-session. */}
