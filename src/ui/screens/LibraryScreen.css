@@ -40,11 +40,32 @@
   font-size: var(--text-data-size);
 }
 
+/* One line per dimension, scrolled rather than wrapped. Sixteen topic chips
+   wrap to four rows on a phone and bury the articles; a rail keeps the filter
+   chrome at a fixed two lines however many subjects the source grows. */
 .library__filters {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Lets the row bleed to both page edges, so a half-visible chip at the end
+     reads as "more this way" rather than as the end of the list. */
+  padding-inline: var(--space-5);
+  margin-inline: calc(-1 * var(--space-5));
+  scroll-padding-inline: var(--space-5);
+}
+
+.library__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.library__filters + .library__filters {
   margin-bottom: var(--space-5);
+}
+
+.library__filters > .library__chip {
+  flex: 0 0 auto;
 }
 
 .library__chip {

@@ -16,14 +16,20 @@ Everything here parses by container and class, never by rendered-text
 heuristics: the markup carries explicit classes for every field worth having.
 
 Dump layout expected:
-    <dump-dir>/<level>/*.html          articles, one per file
-    <dump-dir>/<level>/manifest.json   [{url, title}, ...]
+    <dump-dir>/<level>/NNNN_slug.html  articles, one per file
+    <dump-dir>/<level>/manifest.json   [{url, title}, ...], in file-number order
+
+Two optional sidecars are read from the output directory:
+    posters.json   resolved Brightcove stills, keyed by video id
+    metadata.csv   per-article topics/difficulty/level, keyed by url
 """
+import csv
 import html as H
 import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote as UNQUOTE
 
 STRIP_SCRIPTS = re.compile(r'(?is)<(script|style)[^>]*>.*?</\1>')
 H1 = re.compile(r'<h1[^>]*>(.*?)(?:<span class="lang">(.*?)</span>)?</h1>', re.S)
@@ -126,7 +132,44 @@ def thumbnail(raw: str, posters: dict):
     return None
 
 
-def parse_article(path: Path, level: str, manifest: dict, posters: dict):
+def canonical(url: str) -> str:
+    """Join key for the metadata sidecar: percent-decoded, no trailing slash."""
+    return UNQUOTE(url.strip()).rstrip('/')
+
+
+def read_metadata(path: Path) -> dict:
+    """
+    Per-article metadata the pages themselves do not carry, keyed by url.
+
+    Only the columns that are properties of the article are taken. The file also
+    carries `unknown`, `coverage_pct` and `unknown_per_100`, which are measured
+    against one learner's corpus at one moment: the app computes that live from
+    the corpus it has, and a figure frozen at import would be wrong the moment
+    anything was learned. `tashkeel` is skipped too — it disagrees with the
+    diacritic density measured from the bodies here, and a measurement beats an
+    unexplained flag.
+    """
+    if not path.exists():
+        return {}
+
+    out = {}
+    with path.open(encoding='utf-8-sig', newline='') as handle:
+        for row in csv.DictReader(handle):
+            url = (row.get('url') or '').strip()
+            if not url:
+                continue
+            out[canonical(url)] = {
+                # Pipe-delimited and genuinely multi-label: an article about
+                # stadium economics is both sport and economy.
+                'topics': [t for t in (row.get('topics') or '').split('|') if t],
+                'difficulty': int(row['difficulty']) if (row.get('difficulty') or '').isdigit() else None,
+                'level': (row.get('aj_level') or '').strip().lower() or None,
+                'wordCount': int(row['words']) if (row.get('words') or '').isdigit() else None,
+            }
+    return out
+
+
+def parse_article(path: Path, level: str, manifest: list, metadata: dict, posters: dict):
     raw = path.read_text(encoding='utf-8', errors='replace')
     clean = STRIP_SCRIPTS.sub('', raw)
 
@@ -145,18 +188,34 @@ def parse_article(path: Path, level: str, manifest: dict, posters: dict):
         return None
 
     blocks = {d: b for d, b in PHRASE_BLOCK.findall(clean)}
-    url = manifest.get(title_ar, {}).get('url', '')
+
+    # The manifest is positional: entry N-1 belongs to file NNNN_*.html, which
+    # holds for all 325 files in the dump. It used to be keyed by title, and
+    # titles are not unique — two pairs of articles share one, so each pair
+    # collapsed onto a single manifest entry and both got the same sourceUrl,
+    # and one article whose slug carries a zero-width space matched nothing at
+    # all and shipped with an empty backlink, which REQ-A3 does not allow.
+    index = int(path.stem[:4]) - 1
+    url = manifest[index]['url'] if 0 <= index < len(manifest) else ''
     series = (
         'languageofmedia' if '/languageofmedia/' in url
         else 'generallanguage' if '/generallanguage/' in url
         else 'other'
     )
 
+    # The publisher's own level label where the sidecar has it. The directory
+    # name is only which index page was crawled, and it is coarser: 50 of these
+    # are published as Introductory, a level the crawl folded into the other two.
+    extra = metadata.get(canonical(url), {})
+
     return {
         'id': path.stem,
-        'level': level,
+        'level': extra.get('level') or level,
         'series': series,
         'sourceUrl': url,
+        'topics': extra.get('topics', []),
+        'difficulty': extra.get('difficulty'),
+        'wordCount': extra.get('wordCount'),
         'titleAr': title_ar,
         'titleEn': title_en,
         'vowelled': 'formilized' in bodies,
@@ -174,15 +233,16 @@ def main(dump: Path, out: Path):
     # import does not.
     posters_path = out.parent / 'posters.json'
     posters = json.loads(posters_path.read_text(encoding='utf-8')) if posters_path.exists() else {}
+    metadata = read_metadata(out.parent / 'metadata.csv')
 
     articles, skipped = [], 0
     for level_dir in sorted(d for d in dump.iterdir() if d.is_dir()):
         manifest_path = level_dir / 'manifest.json'
-        manifest = {}
+        manifest = []
         if manifest_path.exists():
-            manifest = {e['title']: e for e in json.loads(manifest_path.read_text(encoding='utf-8'))}
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         for path in sorted(level_dir.glob('*.html')):
-            article = parse_article(path, level_dir.name, manifest, posters)
+            article = parse_article(path, level_dir.name, manifest, metadata, posters)
             if article:
                 articles.append(article)
             else:

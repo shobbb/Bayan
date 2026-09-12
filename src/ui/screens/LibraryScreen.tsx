@@ -9,10 +9,11 @@ export interface LibraryScreenProps {
   opening: string | null;
 }
 
-const LEVEL_ORDER = ['elementary', 'intermediate'];
+/** Publisher's own ladder, easiest first. */
+const LEVEL_ORDER = ['introductory', 'elementary', 'intermediate'];
 
-function levelLabel(level: string): string {
-  return level.charAt(0).toUpperCase() + level.slice(1);
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /**
@@ -61,8 +62,13 @@ function ArticleCard({
           {article.titleAr}
         </span>
       )}
+      {/* Length is the one fact that decides whether there is time for this
+          right now, so it earns a place next to the level. Difficulty does not
+          print here: it is a rank within the library, not a property of the
+          article, and a bare "4/5" on a card reads as the second thing. */}
       <span className="library__card-meta">
-        {levelLabel(article.level)}
+        {capitalize(article.level)}
+        {article.wordCount !== null && ` · ${article.wordCount} words`}
         {article.videoUrl && ' · video'}
         {readAt !== null && ' · read'}
       </span>
@@ -79,6 +85,7 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [source, setSource] = useState<ArticleSource | null>(null);
   const [level, setLevel] = useState<string>('all');
+  const [topic, setTopic] = useState<string>('all');
   const [failure, setFailure] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,9 +109,26 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
     return LEVEL_ORDER.filter((candidate) => present.has(candidate));
   }, [entries]);
 
+  // Ordered by how many articles carry each, so the rail opens on the subjects
+  // actually worth scrolling to rather than on whatever sorts first.
+  const topics = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of entries ?? []) {
+      for (const name of entry.article.topics) counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name]) => name);
+  }, [entries]);
+
   const shown = useMemo(
-    () => (entries ?? []).filter((entry) => level === 'all' || entry.article.level === level),
-    [entries, level],
+    () =>
+      (entries ?? []).filter(
+        (entry) =>
+          (level === 'all' || entry.article.level === level) &&
+          (topic === 'all' || entry.article.topics.includes(topic)),
+      ),
+    [entries, level, topic],
   );
 
   const readCount = (entries ?? []).filter((entry) => entry.readAt !== null).length;
@@ -129,8 +153,11 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
         )}
       </div>
 
+      {/* Two dimensions, one line each. They scroll rather than wrap: a filter
+          row that grows to three lines pushes the articles themselves off the
+          screen, which is the opposite of what a library is for. */}
       {levels.length > 1 && (
-        <div className="library__filters">
+        <div className="library__filters" role="group" aria-label="Level">
           {['all', ...levels].map((candidate) => (
             <button
               key={candidate}
@@ -139,7 +166,23 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
               className={'library__chip' + (level === candidate ? ' library__chip--on' : '')}
               onClick={() => setLevel(candidate)}
             >
-              {candidate === 'all' ? 'All' : levelLabel(candidate)}
+              {candidate === 'all' ? 'All levels' : capitalize(candidate)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {topics.length > 1 && (
+        <div className="library__filters" role="group" aria-label="Topic">
+          {['all', ...topics].map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              aria-pressed={topic === candidate}
+              className={'library__chip' + (topic === candidate ? ' library__chip--on' : '')}
+              onClick={() => setTopic(candidate)}
+            >
+              {candidate === 'all' ? 'All topics' : capitalize(candidate)}
             </button>
           ))}
         </div>
@@ -147,6 +190,9 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
 
       {failure && <p className="library__note">{failure}</p>}
       {!entries && !failure && <p className="library__note">Loading…</p>}
+      {entries && shown.length === 0 && (
+        <p className="library__note">Nothing matches those two filters.</p>
+      )}
 
       <ul className="library__grid">
         {shown.map(({ article, readAt }) => (

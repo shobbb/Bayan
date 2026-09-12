@@ -44,6 +44,8 @@ From 325 saved pages (elementary + intermediate):
 | Articles with neither image nor video | 0 |
 | Publisher gloss pairs | 3,577 |
 | Articles with no body at all | 41 — all video lessons, no transcript |
+| Levels, as the publisher labels them | 211 intermediate, 50 introductory, 23 elementary |
+| Distinct subject tags | 16, multi-label |
 
 ### 2.1 The vowelled body is already served
 
@@ -77,7 +79,11 @@ container.
 
 - `إخفاء النص` appears on only 62 of 325 pages. It is not a usable fence.
 - **Level is not on the article page.** All seven level labels appear on every
-  page, because they are site navigation. It comes from the index.
+  page, because they are site navigation. It comes from the index — and the
+  crawl directory is not that level, see §2.4.
+- **Titles are not unique, and the manifest is not keyed by one.** Two pairs of
+  articles share a title exactly. The manifest is positional: entry *N-1*
+  belongs to `NNNN_*.html`, which holds for all 325 files.
 - Paragraphs are `<p>` on some articles and `<div>` on others; keying on `<p>`
   alone loses 78 of 325.
 - Numeric article ids observed run 21786–21995, and other URL families exist
@@ -87,6 +93,44 @@ container.
   them), so an iframe is not evidence of video; match on the host.
 - All `og:image` URLs are served over `http://`, which a page on `https://`
   refuses as mixed content. Rewrite the scheme.
+
+### 2.4 The metadata sidecar
+
+Three things worth having are on neither the article page nor the index, and
+arrive as `src/assets/articles/metadata.csv`, joined on url. 283 of the 284
+articles match; the odd one out simply has no row and carries nulls.
+
+| Field | What it is |
+|---|---|
+| `topics` | Publisher subjects, pipe-delimited and **multi-label**. 16 of them |
+| `aj_level` | The publisher's real level |
+| `words` | Body length |
+| `difficulty` | Quintile, 1–5 |
+
+`REQ-A13` The sidecar's level supersedes the crawl directory. The directory is
+only which index page a file came from, and it is coarser than the publisher's
+own ladder: **50 articles filed under elementary/intermediate are published as
+Introductory**, a level the two-way crawl had nowhere to put. The library's
+ladder is introductory → elementary → intermediate.
+
+`REQ-A14` `difficulty` is a rank, not a score. It is a quintile of the share of
+each article's vocabulary that was unknown *to one learner at one moment*, so it
+orders the library well and means nothing in absolute terms. It sorts the
+library and is deliberately not printed on a card, where a bare "4/5" would read
+as a property of the text.
+
+`REQ-A15` The corpus-relative columns are not imported. `unknown`,
+`coverage_pct` and `unknown_per_100` are a snapshot against one corpus: the app
+computes that live from the corpus it actually has, and a figure frozen at
+import would be wrong the moment anything was learned. `tashkeel` is skipped for
+a different reason — it disagrees with the diacritic density measured from the
+bodies here (all 10 articles this import finds unvowelled are flagged `Y`), and
+an unexplained flag does not override a measurement.
+
+`REQ-A16` Article topics are not bandit arms. They are the publisher's subjects
+and are not the topic arms in `config/categories.ts` even where a word
+coincides; mapping them across is exactly the failure REQ-A1 describes. They
+filter the library and do nothing else.
 
 ---
 
@@ -172,6 +216,10 @@ distinct forms blank, which is one model call to fill.
 - `robots.txt` and terms of use have **not** been checked. The current design
   does not crawl, which makes this much less pressing, but redistribution of
   bundled text is a separate question from crawling and is unresolved.
+- One article (`نَصَائِحُ بِسَحُورٍ مُتَوازِنٍ`) has no metadata row, so it has no
+  topics and sorts last. Harmless, but it is a join of 283 against 284.
+- The `tashkeel` column's meaning is unresolved — see REQ-A15. It is not the
+  inverse of what is measured here either, so it is not simply mislabelled.
 - Brightcove stills are resolved and checked in. They cannot be derived from a
   video id — they come from the Playback API, and the saved HTML cannot supply
   them because the player sets the poster from its own JavaScript at runtime —

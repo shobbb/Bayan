@@ -25,11 +25,31 @@ export interface ArticleGloss {
 
 export interface Article {
   id: string;
-  /** Publisher's level label, lowercased: 'elementary' | 'intermediate' | … */
+  /** Publisher's level label, lowercased: 'introductory' | 'elementary' | 'intermediate'. */
   level: string;
   series: 'languageofmedia' | 'generallanguage' | 'other';
   /** Canonical page on the publisher's site, for the required backlink (§5.2). */
   sourceUrl: string;
+  /**
+   * Subject tags, multi-label: an article on stadium economics is both.
+   *
+   * These are the publisher's subjects, and they are NOT the topic arms in
+   * config/categories.ts even where a word coincides. Mapping them onto
+   * configured arms is the exact failure the note above describes — it would
+   * let published text set difficulty rewards for arms that plan generated
+   * rounds. They are for filtering the library and nothing else.
+   */
+  topics: string[];
+  /**
+   * Reading difficulty, 1 (easiest) to 5, or null where unmeasured.
+   *
+   * A quintile, not a score: it ranks these articles against each other by the
+   * share of their vocabulary that was unknown when the measurement was taken,
+   * so it orders the library well and means nothing in absolute terms.
+   */
+  difficulty: number | null;
+  /** Body length in words, or null where unmeasured. */
+  wordCount: number | null;
   titleAr: string;
   titleEn: string | null;
   /** True when the body came from the publisher's fully vowelled variant. */

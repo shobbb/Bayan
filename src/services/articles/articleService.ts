@@ -40,7 +40,16 @@ export interface LibraryEntry {
   readAt: number | null;
 }
 
-/** Everything in the library, most recently read first, then unread. */
+/**
+ * Everything in the library, easiest first.
+ *
+ * Ordered rather than left in import order, which was the level directory and
+ * then the file name — an order with no meaning to a reader facing 284 of
+ * these. Difficulty ranks them by how much of their vocabulary was unknown when
+ * it was measured, so ascending is the order a learner would pick by hand.
+ * Anything unmeasured sorts last rather than to the front, and the length and
+ * id tie-breaks keep an unchanged library in an unchanged order.
+ */
 export async function listLibrary(): Promise<{ entries: LibraryEntry[]; source: ArticleSource }> {
   const [bundle, reads] = await Promise.all([loadArticles(), listArticleReads()]);
   const readAt = new Map(reads.map((record) => [record.id, record.readAt]));
@@ -49,6 +58,15 @@ export async function listLibrary(): Promise<{ entries: LibraryEntry[]; source: 
     article,
     readAt: readAt.get(article.id) ?? null,
   }));
+
+  entries.sort(
+    (a, b) =>
+      (a.article.difficulty ?? Number.MAX_SAFE_INTEGER) -
+        (b.article.difficulty ?? Number.MAX_SAFE_INTEGER) ||
+      (a.article.wordCount ?? Number.MAX_SAFE_INTEGER) -
+        (b.article.wordCount ?? Number.MAX_SAFE_INTEGER) ||
+      a.article.id.localeCompare(b.article.id),
+  );
 
   return { entries, source: bundle.source };
 }
