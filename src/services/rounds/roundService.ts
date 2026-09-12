@@ -152,6 +152,7 @@ export async function finishRound(
       ...word,
       unclearCount: word.unclearCount + 1,
       lastSeenAt: now,
+      lastMarkedAt: now,
     })),
   );
 }

@@ -128,6 +128,7 @@ export async function finishArticle(
         ...word,
         unclearCount: word.unclearCount + 1,
         lastSeenAt: now,
+        lastMarkedAt: now,
       })),
     );
   }

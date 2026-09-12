@@ -590,9 +590,26 @@ Rationale for 13–16: the method is still under test. Hardcoding a flow would f
 
 `REQ-20` Triggered only by the Generate-new-batch action.
 
-**Selection**: rank words by `unclearCount / seenCount`, tie-break on `unclearCount`. Take 40.
+**Selection**: rank words by `unclearCount / seenCount`, tie-break on `unclearCount`. Take 40. Candidates are words that have been seen and carry a gloss — a word never shown has no miss rate to rank on, and one with no gloss has no answer side (REQ-23).
 
 `REQ-21` Default batch size 40. Configurable. Warn above 50 — larger batches measurably degrade retention under fatigue.
+
+`REQ-55` A word carries **when** it was last flagged, not only how often.
+`lastMarkedAt` moves wherever `unclearCount` moves — the same two places, one
+for rounds and one for articles — and is distinct from `lastSeenAt` on purpose:
+seeing a word and failing to recognise it are different events, and "what have I
+been getting wrong lately" is not answerable from exposure.
+
+`REQ-56` Batch selection takes an optional **marked-within window**, configured
+in days and off by default. A word whose flag date is unknown — every record
+written before the field existed — is outside every window. Treating unknown as
+inside would fill a deliberately narrow batch with the oldest material in the
+corpus, which is the opposite of what asking for it means.
+
+`REQ-57` Words met but untranslated are **reported, not silently dropped**.
+REQ-23 forbids a card with no answer side, not the knowledge that such words
+exist; a corpus full of flagged article vocabulary must never be described as
+"nothing to drill", and the message names the action that would fix it.
 
 **Sentence generation**: one batched LLM call for all 40 example sentences. Each sentence must contain the target word and stay within already-seen vocabulary where possible.
 

@@ -38,6 +38,15 @@ export interface Word {
   unclearCount: number;
   firstSeenAt: number;
   lastSeenAt: number;
+  /**
+   * When the reader last flagged this "didn't know", or null if never — which
+   * is also what a record carries when it was flagged before the field existed.
+   *
+   * Distinct from lastSeenAt on purpose: seeing a word and failing to recognise
+   * it are different events, and "what have I been getting wrong lately" is not
+   * answerable from exposure. unclearCount says how often; this says when.
+   */
+  lastMarkedAt: number | null;
   roundIds: string[];
   srs: SrsState | null; // null until first included in a batch (REQ-I7)
   /** REQ-I5: imported without a gloss. Eligible for the fill-missing-glosses pass. */

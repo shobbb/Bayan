@@ -36,6 +36,20 @@ function longer(a: string | null, b: string | null): string | null {
   return b.length > a.length ? b : a;
 }
 
+/** Latest of two optional timestamps; null only when neither side has one. */
+function latest(
+  a: number | null | undefined,
+  b: number | null | undefined,
+): number | null {
+  // Loose checks on purpose: a record stored before this field existed comes
+  // back from IndexedDB with it absent, so the value here is undefined rather
+  // than null, and a strict check would hand Math.max an undefined and merge
+  // the word to NaN.
+  if (a == null) return b ?? null;
+  if (b == null) return a;
+  return Math.max(a, b);
+}
+
 function earliest(a: number, b: number): number {
   if (a === 0) return b;
   if (b === 0) return a;
@@ -55,6 +69,9 @@ function toWord(incoming: InterchangeWord, id: WordId, trackId: TrackId): Word {
     unclearCount: incoming.unclearCount,
     firstSeenAt: incoming.firstSeenAt ?? 0,
     lastSeenAt: incoming.lastSeenAt ?? 0,
+    // Absent in any dump written before the field existed. Null is the honest
+    // value: unknown, not "never flagged", and a window must not claim it.
+    lastMarkedAt: incoming.lastMarkedAt ?? null,
     roundIds: [...incoming.roundIds],
     // REQ-I7: null means never drilled. Never fabricate an SRS state on import.
     srs: incoming.srs,
@@ -78,6 +95,7 @@ function mergeWords(existing: Word, incoming: Word): Word {
     unclearCount: existing.unclearCount + incoming.unclearCount,
     firstSeenAt: earliest(existing.firstSeenAt, incoming.firstSeenAt),
     lastSeenAt: Math.max(existing.lastSeenAt, incoming.lastSeenAt),
+    lastMarkedAt: latest(existing.lastMarkedAt, incoming.lastMarkedAt),
     roundIds: [...new Set([...existing.roundIds, ...incoming.roundIds])],
     srs: existing.srs ?? incoming.srs,
     ...(gloss === '' ? { needsEnrichment: true } : { needsEnrichment: undefined }),

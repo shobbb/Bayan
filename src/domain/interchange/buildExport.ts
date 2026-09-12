@@ -39,6 +39,7 @@ function toInterchangeWord(word: Word): InterchangeWord {
     unclearCount: word.unclearCount,
     firstSeenAt: nullableTimestamp(word.firstSeenAt),
     lastSeenAt: nullableTimestamp(word.lastSeenAt),
+    lastMarkedAt: word.lastMarkedAt,
     roundIds: [...word.roundIds],
     srs: word.srs, // REQ-I7: null means never drilled; never fabricated
   };

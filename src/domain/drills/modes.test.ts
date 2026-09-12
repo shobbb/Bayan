@@ -19,6 +19,7 @@ function word(id: string, gloss: string, overrides: Partial<Word> = {}): Word {
     unclearCount: 1,
     firstSeenAt: 0,
     lastSeenAt: 0,
+    lastMarkedAt: null,
     roundIds: [],
     srs: null,
     ...overrides,

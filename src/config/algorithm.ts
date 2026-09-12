@@ -25,6 +25,12 @@ export interface AlgorithmConfig {
     defaultSize: number;
     /** Threshold at which the batch-size UI shows a fatigue warning. */
     warnAboveSize: number;
+    /**
+     * Only draw from words flagged "didn't know" within this many days.
+     * 0 takes the whole corpus, which is the default — a window is a way to
+     * drill what has gone wrong lately, not the normal way to build a batch.
+     */
+    markedWithinDays: number;
   };
   grading: {
     /** Max Levenshtein distance accepted as a typo rather than a miss (REQ-26). */
@@ -49,6 +55,7 @@ export const DEFAULT_ALGORITHM_CONFIG: AlgorithmConfig = {
   batch: {
     defaultSize: 40,
     warnAboveSize: 50,
+    markedWithinDays: 0,
   },
   grading: {
     maxLevenshteinDistance: 2,

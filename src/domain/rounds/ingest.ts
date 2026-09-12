@@ -78,6 +78,9 @@ export function ingestRoundWords(
         unclearCount: 0,
         firstSeenAt: now,
         lastSeenAt: now,
+        // Exposure, not a miss. Flagging is what sets this, in finishRound and
+        // finishArticle — the same place unclearCount moves.
+        lastMarkedAt: null,
         roundIds: [roundId],
         srs: null,
       });

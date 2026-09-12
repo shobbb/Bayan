@@ -54,6 +54,13 @@ export const interchangeWordSchema = z.object({
   unclearCount: z.number(),
   firstSeenAt: z.number().nullable(),
   lastSeenAt: z.number().nullable(),
+  /**
+   * When this was last flagged "didn't know". Optional, and the schema version
+   * stays at 1: purely additive, so a dump written before it existed still
+   * validates and one carrying it still parses in the external tooling, which
+   * ignores keys it does not know (REQ-I1).
+   */
+  lastMarkedAt: z.number().nullable().optional(),
   roundIds: z.array(z.string()),
   srs: srsStateSchema.nullable(),
 });

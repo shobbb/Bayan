@@ -23,6 +23,7 @@ function word(surface: string, overrides: Partial<Word> = {}): Word {
     unclearCount: 1,
     firstSeenAt: 100,
     lastSeenAt: 100,
+    lastMarkedAt: null,
     roundIds: ['r-old'],
     srs: null,
     ...overrides,

@@ -21,6 +21,7 @@ function word(surface: string, overrides: Partial<Word> = {}): Word {
     unclearCount: 1,
     firstSeenAt: 100,
     lastSeenAt: 900,
+    lastMarkedAt: null,
     roundIds: ['r1'],
     srs: null,
     ...overrides,
@@ -169,5 +170,47 @@ describe('buildStateExport', () => {
     delete older.glosses;
 
     expect(parseStateExport(older).ok).toBe(true);
+  });
+
+  it('carries when a word was last flagged', () => {
+    const state = buildStateExport(
+      [word('كتاب', { lastMarkedAt: 1234 })],
+      [],
+      DEFAULT_CATEGORIES,
+      null,
+      1,
+    );
+
+    expect(state.words[0]!.lastMarkedAt).toBe(1234);
+  });
+
+  it('round-trips the flag date, so a restore keeps a recency window working', () => {
+    const words = [word('كتاب', { lastMarkedAt: 1234 }), word('بيت', { lastMarkedAt: null })];
+
+    const dumped = serializeStateExport(buildStateExport(words, [], DEFAULT_CATEGORIES, null, 1));
+    const parsed = parseStateExport(JSON.parse(dumped));
+    if (!parsed.ok) throw new Error('export failed to validate');
+
+    const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
+    const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+
+    expect([...restored.words].sort(byId)).toEqual([...words].sort(byId));
+  });
+
+  // A dump from before the field existed says nothing about when its words were
+  // flagged. Null is the honest restore: unknown, not "never".
+  it('accepts a dump written before flag dates existed, leaving them unknown', () => {
+    const state = buildStateExport([word('كتاب', { lastMarkedAt: 999 })], [], DEFAULT_CATEGORIES, null, 1);
+    const older = JSON.parse(serializeStateExport(state)) as {
+      words: Record<string, unknown>[];
+    };
+    delete older.words[0]!.lastMarkedAt;
+
+    const parsed = parseStateExport(older);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
+    expect(restored.words[0]!.lastMarkedAt).toBeNull();
   });
 });

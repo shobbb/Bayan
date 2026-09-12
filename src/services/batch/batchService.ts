@@ -23,6 +23,8 @@ export interface GeneratedBatch {
   oversized: boolean;
   /** Words the model returned no sentence for; the card still works without one. */
   missingSentences: number;
+  /** Met and flagged, but with no gloss to put on the answer side (REQ-23). */
+  untranslated: number;
 }
 
 function newBatchId(now: number): string {
@@ -41,10 +43,29 @@ export async function generateBatch(
   if (!apiKey) throw new MissingApiKeyError();
 
   const words = await listWords(DEFAULT_TRACK_ID);
-  const selection = selectBatch(words, config.algorithm.batch.defaultSize, config.algorithm.batch.warnAboveSize);
+  const markedWithinDays = config.algorithm.batch.markedWithinDays;
+  const selection = selectBatch(
+    words,
+    config.algorithm.batch.defaultSize,
+    config.algorithm.batch.warnAboveSize,
+    { markedSince: markedWithinDays > 0 ? now - markedWithinDays * 86_400_000 : null },
+  );
 
   if (selection.wordIds.length === 0) {
-    throw new Error('No words are ready to drill yet — read a round first.');
+    // Saying "read a round first" to someone holding a corpus of words they
+    // flagged in an article but never translated is wrong, and hides the one
+    // action that would fix it.
+    if (selection.untranslated > 0) {
+      throw new Error(
+        `${selection.untranslated} word(s) are waiting on a translation before they can be drilled. ` +
+          'Open the article they came from and translate it.',
+      );
+    }
+    throw new Error(
+      markedWithinDays > 0
+        ? `Nothing has been flagged in the last ${markedWithinDays} day(s). Widen "Marked within" in Settings, or set it to 0.`
+        : 'No words are ready to drill yet — read a round first.',
+    );
   }
 
   const selected = await getWords(selection.wordIds);
@@ -107,7 +128,12 @@ export async function generateBatch(
   };
 
   await upsertBatch(batch);
-  return { batch, oversized: selection.oversized, missingSentences };
+  return {
+    batch,
+    oversized: selection.oversized,
+    missingSentences,
+    untranslated: selection.untranslated,
+  };
 }
 
 export interface DrillSession {

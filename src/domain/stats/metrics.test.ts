@@ -27,6 +27,7 @@ function word(id: string, seenCount: number, unclearCount: number, extra: Partia
     unclearCount,
     firstSeenAt: 0,
     lastSeenAt: 0,
+    lastMarkedAt: null,
     roundIds: [],
     srs: null,
     ...extra,

@@ -146,10 +146,11 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
   {
     id: 'batch',
     title: 'Batch',
-    blurb: 'How many cards a study batch holds.',
+    blurb: 'How many cards a study batch holds, and which words it may draw from.',
     fields: [
       num(['algorithm', 'batch', 'defaultSize'], 'Batch size', 'Cards per generated batch. Retention degrades above the measured ceiling (REQ-21).', { min: 5, max: 200, step: 5 }),
       num(['algorithm', 'batch', 'warnAboveSize'], 'Warn above', 'Batch size at which generation flags fatigue. Does not block anything.', { min: 5, max: 200, step: 5 }),
+      num(['algorithm', 'batch', 'markedWithinDays'], 'Marked within (days)', 'Build the batch only from words flagged “didn’t know” this recently — 7 drills the last week. 0 uses the whole corpus. Words flagged before the app recorded flag times are never in a window, since their date is unknown.', { min: 0, max: 365, step: 1 }),
     ],
   },
   {

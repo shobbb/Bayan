@@ -120,7 +120,14 @@ function AppScreens() {
         const gaps = result.missingSentences > 0
           ? ` ${result.missingSentences} card(s) have no example sentence.`
           : '';
-        setNotice(`Batch ready: ${result.batch.wordIds.length} cards.${warning}${gaps}`);
+        // Words met and flagged but never translated cannot be cards (REQ-23),
+        // and staying silent about them makes a short batch look like a bug.
+        const blocked = result.untranslated > 0
+          ? ` ${result.untranslated} more are waiting on a translation.`
+          : '';
+        setNotice(
+          `Batch ready: ${result.batch.wordIds.length} cards.${warning}${gaps}${blocked}`,
+        );
         setRefreshToken((n) => n + 1);
       })
       .catch((error: unknown) => setFailure(describeFailure(error)))
