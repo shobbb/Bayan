@@ -18,8 +18,6 @@ export interface HomeActionContext {
   generateBatch: () => void;
   /** Open a drill session over the current batch plus due cards (§10). */
   studyBatch: () => void;
-  /** Write the whole corpus to remote storage (§13 Remote backup). */
-  syncNow: () => void;
 }
 
 export function startExploreRound(ctx: HomeActionContext): void {
@@ -44,10 +42,6 @@ export function generateNewBatch(ctx: HomeActionContext): void {
 
 export function studyCurrentBatch(ctx: HomeActionContext): void {
   ctx.studyBatch();
-}
-
-export function syncNow(ctx: HomeActionContext): void {
-  ctx.syncNow();
 }
 
 /**
@@ -109,7 +103,6 @@ export const HOME_ACTIONS: readonly HomeActionDescriptor[] = [
     run: startBacklogRound,
   },
   { id: 'generateBatch', label: 'Generate new batch', rank: 'tertiary', run: generateNewBatch },
-  { id: 'syncNow', label: 'Back up now', rank: 'tertiary', run: syncNow },
 ];
 
 /** Actions at a given rank, in declaration order. */

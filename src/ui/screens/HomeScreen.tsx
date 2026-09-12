@@ -35,10 +35,9 @@ export interface HomeScreenProps {
  * "in progress" and left all four round buttons permanently showing a
  * trailing ellipsis and aria-busy="true".
  */
-const BUSY_KEY_BY_ACTION: Readonly<Record<string, 'batch' | 'study' | 'sync'>> = {
+const BUSY_KEY_BY_ACTION: Readonly<Record<string, 'batch' | 'study'>> = {
   generateBatch: 'batch',
   studyBatch: 'study',
-  syncNow: 'sync',
 };
 
 /** Coarse on purpose — a backup's exact minute is not information. */
@@ -89,15 +88,36 @@ export function HomeScreen({
       startRound: onStartRound,
       generateBatch: onGenerateBatch,
       studyBatch: onStudyBatch,
-      syncNow: onSyncNow,
     }),
-    [onStartRound, onGenerateBatch, onStudyBatch, onSyncNow],
+    [onStartRound, onGenerateBatch, onStudyBatch],
   );
 
   return (
     <div className="home-screen has-bottom-nav">
       <header className="home-screen__header">
         <h1 className="home-screen__title">Bayan</h1>
+        <button
+          type="button"
+          className={'home-screen__sync' + (busy === 'sync' ? ' home-screen__sync--busy' : '')}
+          aria-label={
+            lastBackupAt === null
+              ? 'Back up — never backed up'
+              : `Back up — last backed up ${relativeTime(lastBackupAt)}`
+          }
+          aria-busy={busy === 'sync'}
+          onClick={onSyncNow}
+        >
+          {/* Two arrows chasing each other: the conventional sync mark. */}
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M21 3v6h-6M3 12a9 9 0 0 1 15-6.7L21 9M3 21v-6h6M21 12a9 9 0 0 1-15 6.7L3 15"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </header>
 
       {/* Cards due is the only figure that implies an action, so it carries the
@@ -107,9 +127,13 @@ export function HomeScreen({
           <span className="home-screen__due-value">{status.cardsDue}</span>
           <span className="home-screen__due-label">cards due</span>
         </p>
+        {/* A backup control that cannot say when it last ran is not worth
+            trusting, so the state sits with the other figures rather than
+            needing a line of its own. */}
         <p className="home-screen__context">
           {status.currentBatchSize} in batch · {status.undrilledBacklog} undrilled ·{' '}
-          {status.roundsCompleted} rounds
+          {status.roundsCompleted} rounds ·{' '}
+          {lastBackupAt === null ? 'never backed up' : `backed up ${relativeTime(lastBackupAt)}`}
         </p>
       </div>
 
@@ -163,13 +187,6 @@ export function HomeScreen({
             </button>
           );
         })}
-        {/* A backup control that cannot say when it last ran is not worth
-            trusting, so it says. */}
-        <p className="home-screen__synced">
-          {lastBackupAt === null
-            ? 'Never backed up'
-            : `Last backed up ${relativeTime(lastBackupAt)}`}
-        </p>
       </div>
 
       {generating !== null && (

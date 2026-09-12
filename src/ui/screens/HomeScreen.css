@@ -45,6 +45,7 @@
 
 /* Icon control (§7 header). ≥44px tap target (§5.9); the negative inline-end
    margin lets the glyph sit flush with the page edge without shrinking it. */
+.home-screen__sync,
 .home-screen__settings {
   display: inline-flex;
   align-items: center;
@@ -59,8 +60,31 @@
   cursor: pointer;
 }
 
+.home-screen__sync:hover,
 .home-screen__settings:hover {
   color: var(--signal);
+}
+
+/* Turning while it runs: the one place a spinner is the clearest possible
+   statement, and the icon is already a pair of arrows going round. */
+.home-screen__sync--busy {
+  color: var(--signal);
+}
+
+.home-screen__sync--busy svg {
+  animation: home-screen-sync 1.1s linear infinite;
+}
+
+@keyframes home-screen-sync {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-screen__sync--busy svg {
+    animation: none;
+  }
 }
 
 /* One figure implies an action, so one figure carries the weight (REQ-49).
@@ -184,16 +208,6 @@
   font-family: var(--font-english);
   font-size: var(--text-ui-label-size);
   cursor: pointer;
-}
-
-.home-screen__synced {
-  /* Full-width so it drops onto its own line under the row it describes. */
-  flex-basis: 100%;
-  margin: var(--space-1) 0 0;
-  font-family: var(--font-english);
-  font-size: var(--text-data-size);
-  line-height: var(--text-data-line);
-  color: var(--ink-muted);
 }
 
 .home-screen__notice {
