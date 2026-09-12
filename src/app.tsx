@@ -57,6 +57,11 @@ function AppScreens() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
+  // Kept apart from the Home advisory above. Enrichment is run from the reader,
+  // and raising its outcome into state only Home renders is how a failed
+  // translation came to look like a control that does nothing.
+  const [enrichFailure, setEnrichFailure] = useState<Failure | null>(null);
+  const [enrichNotice, setEnrichNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,6 +168,8 @@ function AppScreens() {
   // Words through the same ingestion a round uses.
   const handleOpenArticle = useCallback((id: string) => {
     setFailure(null);
+    setEnrichFailure(null);
+    setEnrichNotice(null);
     setOpeningArticle(id);
     openArticle(id)
       .then(({ article, segments, flaggedIndices, untranslated }) =>
@@ -177,7 +184,8 @@ function AppScreens() {
   const handleEnrich = useCallback(() => {
     if (screen.name !== 'article') return;
     const { article, segments, flaggedIndices } = screen;
-    setFailure(null);
+    setEnrichFailure(null);
+    setEnrichNotice(null);
     setEnriching(true);
     enrichArticle(article, segments, config)
       .then(({ result, segments: filled }) => {
@@ -188,9 +196,9 @@ function AppScreens() {
           flaggedIndices,
           untranslated: result.requested - result.filled,
         });
-        setNotice(`Translated ${result.filled} of ${result.requested} words.`);
+        setEnrichNotice(`Translated ${result.filled} of ${result.requested} words.`);
       })
-      .catch((error: unknown) => setFailure(describeFailure(error)))
+      .catch((error: unknown) => setEnrichFailure(describeFailure(error)))
       .finally(() => setEnriching(false));
   }, [screen, config]);
 
@@ -253,7 +261,14 @@ function AppScreens() {
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
         onExit={{ label: 'Articles', run: () => setScreen({ name: 'library' }) }}
-        enrich={{ count: screen.untranslated, busy: enriching, run: handleEnrich }}
+        enrich={{
+          count: screen.untranslated,
+          busy: enriching,
+          run: handleEnrich,
+          failure: enrichFailure,
+          notice: enrichNotice,
+          onOpenSettings: handleOpenSettings,
+        }}
         media={
           <ArticleMedia
             imageUrl={article.imageUrl}

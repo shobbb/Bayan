@@ -40,6 +40,55 @@
   cursor: pointer;
 }
 
+/* The outcome of the last attempt, next to the control that caused it. */
+.reading-screen__enrich-notice {
+  margin: 0;
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+}
+
+.reading-screen__enrich-message {
+  margin: 0;
+}
+
+.reading-screen__enrich-settings {
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reading-screen__enrich-details {
+  margin-top: var(--space-2);
+  text-align: start;
+}
+
+.reading-screen__enrich-details > summary {
+  color: var(--signal);
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+
+.reading-screen__enrich-raw {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--mark-seen);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .reading-screen__header {
   text-align: center;
   margin-bottom: var(--space-6);

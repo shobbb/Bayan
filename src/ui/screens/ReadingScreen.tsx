@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
+import type { Failure } from '@/ui/failure';
 import type { Segment } from '@/domain/types';
 import { DEMO_SEGMENTS, DEMO_TITLE_AR } from './demoRound';
 import './ReadingScreen.css';
@@ -36,8 +37,21 @@ export interface ReadingScreenProps {
    * Offered when the text contains words nothing has a translation for. Not
    * automatic: it is a paid model call on the reader's key, so it is asked for
    * rather than spent on their behalf (REQ-15).
+   *
+   * It carries its own outcome. The advisory used to be raised into app state
+   * that only Home renders, so a missing API key or a bad response stopped the
+   * spinner and changed nothing else — the reader was left tapping a link that
+   * silently did nothing, which is exactly the disabled-control failure mode
+   * REQ-13 exists to prevent.
    */
-  enrich?: { count: number; busy: boolean; run: () => void } | null;
+  enrich?: {
+    count: number;
+    busy: boolean;
+    run: () => void;
+    failure: Failure | null;
+    notice: string | null;
+    onOpenSettings: () => void;
+  } | null;
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -77,8 +91,17 @@ export function ReadingScreen({
   const [notKnownIndices, setNotKnownIndices] = useState<Set<number>>(
     () => new Set(initialNotKnown ?? []),
   );
-  const [glossItem, setGlossItem] = useState<GlossPanelItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Read from the segments rather than copied into state on tap. Held as state,
+  // the panel was a snapshot of the word as it looked when it was tapped: after
+  // enrichment replaced the segments, a word tapped beforehand went on saying
+  // "No translation yet" over a gloss that had just arrived.
+  const activeSegment = activeIndex === null ? undefined : segments[activeIndex];
+  const glossItem: GlossPanelItem | null =
+    activeSegment && activeSegment.gloss !== null
+      ? { arabic: activeSegment.text, forms: activeSegment.forms, gloss: activeSegment.gloss }
+      : null;
 
   const handleTapWord = useCallback(
     (segment: Segment, index: number) => {
@@ -88,7 +111,6 @@ export function ReadingScreen({
         // Re-tapping the active word clears it (double-tap to remove) and drops
         // any "didn't know" flag on it — a fully reversible mistap (REQ-19).
         setActiveIndex(null);
-        setGlossItem(null);
         setNotKnownIndices((prev) => {
           if (!prev.has(index)) return prev;
           const next = new Set(prev);
@@ -101,7 +123,6 @@ export function ReadingScreen({
       // Tapping a different word moves the transient highlight to it. The
       // previous word loses its highlight unless it was flagged "didn't know".
       setActiveIndex(index);
-      setGlossItem({ arabic: segment.text, forms: segment.forms, gloss: segment.gloss });
 
       // REQ-D6: the gloss panel must never cover the tapped word.
       const target = containerRef.current?.querySelector<HTMLElement>(
@@ -157,19 +178,56 @@ export function ReadingScreen({
 
       {media}
 
-      {enrich && enrich.count > 0 && (
-        <p className="reading-screen__enrich">
-          <button
-            type="button"
-            className="reading-screen__enrich-action"
-            aria-busy={enrich.busy}
-            onClick={enrich.run}
-          >
-            {enrich.busy
-              ? `Translating ${enrich.count} words…`
-              : `Translate ${enrich.count} untranslated words`}
-          </button>
-        </p>
+      {enrich && (enrich.count > 0 || enrich.failure || enrich.notice) && (
+        <div className="reading-screen__enrich">
+          {enrich.count > 0 && (
+            <button
+              type="button"
+              className="reading-screen__enrich-action"
+              aria-busy={enrich.busy}
+              onClick={enrich.run}
+            >
+              {enrich.busy
+                ? `Translating ${enrich.count} words…`
+                : `Translate ${enrich.count} untranslated words`}
+            </button>
+          )}
+
+          {/* Whatever came of the last attempt, said here rather than on a
+              screen the reader is not looking at (REQ-13). */}
+          {enrich.failure && !enrich.busy && (
+            <div className="reading-screen__enrich-notice" role="status">
+              <p className="reading-screen__enrich-message">
+                {enrich.failure.message}
+                {enrich.failure.settingsWillHelp && (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      className="reading-screen__enrich-settings"
+                      onClick={enrich.onOpenSettings}
+                    >
+                      Open Settings
+                    </button>
+                  </>
+                )}
+              </p>
+              {/* REQ-17: reachable, folded away — diagnostics, not reading. */}
+              {enrich.failure.detail && (
+                <details className="reading-screen__enrich-details">
+                  <summary>What came back</summary>
+                  <pre className="reading-screen__enrich-raw">{enrich.failure.detail}</pre>
+                </details>
+              )}
+            </div>
+          )}
+
+          {enrich.notice && !enrich.failure && !enrich.busy && (
+            <p className="reading-screen__enrich-notice" role="status">
+              {enrich.notice}
+            </p>
+          )}
+        </div>
       )}
 
       <ArabicText
