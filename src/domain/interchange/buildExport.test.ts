@@ -141,4 +141,33 @@ describe('buildStateExport', () => {
     expect(parsed.ok).toBe(true);
     expect(parsed.ok && parsed.value.articleReads).toBeUndefined();
   });
+
+  // Cached glosses cost money to produce, so a dump that dropped them would
+  // make the reader buy them again article by article after a restore.
+  it('carries bought translations', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42, [], [
+      { id: 'كتاب', gloss: 'book', forms: null, createdAt: 42 },
+    ]);
+
+    expect(state.glosses).toEqual([{ id: 'كتاب', gloss: 'book', forms: null, createdAt: 42 }]);
+  });
+
+  it('round-trips bought translations through the schema', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42, [], [
+      { id: 'كتاب', gloss: 'book', forms: 'كِتَاب / كُتُب', createdAt: 42 },
+    ]);
+    const parsed = parseStateExport(JSON.parse(serializeStateExport(state)));
+
+    expect(parsed.ok && parsed.value.glosses).toEqual([
+      { id: 'كتاب', gloss: 'book', forms: 'كِتَاب / كُتُب', createdAt: 42 },
+    ]);
+  });
+
+  it('accepts a dump written before translations were carried', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42);
+    const older: Record<string, unknown> = { ...state };
+    delete older.glosses;
+
+    expect(parseStateExport(older).ok).toBe(true);
+  });
 });

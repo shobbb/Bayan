@@ -85,6 +85,20 @@ export const interchangeArticleReadSchema = z.object({
   flaggedIndices: z.array(z.number()),
 });
 
+/**
+ * Translations bought from the model for words met in published articles.
+ *
+ * Carried for the same reason as article progress, and with more at stake:
+ * these cost real money to produce, so a restore that dropped them would make
+ * the reader pay for them a second time, article by article.
+ */
+export const interchangeGlossSchema = z.object({
+  id: z.string(),
+  gloss: z.string(),
+  forms: z.string().nullable(),
+  createdAt: z.number(),
+});
+
 export const stateExportSchema = z.object({
   schemaVersion: z.literal(1),
   exportedAt: z.number(),
@@ -94,12 +108,14 @@ export const stateExportSchema = z.object({
   categories: z.object({ topics: z.array(z.string()), formats: z.array(z.string()) }),
   config: z.unknown().nullable(),
   articleReads: z.array(interchangeArticleReadSchema).optional(),
+  glosses: z.array(interchangeGlossSchema).optional(),
 });
 
 export type StateExport = z.infer<typeof stateExportSchema>;
 export type InterchangeWord = z.infer<typeof interchangeWordSchema>;
 export type InterchangeRound = z.infer<typeof interchangeRoundSchema>;
 export type InterchangeArticleRead = z.infer<typeof interchangeArticleReadSchema>;
+export type InterchangeGloss = z.infer<typeof interchangeGlossSchema>;
 
 export interface ValidationFailure {
   path: string;

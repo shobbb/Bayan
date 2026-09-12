@@ -9,6 +9,7 @@ import { listWords } from '@/data/wordRepository';
 import { listRounds } from '@/data/roundRepository';
 import { getConfigOverrides } from '@/data/settingsRepository';
 import { listArticleReads } from '@/data/articleReadRepository';
+import { listGlosses } from '@/data/glossRepository';
 import type { Categories } from '@/config';
 
 export interface ExportedState {
@@ -23,11 +24,12 @@ export async function exportState(
   categories: Categories,
   now = Date.now(),
 ): Promise<ExportedState> {
-  const [words, rounds, overrides, articleReads] = await Promise.all([
+  const [words, rounds, overrides, articleReads, glosses] = await Promise.all([
     listWords(DEFAULT_TRACK_ID),
     listRounds(DEFAULT_TRACK_ID),
     getConfigOverrides(),
     listArticleReads(),
+    listGlosses(),
   ]);
 
   // Oldest first, so a dump reads chronologically.
@@ -38,6 +40,9 @@ export async function exportState(
     overrides,
     now,
     articleReads,
+    // The cache stores its own provenance; the dump carries only the
+    // translation, so a restored gloss comes back marked as generated.
+    glosses.map(({ id, gloss, forms, createdAt }) => ({ id, gloss, forms, createdAt })),
   );
 
   return {

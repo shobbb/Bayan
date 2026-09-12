@@ -8,7 +8,13 @@
  */
 import type { AppConfigOverrides, Categories } from '@/config';
 import type { Round, Word } from '@/domain/types';
-import type { InterchangeArticleRead, InterchangeRound, InterchangeWord, StateExport } from './schema';
+import type {
+  InterchangeArticleRead,
+  InterchangeGloss,
+  InterchangeRound,
+  InterchangeWord,
+  StateExport,
+} from './schema';
 
 export const SCHEMA_VERSION = 1;
 
@@ -62,6 +68,7 @@ export function buildStateExport(
   config: AppConfigOverrides | null,
   exportedAt: number,
   articleReads: readonly InterchangeArticleRead[] = [],
+  glosses: readonly InterchangeGloss[] = [],
 ): StateExport {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -72,6 +79,7 @@ export function buildStateExport(
     categories: { topics: [...categories.topics], formats: [...categories.formats] },
     config,
     articleReads: [...articleReads],
+    glosses: [...glosses],
   };
 }
 

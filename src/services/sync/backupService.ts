@@ -7,6 +7,7 @@
  * corpus without being told to.
  */
 import type { Categories } from '@/config';
+import type { WordId } from '@/domain/types';
 import { parseStateExport, type StateExport } from '@/domain/interchange/schema';
 import { planImport } from '@/domain/interchange/importPlan';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
@@ -15,6 +16,7 @@ import { exportState } from '@/services/interchange/exportState';
 import { getSupabaseCredentials } from '@/services/platform/storage';
 import { getSetting, setSetting } from '@/data/settingsRepository';
 import { markArticleRead } from '@/data/articleReadRepository';
+import { putGlosses } from '@/data/glossRepository';
 import { getBackup, putBackup, type SupabaseBackupConfig } from './supabaseStorage';
 
 const BACKUP_PATH = 'state/latest.json';
@@ -140,11 +142,20 @@ export async function restoreFromBackup(): Promise<BackupResult> {
 
   await applyImport({ words: plan.words, rounds: plan.rounds }, DEFAULT_TRACK_ID, true);
 
-  // Article progress rides along in the dump. Restored after the corpus so a
-  // failed import does not leave read marks for words that are not there.
+  // Article progress and bought translations ride along in the dump. Restored
+  // after the corpus so a failed import does not leave either behind for words
+  // that are not there.
   for (const read of parsed.value.articleReads ?? []) {
     await markArticleRead(read);
   }
+
+  await putGlosses(
+    (parsed.value.glosses ?? []).map((entry) => ({
+      ...entry,
+      id: entry.id as WordId,
+      source: 'generated' as const,
+    })),
+  );
 
   return { words: plan.report.totalWords, rounds: plan.report.totalRounds };
 }

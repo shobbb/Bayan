@@ -762,9 +762,11 @@ learner did not ask for. The control says when it last ran — a backup control
 that cannot answer that is not worth trusting.
 
 `REQ-54` The dump is complete, including state that lives outside words and
-rounds. Article progress is carried as an optional field; the schema version
-stays at 1 because the addition is purely additive and must not break the
-external tooling's round trip (REQ-I1).
+rounds. Article progress and bought translations are carried as optional fields;
+the schema version stays at 1 because both additions are purely additive and
+must not break the external tooling's round trip (REQ-I1). Translations matter
+most here — they cost money to produce, so a dump that dropped them would make
+the reader buy them again, article by article.
 
 ---
 
