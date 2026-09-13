@@ -87,6 +87,61 @@
   }
 }
 
+/* The article left open. Drawn as a quiet card rather than as a second filled
+   button: it competes with Study for the top of the screen, and only one of
+   them is the daily habit. */
+.home-screen__reading-resume {
+  display: block;
+  width: 100%;
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+}
+
+.home-screen__reading-resume:hover {
+  border-color: var(--signal);
+}
+
+.home-screen__resume-label {
+  display: block;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  line-height: var(--text-data-line);
+  color: var(--ink-muted);
+}
+
+.home-screen__resume-title {
+  display: block;
+  font-family: var(--font-arabic);
+  font-size: 1.15rem;
+  /* Enough to clear stacked marks (§5.2) — these titles are fully vowelled. */
+  line-height: 1.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-screen__resume-track {
+  display: block;
+  block-size: 2px;
+  margin-top: var(--space-2);
+  background: var(--rule);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.home-screen__resume-fill {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 2px;
+  background: var(--signal);
+}
+
 /* One figure implies an action, so one figure carries the weight (REQ-49).
    The rules are gone: whitespace already separates this from what follows, and
    a line that is not doing work is clutter. */

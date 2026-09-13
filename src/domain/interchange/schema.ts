@@ -90,6 +90,10 @@ export const interchangeArticleReadSchema = z.object({
   id: z.string(),
   /** Null while the article has been flagged in but not finished. */
   readAt: z.number().nullable(),
+  /** Where the reader was, so a restore resumes rather than starts over. */
+  openedAt: z.number().nullable().optional(),
+  progressIndex: z.number().nullable().optional(),
+  progressTotal: z.number().nullable().optional(),
   flaggedIndices: z.array(z.number()),
   /**
    * Pre-reading values for the words this reading flagged, so unmarking after a

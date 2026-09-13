@@ -31,6 +31,12 @@ export interface HomeScreenProps {
   /** Whether the choice is open, and how to start one of them. */
   studyOpen: boolean;
   onChooseStudy: (id: StudySourceId) => void;
+  /**
+   * The article left open mid-read, or null. Offered here because this is where
+   * the app opens, and losing your place on every launch is the whole problem
+   * it answers.
+   */
+  reading: { titleAr: string; progress: number; resume: () => void } | null;
   onSyncNow: () => void;
   /** When this device last wrote to remote storage, or null if never. */
   lastBackupAt: number | null;
@@ -89,6 +95,7 @@ export function HomeScreen({
   studyOptions,
   studyOpen,
   onChooseStudy,
+  reading,
   onSyncNow,
   lastBackupAt,
   refreshToken,
@@ -149,6 +156,27 @@ export function HomeScreen({
           {lastBackupAt === null ? 'never backed up' : `backed up ${relativeTime(lastBackupAt)}`}
         </p>
       </div>
+
+      {/* Above the primary action, because someone in the middle of an article
+          came back to finish it. Absent entirely the rest of the time, so it
+          never costs a line it has not earned. */}
+      {reading && (
+        <button type="button" className="home-screen__reading-resume" onClick={reading.resume}>
+          <span className="home-screen__resume-label">Continue reading</span>
+          <span dir="rtl" lang="ar" className="home-screen__resume-title">
+            {reading.titleAr}
+          </span>
+          {/* A bar, not a percentage: how far in is a feeling, and two decimal
+              places of one would be pretending to a precision the top of a
+              viewport does not have. */}
+          <span className="home-screen__resume-track" aria-hidden="true">
+            <span
+              className="home-screen__resume-fill"
+              style={{ inlineSize: `${Math.round(Math.min(1, reading.progress) * 100)}%` }}
+            />
+          </span>
+        </button>
+      )}
 
       {actionsRanked('primary').map((action) => (
         <div key={action.id}>

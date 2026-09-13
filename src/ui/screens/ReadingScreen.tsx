@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
 import type { Failure } from '@/ui/failure';
@@ -25,6 +25,18 @@ export interface ReadingScreenProps {
    * when the round completes.
    */
   onToggleNotKnown?: (index: number, flagged: boolean) => void;
+  /**
+   * Where the reader left off last time, scrolled to on arrival. Null starts at
+   * the title, which is also what a first reading does.
+   */
+  resumeAt?: number | null;
+  /**
+   * Reports the segment now at the top of the viewport, so leaving the app
+   * mid-article does not cost the reader their place. Throttled by the caller's
+   * standards, not this screen's: it fires at most once a second and only when
+   * the position has actually moved.
+   */
+  onProgress?: (index: number) => void;
   /**
    * Rendered between the title and the text. Typed as a node rather than as an
    * image and a video URL so this screen stays ignorant of where its text came
@@ -88,6 +100,8 @@ export function ReadingScreen({
   onExit,
   enrich = null,
   onToggleNotKnown,
+  resumeAt = null,
+  onProgress,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -159,6 +173,61 @@ export function ReadingScreen({
   }, [activeIndex, notKnownIndices, onToggleNotKnown]);
 
   const activeIsNotKnown = activeIndex !== null && notKnownIndices.has(activeIndex);
+
+  // Put the reader back where they were. Runs once per article: `resumeAt` is
+  // read from storage on open and must not fight the scrolling that follows.
+  const resumedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (resumeAt === null || resumedFor.current === titleAr) return;
+    resumedFor.current = titleAr;
+    const target = containerRef.current?.querySelector<HTMLElement>(
+      `[data-segment-index="${resumeAt}"]`,
+    );
+    // Instant, not smooth: an animated scroll through a long article on arrival
+    // reads as the page running away from you.
+    target?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }, [resumeAt, titleAr]);
+
+  // The topmost segment still on screen is the reader's place. Measured from
+  // the DOM rather than from a scroll offset: an offset is a fact about one
+  // font size on one screen, and would land somewhere arbitrary on another.
+  const lastReported = useRef<number | null>(null);
+  useEffect(() => {
+    if (!onProgress) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    let timer: number | null = null;
+    const report = () => {
+      timer = null;
+      const marks = container.querySelectorAll<HTMLElement>('[data-segment-index]');
+      for (const mark of marks) {
+        // A little below the top edge, so the word being reported is one the
+        // reader can actually see rather than one half cut off by the bezel.
+        if (mark.getBoundingClientRect().bottom > 80) {
+          const index = Number(mark.dataset.segmentIndex);
+          if (Number.isFinite(index) && index !== lastReported.current) {
+            lastReported.current = index;
+            onProgress(index);
+          }
+          return;
+        }
+      }
+    };
+
+    const onScroll = () => {
+      if (timer !== null) return; // trailing-edge throttle: one write a second
+      timer = window.setTimeout(report, 1000);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (timer !== null) window.clearTimeout(timer);
+      // One last write on the way out, so leaving by any route keeps the place.
+      report();
+    };
+  }, [onProgress]);
 
   return (
     <div className="reading-screen" ref={containerRef}>

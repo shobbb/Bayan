@@ -15,6 +15,7 @@ import { resegment, untranslatedIds } from './enrichGlosses';
 import type { Article, ArticleBundle, ArticleSource } from '@/domain/articles/types';
 import { ingestRoundWords } from '@/domain/rounds/ingest';
 import { planArticleFlag, wordIdAt } from '@/domain/articles/flags';
+import { pickCurrentReading, readingFraction, resumeIndex } from '@/domain/articles/progress';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -68,6 +69,58 @@ export interface OpenedArticle {
   flaggedIndices: number[];
   /** Distinct forms here that still have no translation anywhere. */
   untranslated: number;
+  /** Where to put the reader back, or null to start at the title. */
+  resumeAt: number | null;
+}
+
+/** The article left open, for the offer to pick it back up. */
+export interface CurrentReading {
+  article: Article;
+  /** Roughly how far in, 0–1, for a progress hint rather than a percentage. */
+  progress: number;
+}
+
+/**
+ * The article the reader is in the middle of, or null.
+ *
+ * Read from storage rather than held in memory on purpose: the reason it was
+ * being lost is that leaving the app discards memory, and an offer to resume
+ * that only survives as long as the session would answer the wrong question.
+ */
+export async function currentReading(): Promise<CurrentReading | null> {
+  const reads = await listArticleReads();
+  const current = pickCurrentReading(reads);
+  if (!current) return null;
+
+  const bundle = await loadArticles();
+  const article = bundle.articles.find((candidate) => candidate.id === current.id);
+  if (!article) return null; // the bundle changed under a stored reading
+
+  return { article, progress: readingFraction(current) };
+}
+
+/**
+ * Stores how far into an article the reader has got.
+ *
+ * Never marks it read: leaving halfway is not finishing (REQ-51), and the two
+ * are told apart by comparing openedAt with readAt.
+ */
+export async function saveReadingProgress(
+  articleId: string,
+  progressIndex: number,
+  progressTotal: number,
+  now = Date.now(),
+): Promise<void> {
+  const record = await getArticleRead(articleId);
+  await markArticleRead({
+    id: articleId,
+    readAt: record?.readAt ?? null,
+    openedAt: record?.openedAt ?? now,
+    flaggedIndices: record?.flaggedIndices ?? [],
+    ...(record?.priorMarks ? { priorMarks: record.priorMarks } : {}),
+    progressIndex,
+    progressTotal,
+  });
 }
 
 /**
@@ -77,7 +130,7 @@ export interface OpenedArticle {
  * consults the learner's corpus — a word learned yesterday should be glossed
  * today, and a segmentation cached at import would never know.
  */
-export async function openArticle(id: string): Promise<OpenedArticle> {
+export async function openArticle(id: string, now = Date.now()): Promise<OpenedArticle> {
   const [bundle, previous] = await Promise.all([loadArticles(), getArticleRead(id)]);
 
   const article = bundle.articles.find((candidate) => candidate.id === id);
@@ -89,11 +142,24 @@ export async function openArticle(id: string): Promise<OpenedArticle> {
   // import would never know.
   const segments = await resegment(article);
 
+  // Stamped on open, which is what makes this the current reading — and what a
+  // second article opened later quietly takes over.
+  await markArticleRead({
+    id,
+    readAt: previous?.readAt ?? null,
+    openedAt: now,
+    progressIndex: previous?.progressIndex ?? null,
+    progressTotal: previous?.progressTotal ?? null,
+    flaggedIndices: previous?.flaggedIndices ?? [],
+    ...(previous?.priorMarks ? { priorMarks: previous.priorMarks } : {}),
+  });
+
   return {
     article,
     segments,
     flaggedIndices: previous?.flaggedIndices ?? [],
     untranslated: untranslatedIds(segments).length,
+    resumeAt: resumeIndex(previous ?? null, segments.length),
   };
 }
 
@@ -176,6 +242,12 @@ export async function finishArticle(
   await markArticleRead({
     id: article.id,
     readAt: now,
+    // Finishing ends the reading: openedAt now sits at or before readAt, so
+    // this article stops being the one offered to pick back up, and the stored
+    // position is cleared rather than left to resume a reading that is over.
+    openedAt: record?.openedAt ?? now,
+    progressIndex: null,
+    progressTotal: null,
     flaggedIndices: [...notKnownIndices].sort((a, b) => a - b),
     priorMarks: record?.priorMarks ?? {},
   });

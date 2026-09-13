@@ -594,6 +594,26 @@ Rationale for 13–16: the method is still under test. Hardcoding a flow would f
 
 `REQ-21` Default batch size 40. Configurable. Warn above 50 — larger batches measurably degrade retention under fatigue.
 
+`REQ-65` An article left open is **offered back on Home**. Leaving the app
+discards memory, so the offer is read from storage rather than remembered: the
+most recently opened article whose opening is later than its finishing. That
+comparison, rather than "readAt is null", is what lets a finished article be
+reopened and read again without losing the mark it earned.
+
+`REQ-66` Reading position is stored as a **segment index, not a scroll offset**.
+An offset is a fact about one font size on one screen and would land the reader
+somewhere arbitrary on another; a segment is a fact about the text. It is
+written at most once a second while scrolling and once more on the way out, and
+clamped on the way back in — a stored index outlives the reading it came from,
+and a re-segmentation can leave it pointing past the end.
+
+`REQ-67` How far in is measured against the **segment count stored beside the
+index**. The index counts every segment, punctuation and paragraph breaks
+included, so dividing by a word count overstates it: a third of the way in read
+as five sixths. Shown as a bar rather than a percentage — how far in is a
+feeling, and a figure would claim a precision the top of a viewport does not
+have.
+
 `REQ-62` A mark is written **when it is made**, not at Finish. Holding it in
 component state until the end of the text means backing out of a long article —
 or the phone reclaiming the tab — throws away everything the reader noticed, and

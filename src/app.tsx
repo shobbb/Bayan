@@ -11,7 +11,14 @@ import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession, studyOptions } from '@/services/batch/batchService';
 import type { StudySourceId } from '@/domain/drills/studySources';
-import { openArticle, finishArticle, setArticleFlag } from '@/services/articles/articleService';
+import {
+  openArticle,
+  finishArticle,
+  setArticleFlag,
+  saveReadingProgress,
+  currentReading,
+  type CurrentReading,
+} from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
 import { enrichArticle } from '@/services/articles/enrichGlosses';
@@ -38,6 +45,7 @@ type Screen =
       segments: ResolvedSegment[];
       flaggedIndices: number[];
       untranslated: number;
+      resumeAt: number | null;
     }
   | {
       name: 'drill';
@@ -69,6 +77,7 @@ function AppScreens() {
   // translation came to look like a control that does nothing.
   const [enrichFailure, setEnrichFailure] = useState<Failure | null>(null);
   const [enrichNotice, setEnrichNotice] = useState<string | null>(null);
+  const [reading, setReading] = useState<CurrentReading | null>(null);
 
   // Fetches the code-split Capacitor plugin chunks now, while this page is
   // known to match what the server is serving. See warmPlatformPlugins.
@@ -80,6 +89,11 @@ function AppScreens() {
     let cancelled = false;
     void getLastBackupAt().then((at) => {
       if (!cancelled) setLastBackupAt(at);
+    });
+    // Read from storage, not remembered in state: losing it on every launch is
+    // exactly what this answers.
+    void currentReading().then((current) => {
+      if (!cancelled) setReading(current);
     });
     return () => {
       cancelled = true;
@@ -212,8 +226,8 @@ function AppScreens() {
     setEnrichNotice(null);
     setOpeningArticle(id);
     openArticle(id)
-      .then(({ article, segments, flaggedIndices, untranslated }) =>
-        setScreen({ name: 'article', article, segments, flaggedIndices, untranslated }),
+      .then(({ article, segments, flaggedIndices, untranslated, resumeAt }) =>
+        setScreen({ name: 'article', article, segments, flaggedIndices, untranslated, resumeAt }),
       )
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setOpeningArticle(null));
@@ -235,6 +249,7 @@ function AppScreens() {
           segments: filled,
           flaggedIndices,
           untranslated: result.requested - result.filled,
+          resumeAt: null, // already on screen; do not jump them back
         });
         setEnrichNotice(`Translated ${result.filled} of ${result.requested} words.`);
       })
@@ -295,13 +310,24 @@ function AppScreens() {
   }
 
   if (screen.name === 'article') {
-    const { article, segments, flaggedIndices } = screen;
+    const { article, segments, flaggedIndices, resumeAt } = screen;
     return (
       <ReadingScreen
         segments={segments}
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
-        onExit={{ label: 'Articles', run: () => setScreen({ name: 'library' }) }}
+        resumeAt={resumeAt}
+        onProgress={(index) => {
+          void saveReadingProgress(article.id, index, segments.length);
+        }}
+        onExit={{
+          label: 'Articles',
+          run: () => {
+            // The place is already stored; refresh so Home offers it back.
+            setRefreshToken((n) => n + 1);
+            setScreen({ name: 'library' });
+          },
+        }}
         onToggleNotKnown={(index, flagged) => {
           // Written as it is tapped, not at Finish: backing out of a long
           // article should not cost the reader everything they noticed in it.
@@ -368,6 +394,13 @@ function AppScreens() {
       notice={notice}
       onGenerateBatch={handleGenerateBatch}
       onStudyBatch={handleStudyBatch}
+      reading={
+        reading && {
+          titleAr: reading.article.titleAr,
+          progress: reading.progress,
+          resume: () => handleOpenArticle(reading.article.id),
+        }
+      }
       studyOptions={studyChoices}
       studyOpen={studyOpen}
       onChooseStudy={handleChooseStudy}

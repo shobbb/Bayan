@@ -28,6 +28,26 @@ export interface ArticleReadRecord {
    * quietly drop every article still in progress.
    */
   readAt: number | null;
+  /**
+   * When the article was last opened. Compared against readAt to tell an open
+   * reading from a finished one, so reopening a finished article counts as
+   * reading it again without costing it the "read" mark it earned.
+   */
+  openedAt?: number | null;
+  /**
+   * Segment index at the top of the viewport when the reader last left, so
+   * coming back lands where they were rather than at the title.
+   *
+   * An index, not a scroll offset: the offset is a fact about one font size on
+   * one screen, and would put the reader somewhere arbitrary the moment either
+   * changed. A segment is a fact about the text.
+   */
+  progressIndex?: number | null;
+  /**
+   * How many segments the text had when that index was taken, so how far in it
+   * is can be stated without re-segmenting the article to find out.
+   */
+  progressTotal?: number | null;
   /** Segment indices currently flagged "didn't know". */
   flaggedIndices: number[];
   /**
