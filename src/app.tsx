@@ -11,7 +11,7 @@ import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession, studyOptions } from '@/services/batch/batchService';
 import type { StudySourceId } from '@/domain/drills/studySources';
-import { openArticle, finishArticle } from '@/services/articles/articleService';
+import { openArticle, finishArticle, setArticleFlag } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
 import { enrichArticle } from '@/services/articles/enrichGlosses';
@@ -302,6 +302,13 @@ function AppScreens() {
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
         onExit={{ label: 'Articles', run: () => setScreen({ name: 'library' }) }}
+        onToggleNotKnown={(index, flagged) => {
+          // Written as it is tapped, not at Finish: backing out of a long
+          // article should not cost the reader everything they noticed in it.
+          void setArticleFlag(article, segments, index, flagged)
+            .then(() => setRefreshToken((n) => n + 1))
+            .catch((error: unknown) => setEnrichFailure(describeFailure(error)));
+        }}
         enrich={{
           count: screen.untranslated,
           busy: enriching,

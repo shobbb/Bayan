@@ -20,6 +20,12 @@ export interface ReadingScreenProps {
   /** Flags carried over from a previous read of the same text. */
   initialNotKnown?: readonly number[];
   /**
+   * Called as each flag is made or taken back, so it can be persisted there and
+   * then rather than at Finish. Absent for generated rounds, which are written
+   * when the round completes.
+   */
+  onToggleNotKnown?: (index: number, flagged: boolean) => void;
+  /**
    * Rendered between the title and the text. Typed as a node rather than as an
    * image and a video URL so this screen stays ignorant of where its text came
    * from — generated rounds pass nothing.
@@ -81,6 +87,7 @@ export function ReadingScreen({
   media = null,
   onExit,
   enrich = null,
+  onToggleNotKnown,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -117,6 +124,7 @@ export function ReadingScreen({
           next.delete(index);
           return next;
         });
+        if (notKnownIndices.has(index)) onToggleNotKnown?.(index, false);
         return;
       }
 
@@ -135,18 +143,20 @@ export function ReadingScreen({
         }
       }
     },
-    [activeIndex],
+    [activeIndex, notKnownIndices, onToggleNotKnown],
   );
 
   const handleToggleNotKnown = useCallback(() => {
     if (activeIndex === null) return;
+    const flagged = !notKnownIndices.has(activeIndex);
     setNotKnownIndices((prev) => {
       const next = new Set(prev);
-      if (next.has(activeIndex)) next.delete(activeIndex);
-      else next.add(activeIndex);
+      if (flagged) next.add(activeIndex);
+      else next.delete(activeIndex);
       return next;
     });
-  }, [activeIndex]);
+    onToggleNotKnown?.(activeIndex, flagged);
+  }, [activeIndex, notKnownIndices, onToggleNotKnown]);
 
   const activeIsNotKnown = activeIndex !== null && notKnownIndices.has(activeIndex);
 

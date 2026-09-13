@@ -14,10 +14,12 @@ import type { ResolvedSegment } from '@/domain/articles/segment';
 import { resegment, untranslatedIds } from './enrichGlosses';
 import type { Article, ArticleBundle, ArticleSource } from '@/domain/articles/types';
 import { ingestRoundWords } from '@/domain/rounds/ingest';
+import { planArticleFlag, wordIdAt } from '@/domain/articles/flags';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
-import type { Word, WordId } from '@/domain/types';
+
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
 import { getArticleRead, listArticleReads, markArticleRead } from '@/data/articleReadRepository';
+import type { ArticleReadRecord } from '@/data/db';
 
 let cached: ArticleBundle | null = null;
 
@@ -96,11 +98,67 @@ export async function openArticle(id: string): Promise<OpenedArticle> {
 }
 
 /**
+ * Records a "didn't know" the moment it is tapped, rather than at Finish.
+ *
+ * A mark is something the reader did, and holding it in component state until
+ * they reach the end means backing out of a long article — or the phone
+ * reclaiming the tab — throws away everything they noticed. It is also what
+ * made the corpus and the "marked recently" count lag behind the screen.
+ *
+ * Orchestration only: what a mark is worth is decided by planArticleFlag in
+ * domain/articles (§2.1). This reads the two records it needs and writes back
+ * what that returns.
+ */
+export async function setArticleFlag(
+  article: Article,
+  segments: readonly ResolvedSegment[],
+  index: number,
+  flagged: boolean,
+  now = Date.now(),
+): Promise<void> {
+  const profile = modernStandardArabicProfile;
+  const id = wordIdAt(segments, index, profile);
+  if (id === null) return;
+
+  const record: ArticleReadRecord = (await getArticleRead(article.id)) ?? {
+    id: article.id,
+    readAt: null,
+    flaggedIndices: [],
+  };
+  const [word] = await getWords([id]);
+
+  const plan = planArticleFlag({
+    segments,
+    index,
+    flagged,
+    state: { flaggedIndices: record.flaggedIndices, priorMarks: record.priorMarks ?? {} },
+    word: word ?? null,
+    articleId: article.id,
+    trackId: DEFAULT_TRACK_ID,
+    profile,
+    now,
+  });
+  if (!plan) return;
+
+  if (plan.word) await upsertWords([plan.word]);
+  await markArticleRead({
+    ...record,
+    flaggedIndices: [...plan.state.flaggedIndices],
+    priorMarks: { ...plan.state.priorMarks },
+  });
+}
+
+/**
  * Folds a finished article back into the corpus.
  *
  * Uses the same ingestion as a generated round (REQ-11 identity, one increment
  * per reading regardless of repeats) so there is no second set of counting
  * rules that could drift from the first.
+ *
+ * Flags are not applied here — setArticleFlag wrote them as they were made.
+ * That also ends a quiet inflation: reopening a previously flagged article
+ * restored its flags, and finishing it again added another miss to every one of
+ * them without the reader having touched anything.
  */
 export async function finishArticle(
   article: Article,
@@ -114,28 +172,11 @@ export async function finishArticle(
   const touched = ingestRoundWords(segments, existing, article.id, DEFAULT_TRACK_ID, profile, now);
   await upsertWords(touched);
 
-  const flaggedIds = new Set<WordId>(
-    notKnownIndices
-      .map((index) => segments[index])
-      .filter((segment): segment is ResolvedSegment => segment?.gloss != null)
-      .map((segment) => profile.normalize(segment.text)),
-  );
-
-  if (flaggedIds.size > 0) {
-    const flagged = await getWords([...flaggedIds]);
-    await upsertWords(
-      flagged.map((word: Word) => ({
-        ...word,
-        unclearCount: word.unclearCount + 1,
-        lastSeenAt: now,
-        lastMarkedAt: now,
-      })),
-    );
-  }
-
+  const record = await getArticleRead(article.id);
   await markArticleRead({
     id: article.id,
     readAt: now,
-    flaggedIndices: [...notKnownIndices],
+    flaggedIndices: [...notKnownIndices].sort((a, b) => a - b),
+    priorMarks: record?.priorMarks ?? {},
   });
 }

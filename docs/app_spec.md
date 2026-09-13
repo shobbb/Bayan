@@ -594,6 +594,31 @@ Rationale for 13–16: the method is still under test. Hardcoding a flow would f
 
 `REQ-21` Default batch size 40. Configurable. Warn above 50 — larger batches measurably degrade retention under fatigue.
 
+`REQ-62` A mark is written **when it is made**, not at Finish. Holding it in
+component state until the end of the text means backing out of a long article —
+or the phone reclaiming the tab — throws away everything the reader noticed, and
+it is what made the corpus and the study counts lag behind the screen. Finish
+still owns `seenCount`, which `ingestRoundWords` applies once over the whole
+article: incrementing it on a mark as well would count the sighting twice, so a
+word first met by being marked is created at zero and reaches one when the
+reading is finished.
+
+`REQ-63` Mark writes are **absolute, not relative**. Each word's pre-reading
+values are captured once onto the article's progress record, and every write
+sets `unclearCount` to that base plus one, or back to the base. A double tap, a
+re-render or a repeated call therefore converges instead of counting again —
+which a bare increment could not promise once every tap writes. Unmarking
+restores the captured values rather than decrementing, because nothing can
+reconstruct the previous `lastMarkedAt`, and leaving it at the time of a mistap
+would put the word in "marked this week" on the strength of a tap that was
+taken back.
+
+`REQ-64` Marking is not reading. An article flagged in but not finished has a
+null `readAt` and does not show as read (REQ-51). Progress records are therefore
+sorted in code rather than through that index: a null indexed key is absent from
+its index in IndexedDB, so ordering by it would silently drop every article
+still in progress.
+
 `REQ-55` A word carries **when** it was last flagged, not only how often.
 `lastMarkedAt` moves wherever `unclearCount` moves — the same two places, one
 for rounds and one for articles — and is distinct from `lastSeenAt` on purpose:

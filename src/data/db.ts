@@ -18,9 +18,28 @@ export interface SettingsRecord {
  */
 export interface ArticleReadRecord {
   id: string;
-  readAt: number;
-  /** Segment indices flagged "didn't know" on the last read. */
+  /**
+   * When the article was finished, or null when it has only been flagged in.
+   *
+   * Nullable because flags are written the moment they are made, which is
+   * before the article has been read to the end — and a flag is not a reading
+   * (REQ-51). Records are sorted in JS rather than through an index: a null
+   * indexed key is absent from that index in IndexedDB, so ordering by it would
+   * quietly drop every article still in progress.
+   */
+  readAt: number | null;
+  /** Segment indices currently flagged "didn't know". */
   flaggedIndices: number[];
+  /**
+   * What each flagged word looked like before this reading flagged it.
+   *
+   * Carried on the record so unmarking restores the exact previous values
+   * rather than guessing at them — a decrement can put unclearCount back, but
+   * nothing can reconstruct the previous lastMarkedAt, and leaving it at the
+   * time of a mistap would put the word in "marked this week" on the strength
+   * of a tap that was taken back.
+   */
+  priorMarks?: Record<string, { unclearCount: number; lastMarkedAt: number | null }>;
 }
 
 /**

@@ -88,8 +88,17 @@ export const interchangeRoundSchema = z.object({
  */
 export const interchangeArticleReadSchema = z.object({
   id: z.string(),
-  readAt: z.number(),
+  /** Null while the article has been flagged in but not finished. */
+  readAt: z.number().nullable(),
   flaggedIndices: z.array(z.number()),
+  /**
+   * Pre-reading values for the words this reading flagged, so unmarking after a
+   * restore puts them back exactly. Optional and additive, so the version stays
+   * at 1 (REQ-I1) and an older dump still validates.
+   */
+  priorMarks: z
+    .record(z.string(), z.object({ unclearCount: z.number(), lastMarkedAt: z.number().nullable() }))
+    .optional(),
 });
 
 /**
