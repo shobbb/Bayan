@@ -48,6 +48,11 @@ export interface ArticleReadRecord {
    * is can be stated without re-segmenting the article to find out.
    */
   progressTotal?: number | null;
+  /**
+   * How many segments preceded the body when the indices above were taken, so
+   * they can be moved onto the current base. See domain/articles/progress.
+   */
+  titleOffset?: number | null;
   /** Segment indices currently flagged "didn't know". */
   flaggedIndices: number[];
   /**

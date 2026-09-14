@@ -102,6 +102,13 @@
   margin: 0 0 var(--space-2);
 }
 
+/* When the headline is tappable the run inside carries the type, so the
+   heading is only a wrapper — leaving its own size on would set it twice. */
+.reading-screen__title-ar--tappable {
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .reading-screen__finish-row {
   display: flex;
   justify-content: center;

@@ -16,6 +16,16 @@ export interface ArabicTextProps {
    */
   notKnownIndices: ReadonlySet<number>;
   onTapWord: (segment: Segment, index: number) => void;
+  /**
+   * Where this run sits in the article's single index space. The headline is
+   * the first segments of the same stream but renders in its own block, so it
+   * passes 0 and the body passes the title's length — every index this emits
+   * is the absolute one, which is what the flags, the stored position and the
+   * corpus all key on.
+   */
+  indexOffset?: number;
+  /** Extra class on the wrapper, for the headline's own type treatment. */
+  className?: string;
 }
 
 /**
@@ -24,10 +34,18 @@ export interface ArabicTextProps {
  * proven by docs/reference_reader.jsx. Punctuation renders inline with no
  * leading space; PARAGRAPH_BREAK renders as a line break.
  */
-export function ArabicText({ segments, activeIndex, notKnownIndices, onTapWord }: ArabicTextProps) {
+export function ArabicText({
+  segments,
+  activeIndex,
+  notKnownIndices,
+  onTapWord,
+  indexOffset = 0,
+  className,
+}: ArabicTextProps) {
   return (
-    <div dir="rtl" lang="ar" className="arabic-text">
-      {segments.map((segment, index) => {
+    <div dir="rtl" lang="ar" className={'arabic-text' + (className ? ` ${className}` : '')}>
+      {segments.map((segment, local) => {
+        const index = indexOffset + local;
         if (segment.text === PARAGRAPH_BREAK) {
           return <br key={index} className="arabic-text__break" />;
         }
@@ -42,8 +60,10 @@ export function ArabicText({ segments, activeIndex, notKnownIndices, onTapWord }
           );
         }
 
-        const previous = index > 0 ? segments[index - 1] : undefined;
-        const needsLeadingSpace = index > 0 && previous?.text !== PARAGRAPH_BREAK;
+        // Local, not absolute: the first word of a block never needs a space
+        // in front of it, whatever its index in the article.
+        const previous = local > 0 ? segments[local - 1] : undefined;
+        const needsLeadingSpace = local > 0 && previous?.text !== PARAGRAPH_BREAK;
         const isActive = index === activeIndex;
         const isNotKnown = notKnownIndices.has(index);
 

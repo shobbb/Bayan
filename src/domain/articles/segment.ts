@@ -128,90 +128,118 @@ export interface SegmentContext {
  * Segments one article. Paragraphs are separated by PARAGRAPH_BREAK sentinels,
  * matching what the reader already renders for generated rounds.
  */
-export function articleToSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
+function segmentRun(
+  text: string,
+  byPhrase: ReadonlyMap<string, PhraseEntry>,
+  maxWords: number,
+  ctx: SegmentContext,
+  into: ResolvedSegment[],
+): void {
   const { profile, known } = ctx;
-  const { byPhrase, maxWords } = indexGlosses(article, profile);
+  const tokens = text.match(TOKEN) ?? [];
+  let cursor = 0;
+
+  while (cursor < tokens.length) {
+    const token = tokens[cursor]!;
+
+    if (!isWord(token)) {
+      into.push({ text: token, gloss: null, forms: null, glossSource: null });
+      cursor += 1;
+      continue;
+    }
+
+    // Longest phrase first, so a multi-word expression is one tappable unit
+    // rather than being shadowed by a single-word entry for its first word.
+    let matched = false;
+    for (let span = Math.min(maxWords, tokens.length - cursor); span >= 1; span--) {
+      const window = tokens.slice(cursor, cursor + span);
+      if (!window.every(isWord)) continue;
+
+      const entry =
+        byPhrase.get(phraseKey(window, profile)) ??
+        (span === 1
+          ? candidateKeys(phraseKey(window, profile) as WordId)
+              .map((key) => byPhrase.get(key))
+              .find(Boolean)
+          : undefined);
+      if (!entry) continue;
+
+      into.push({
+        text: window.join(' '),
+        gloss: entry.gloss,
+        forms: entry.forms,
+        glossSource: 'publisher',
+      });
+      cursor += span;
+      matched = true;
+      break;
+    }
+    if (matched) continue;
+
+    // Exact first, then with a proclitic peeled off — never the other way
+    // round, so a word that really does start with these letters wins.
+    const keys = candidateKeys(profile.normalize(token));
+    const corpus = keys.map((key) => known.get(key)).find(Boolean);
+    if (corpus) {
+      into.push({
+        text: token,
+        gloss: corpus.gloss,
+        forms: corpus.forms,
+        glossSource: 'corpus',
+      });
+      cursor += 1;
+      continue;
+    }
+
+    // No gloss from anywhere. An Arabic word still gets an empty gloss rather
+    // than a null one, which is the difference between "we have no
+    // translation yet" and "this is punctuation": the empty string keeps the
+    // word tappable, keeps it flaggable, and — because ingestion keys on
+    // gloss !== null — keeps it counted in the corpus as something the
+    // learner has now seen. It lands there with needsEnrichment set, which
+    // is the existing hook for a fill-missing-glosses pass (REQ-I5).
+    //
+    // Roughly 60% of an article's words arrive here, since the publisher only
+    // glosses what it considers hard. Dropping them would mean most of what
+    // is read never counts as read.
+    into.push({
+      text: token,
+      gloss: isArabicWord(token) ? '' : null,
+      forms: null,
+      glossSource: null,
+    });
+    cursor += 1;
+  }
+}
+
+/**
+ * The headline, segmented exactly as the body is.
+ *
+ * A headline is the densest Arabic on the page and routinely carries the word
+ * the article is about, so leaving it as flat text made the one line most worth
+ * a tap the only line that refused one. It resolves against the same publisher
+ * glosses and the same corpus, so a word met here is the same word met below.
+ */
+export function articleTitleSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
+  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
+  const segments: ResolvedSegment[] = [];
+  segmentRun(article.titleAr, byPhrase, maxWords, ctx, segments);
+  return segments;
+}
+
+/**
+ * Segments one article. Paragraphs are separated by PARAGRAPH_BREAK sentinels,
+ * matching what the reader already renders for generated rounds.
+ */
+export function articleToSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
+  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
   const segments: ResolvedSegment[] = [];
 
   article.paragraphs.forEach((paragraph, index) => {
     if (index > 0) {
       segments.push({ text: PARAGRAPH_BREAK, gloss: null, forms: null, glossSource: null });
     }
-
-    const tokens = paragraph.match(TOKEN) ?? [];
-    let cursor = 0;
-
-    while (cursor < tokens.length) {
-      const token = tokens[cursor]!;
-
-      if (!isWord(token)) {
-        segments.push({ text: token, gloss: null, forms: null, glossSource: null });
-        cursor += 1;
-        continue;
-      }
-
-      // Longest phrase first, so a multi-word expression is one tappable unit
-      // rather than being shadowed by a single-word entry for its first word.
-      let matched = false;
-      for (let span = Math.min(maxWords, tokens.length - cursor); span >= 1; span--) {
-        const window = tokens.slice(cursor, cursor + span);
-        if (!window.every(isWord)) continue;
-
-        const entry =
-          byPhrase.get(phraseKey(window, profile)) ??
-          (span === 1
-            ? candidateKeys(phraseKey(window, profile) as WordId)
-                .map((key) => byPhrase.get(key))
-                .find(Boolean)
-            : undefined);
-        if (!entry) continue;
-
-        segments.push({
-          text: window.join(' '),
-          gloss: entry.gloss,
-          forms: entry.forms,
-          glossSource: 'publisher',
-        });
-        cursor += span;
-        matched = true;
-        break;
-      }
-      if (matched) continue;
-
-      // Exact first, then with a proclitic peeled off — never the other way
-      // round, so a word that really does start with these letters wins.
-      const keys = candidateKeys(profile.normalize(token));
-      const corpus = keys.map((key) => known.get(key)).find(Boolean);
-      if (corpus) {
-        segments.push({
-          text: token,
-          gloss: corpus.gloss,
-          forms: corpus.forms,
-          glossSource: 'corpus',
-        });
-        cursor += 1;
-        continue;
-      }
-
-      // No gloss from anywhere. An Arabic word still gets an empty gloss rather
-      // than a null one, which is the difference between "we have no
-      // translation yet" and "this is punctuation": the empty string keeps the
-      // word tappable, keeps it flaggable, and — because ingestion keys on
-      // gloss !== null — keeps it counted in the corpus as something the
-      // learner has now seen. It lands there with needsEnrichment set, which
-      // is the existing hook for a fill-missing-glosses pass (REQ-I5).
-      //
-      // Roughly 60% of an article's words arrive here, since the publisher only
-      // glosses what it considers hard. Dropping them would mean most of what
-      // is read never counts as read.
-      segments.push({
-        text: token,
-        gloss: isArabicWord(token) ? '' : null,
-        forms: null,
-        glossSource: null,
-      });
-      cursor += 1;
-    }
+    segmentRun(paragraph, byPhrase, maxWords, ctx, segments);
   });
 
   return segments;

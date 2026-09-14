@@ -15,7 +15,12 @@ import { resegment, untranslatedIds } from './enrichGlosses';
 import type { Article, ArticleBundle, ArticleSource } from '@/domain/articles/types';
 import { ingestRoundWords } from '@/domain/rounds/ingest';
 import { planArticleFlag, wordIdAt } from '@/domain/articles/flags';
-import { pickCurrentReading, readingFraction, resumeIndex } from '@/domain/articles/progress';
+import {
+  pickCurrentReading,
+  readingFraction,
+  rebaseIndices,
+  resumeIndex,
+} from '@/domain/articles/progress';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -71,6 +76,8 @@ export interface OpenedArticle {
   untranslated: number;
   /** Where to put the reader back, or null to start at the title. */
   resumeAt: number | null;
+  /** How many leading segments are the headline, which renders separately. */
+  titleOffset: number;
 }
 
 /** The article left open, for the offer to pick it back up. */
@@ -118,6 +125,7 @@ export async function saveReadingProgress(
     openedAt: record?.openedAt ?? now,
     flaggedIndices: record?.flaggedIndices ?? [],
     ...(record?.priorMarks ? { priorMarks: record.priorMarks } : {}),
+    titleOffset: record?.titleOffset ?? null,
     progressIndex,
     progressTotal,
   });
@@ -140,7 +148,13 @@ export async function openArticle(id: string, now = Date.now()): Promise<OpenedA
   // consults the learner's corpus and the gloss cache — a word learned or
   // translated yesterday should be glossed today, and a segmentation cached at
   // import would never know.
-  const segments = await resegment(article);
+  const { segments, titleOffset } = await resegment(article);
+
+  // Moved onto the current base and written straight back, so everything after
+  // this point works in one numbering. The headline joining the segment stream
+  // shifted every index by its length; without this, previously flagged words
+  // would quietly slide along the text.
+  const rebased = rebaseIndices(previous ?? null, titleOffset);
 
   // Stamped on open, which is what makes this the current reading — and what a
   // second article opened later quietly takes over.
@@ -148,18 +162,23 @@ export async function openArticle(id: string, now = Date.now()): Promise<OpenedA
     id,
     readAt: previous?.readAt ?? null,
     openedAt: now,
-    progressIndex: previous?.progressIndex ?? null,
+    progressIndex: rebased.progressIndex,
     progressTotal: previous?.progressTotal ?? null,
-    flaggedIndices: previous?.flaggedIndices ?? [],
+    titleOffset,
+    flaggedIndices: rebased.flaggedIndices,
     ...(previous?.priorMarks ? { priorMarks: previous.priorMarks } : {}),
   });
 
   return {
     article,
     segments,
-    flaggedIndices: previous?.flaggedIndices ?? [],
+    titleOffset,
+    flaggedIndices: rebased.flaggedIndices,
     untranslated: untranslatedIds(segments).length,
-    resumeAt: resumeIndex(previous ?? null, segments.length),
+    resumeAt: resumeIndex(
+      { ...(previous ?? { id, readAt: null }), progressIndex: rebased.progressIndex },
+      segments.length,
+    ),
   };
 }
 
@@ -246,6 +265,7 @@ export async function finishArticle(
     // this article stops being the one offered to pick back up, and the stored
     // position is cleared rather than left to resume a reading that is over.
     openedAt: record?.openedAt ?? now,
+    titleOffset: record?.titleOffset ?? null,
     progressIndex: null,
     progressTotal: null,
     flaggedIndices: [...notKnownIndices].sort((a, b) => a - b),

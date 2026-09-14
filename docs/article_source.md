@@ -217,6 +217,18 @@ already known, because the same letters are ordinary root letters and وزير i
 not wa- + زير. Identity is untouched; "وَفِي" still enters the corpus as its own
 form, which is what REQ-29 says the app counts.
 
+`REQ-A18` The headline is part of the segment stream, not a caption above it. It
+is the densest Arabic on the page and usually carries the word the article is
+about, so leaving it flat made the one line most worth a tap the only line that
+refused one. It leads the same array the body continues, which is what makes a
+word tapped there the same word — one index space, one ingestion, one set of
+stored flags, one stored position — rather than a parallel set of rules.
+
+That shifted every stored index by the length of the title, so a reading record
+now says which base its indices were written against and is moved onto the
+current one when the article is opened. Without that, adding the headline would
+have slid every previously marked word quietly onto its neighbour.
+
 `REQ-A11` Everything still untranslated is filled on request, per article, by a
 batched model call. Results go to a **gloss cache**, not the corpus: a `Word`
 means the learner has seen this, with counts and SRS state attached, so

@@ -94,6 +94,7 @@ export const interchangeArticleReadSchema = z.object({
   openedAt: z.number().nullable().optional(),
   progressIndex: z.number().nullable().optional(),
   progressTotal: z.number().nullable().optional(),
+  titleOffset: z.number().nullable().optional(),
   flaggedIndices: z.array(z.number()),
   /**
    * Pre-reading values for the words this reading flagged, so unmarking after a

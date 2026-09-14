@@ -38,6 +38,14 @@ export interface ReadingScreenProps {
    */
   onProgress?: (index: number) => void;
   /**
+   * How many leading segments are the headline. The title is the first of the
+   * same stream rather than a list of its own, so a word tapped in it is the
+   * same word, with the same index, as one tapped below — one ingestion, one
+   * set of flags, one stored position. Zero leaves the title as plain text,
+   * which is what generated rounds pass.
+   */
+  titleOffset?: number;
+  /**
    * Rendered between the title and the text. Typed as a node rather than as an
    * image and a video URL so this screen stays ignorant of where its text came
    * from — generated rounds pass nothing.
@@ -102,6 +110,7 @@ export function ReadingScreen({
   onToggleNotKnown,
   resumeAt = null,
   onProgress,
+  titleOffset = 0,
 }: ReadingScreenProps) {
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
@@ -243,9 +252,24 @@ export function ReadingScreen({
           which costs the reader the one bit of comprehension the headline was
           going to give them. */}
       <header className="reading-screen__header">
-        <h1 dir="rtl" lang="ar" className="reading-screen__title-ar">
-          {titleAr}
-        </h1>
+        {titleOffset > 0 ? (
+          // A headline is the densest Arabic on the page and usually carries
+          // the word the article is about, so leaving it flat made the one line
+          // most worth a tap the only line that refused one.
+          <h1 className="reading-screen__title-ar reading-screen__title-ar--tappable">
+            <ArabicText
+              segments={segments.slice(0, titleOffset)}
+              activeIndex={activeIndex}
+              notKnownIndices={notKnownIndices}
+              onTapWord={handleTapWord}
+              className="arabic-text--title"
+            />
+          </h1>
+        ) : (
+          <h1 dir="rtl" lang="ar" className="reading-screen__title-ar">
+            {titleAr}
+          </h1>
+        )}
         {attribution && (
           <p className="reading-screen__attribution">
             <a href={attribution.url} target="_blank" rel="noreferrer noopener">
@@ -324,7 +348,8 @@ export function ReadingScreen({
       )}
 
       <ArabicText
-        segments={segments}
+        segments={segments.slice(titleOffset)}
+        indexOffset={titleOffset}
         activeIndex={activeIndex}
         notKnownIndices={notKnownIndices}
         onTapWord={handleTapWord}

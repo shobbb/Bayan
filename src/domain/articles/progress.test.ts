@@ -3,6 +3,7 @@ import {
   isInProgress,
   pickCurrentReading,
   readingFraction,
+  rebaseIndices,
   resumeIndex,
   type ReadingProgress,
 } from './progress';
@@ -114,5 +115,64 @@ describe('resumeIndex', () => {
     expect(resumeIndex(record({ progressIndex: 5 }), 0)).toBeNull();
     expect(resumeIndex(record({ progressIndex: Number.NaN }), 100)).toBeNull();
     expect(resumeIndex(record({ progressIndex: -3 }), 100)).toBeNull();
+  });
+});
+
+describe('rebaseIndices', () => {
+  // The headline joined the segment stream, which pushed every body index along
+  // by its length. Without this, previously flagged words would slide quietly
+  // onto their neighbours.
+  it('shifts indices written before the headline was part of the stream', () => {
+    const before = { id: 'a1', readAt: null, flaggedIndices: [0, 5, 9], progressIndex: 12 };
+
+    expect(rebaseIndices(before, 4)).toEqual({
+      flaggedIndices: [4, 9, 13],
+      progressIndex: 16,
+      titleOffset: 4,
+    });
+  });
+
+  it('leaves indices alone when the base has not moved', () => {
+    const record = { id: 'a1', readAt: null, flaggedIndices: [4, 9], progressIndex: 16, titleOffset: 4 };
+
+    expect(rebaseIndices(record, 4)).toEqual({
+      flaggedIndices: [4, 9],
+      progressIndex: 16,
+      titleOffset: 4,
+    });
+  });
+
+  it('shifts back when a title re-segments shorter', () => {
+    const record = { id: 'a1', readAt: null, flaggedIndices: [6], progressIndex: 8, titleOffset: 4 };
+
+    expect(rebaseIndices(record, 2)).toEqual({
+      flaggedIndices: [4],
+      progressIndex: 6,
+      titleOffset: 2,
+    });
+  });
+
+  it('drops an index a negative shift would push off the front', () => {
+    const record = { id: 'a1', readAt: null, flaggedIndices: [0, 1, 6], titleOffset: 4 };
+
+    expect(rebaseIndices(record, 0).flaggedIndices).toEqual([2]);
+  });
+
+  it('keeps a missing position missing', () => {
+    expect(rebaseIndices({ id: 'a1', readAt: null, flaggedIndices: [] }, 3).progressIndex).toBeNull();
+  });
+
+  it('handles an article with no stored reading at all', () => {
+    expect(rebaseIndices(null, 4)).toEqual({
+      flaggedIndices: [],
+      progressIndex: null,
+      titleOffset: 4,
+    });
+  });
+
+  it('returns indices in order', () => {
+    const record = { id: 'a1', readAt: null, flaggedIndices: [9, 0, 5] };
+
+    expect(rebaseIndices(record, 2).flaggedIndices).toEqual([2, 7, 11]);
   });
 });

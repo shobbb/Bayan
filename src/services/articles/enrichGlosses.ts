@@ -11,7 +11,11 @@
  * not. Reading is still what creates a Word — this only decides what to show.
  */
 import type { AppConfig } from '@/config';
-import { articleToSegments, type ResolvedSegment } from '@/domain/articles/segment';
+import {
+  articleToSegments,
+  articleTitleSegments,
+  type ResolvedSegment,
+} from '@/domain/articles/segment';
 import type { Article } from '@/domain/articles/types';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { WordId } from '@/domain/types';
@@ -125,17 +129,30 @@ export async function enrichArticle(
 
   return {
     result: { requested: wanted.length, filled: filled + cached.size },
-    segments: await resegment(article),
+    segments: (await resegment(article)).segments,
   };
 }
 
-/** Re-reads the article against the corpus and the now-fuller cache. */
-export async function resegment(article: Article): Promise<ResolvedSegment[]> {
+export interface SegmentedArticle {
+  /** Title segments first, then the body — one stream, one set of indices. */
+  segments: ResolvedSegment[];
+  /** How many of those belong to the headline. */
+  titleOffset: number;
+}
+
+/**
+ * Re-reads the article against the corpus and the now-fuller cache.
+ *
+ * The headline leads the same array rather than living in one of its own, so a
+ * word marked in the title is marked by exactly the machinery that marks one in
+ * the body — one index space, one ingestion, one set of stored flags.
+ */
+export async function resegment(article: Article): Promise<SegmentedArticle> {
   const profile = modernStandardArabicProfile;
   const [words, cache] = await Promise.all([
     listWords(DEFAULT_TRACK_ID),
     getGlosses(
-      article.paragraphs
+      [article.titleAr, ...article.paragraphs]
         .join(' ')
         .split(/\s+/)
         .map((token) => profile.normalize(token))
@@ -151,5 +168,7 @@ export async function resegment(article: Article): Promise<ResolvedSegment[]> {
     if (word.gloss) known.set(word.id, { gloss: word.gloss, forms: word.forms });
   }
 
-  return articleToSegments(article, { profile, known });
+  const ctx = { profile, known };
+  const title = articleTitleSegments(article, ctx);
+  return { segments: [...title, ...articleToSegments(article, ctx)], titleOffset: title.length };
 }

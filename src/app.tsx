@@ -46,6 +46,7 @@ type Screen =
       flaggedIndices: number[];
       untranslated: number;
       resumeAt: number | null;
+      titleOffset: number;
     }
   | {
       name: 'drill';
@@ -226,8 +227,16 @@ function AppScreens() {
     setEnrichNotice(null);
     setOpeningArticle(id);
     openArticle(id)
-      .then(({ article, segments, flaggedIndices, untranslated, resumeAt }) =>
-        setScreen({ name: 'article', article, segments, flaggedIndices, untranslated, resumeAt }),
+      .then(({ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }) =>
+        setScreen({
+          name: 'article',
+          article,
+          segments,
+          flaggedIndices,
+          untranslated,
+          resumeAt,
+          titleOffset,
+        }),
       )
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setOpeningArticle(null));
@@ -250,6 +259,7 @@ function AppScreens() {
           flaggedIndices,
           untranslated: result.requested - result.filled,
           resumeAt: null, // already on screen; do not jump them back
+          titleOffset: screen.titleOffset,
         });
         setEnrichNotice(`Translated ${result.filled} of ${result.requested} words.`);
       })
@@ -310,12 +320,13 @@ function AppScreens() {
   }
 
   if (screen.name === 'article') {
-    const { article, segments, flaggedIndices, resumeAt } = screen;
+    const { article, segments, flaggedIndices, resumeAt, titleOffset } = screen;
     return (
       <ReadingScreen
         segments={segments}
         titleAr={article.titleAr}
         initialNotKnown={flaggedIndices}
+        titleOffset={titleOffset}
         resumeAt={resumeAt}
         onProgress={(index) => {
           void saveReadingProgress(article.id, index, segments.length);

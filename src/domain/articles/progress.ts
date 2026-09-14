@@ -12,10 +12,50 @@ export interface ReadingProgress {
   openedAt?: number | null;
   /** When it was last finished, or null if never. */
   readAt: number | null;
+  /** Segment indices currently flagged "didn't know". */
+  flaggedIndices?: readonly number[];
   /** Segment index at the top of the viewport when the reader last left. */
   progressIndex?: number | null;
   /** How many segments the text had when that index was taken. */
   progressTotal?: number | null;
+  /**
+   * How many segments preceded the body when these indices were taken.
+   *
+   * The headline became part of the segment stream so that marking a word in it
+   * counts exactly as marking one below it does. That shifted every index by
+   * the length of the title, so stored positions say which base they were
+   * written against. Absent means a record written when the body started at
+   * zero.
+   */
+  titleOffset?: number | null;
+}
+
+/**
+ * Moves stored indices onto the current base.
+ *
+ * Applied once when an article is opened, and written straight back, so that
+ * everything downstream works in one numbering. Without it, adding the headline
+ * to the stream would have silently slid every previously flagged word along by
+ * the length of the title — highlighting the wrong words, and leaving the right
+ * ones marked with no way to unmark them.
+ */
+export function rebaseIndices(
+  record: ReadingProgress | null,
+  titleOffset: number,
+): { flaggedIndices: number[]; progressIndex: number | null; titleOffset: number } {
+  const stored = record?.titleOffset ?? 0;
+  const shift = titleOffset - stored;
+  const flagged = record?.flaggedIndices ?? [];
+
+  return {
+    flaggedIndices: flagged
+      .map((index) => index + shift)
+      .filter((index) => index >= 0)
+      .sort((a, b) => a - b),
+    progressIndex:
+      record?.progressIndex == null ? null : Math.max(0, record.progressIndex + shift),
+    titleOffset,
+  };
 }
 
 /**

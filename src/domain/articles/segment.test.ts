@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PARAGRAPH_BREAK } from '@/domain/types';
 import type { WordId } from '@/domain/types';
 import { modernStandardArabicProfile as profile } from '@/domain/languageProfile';
-import { articleToSegments, glossCoverage, indexGlosses } from './segment';
+import { articleToSegments, articleTitleSegments, glossCoverage, indexGlosses } from './segment';
 import type { Article } from './types';
 
 function article(overrides: Partial<Article> = {}): Article {
@@ -254,5 +254,55 @@ describe('glossCoverage', () => {
 
   it('is zero for an article with nothing to show', () => {
     expect(glossCoverage(articleToSegments(article(), NO_CORPUS))).toBe(0);
+  });
+});
+
+describe('articleTitleSegments', () => {
+  const ctx = { profile, known: new Map<WordId, { gloss: string; forms: string | null }>() };
+
+  it('makes the headline tappable, word by word', () => {
+    const segments = articleTitleSegments(article({ titleAr: 'الْكِتَابُ جَدِيدٌ' }), ctx);
+
+    expect(segments.map((s) => s.text)).toEqual(['الْكِتَابُ', 'جَدِيدٌ']);
+    // Empty, not null: an Arabic word with no translation yet is still a word
+    // the reader can tap, flag and have counted (REQ-A8).
+    expect(segments.every((s) => s.gloss === '')).toBe(true);
+  });
+
+  it('resolves the headline against the publisher glosses, like the body', () => {
+    const segments = articleTitleSegments(
+      article({
+        titleAr: 'الْكِتَابُ جَدِيدٌ',
+        vocab: [{ term: 'كِتَاب', gloss: 'book', forms: null }],
+      }),
+      ctx,
+    );
+
+    expect(segments[0]).toMatchObject({ gloss: 'book', glossSource: 'publisher' });
+  });
+
+  it('keeps a publisher expression in the headline as one tap', () => {
+    const segments = articleTitleSegments(
+      article({
+        titleAr: 'لِلْوَهْلَةِ الْأُولَى نَعَمْ',
+        expressions: [{ term: 'لِلْوَهْلَةِ الْأُولَى', gloss: 'at first glance', forms: null }],
+      }),
+      ctx,
+    );
+
+    expect(segments[0]).toMatchObject({ text: 'لِلْوَهْلَةِ الْأُولَى', gloss: 'at first glance' });
+    expect(segments).toHaveLength(2);
+  });
+
+  it('leaves punctuation in the headline untappable', () => {
+    const segments = articleTitleSegments(article({ titleAr: 'جَدِيدٌ؟' }), ctx);
+
+    expect(segments.map((s) => s.gloss)).toEqual(['', null]);
+  });
+
+  it('carries no paragraph break, since a headline is one line', () => {
+    const segments = articleTitleSegments(article({ titleAr: 'الْكِتَابُ جَدِيدٌ' }), ctx);
+
+    expect(segments.some((s) => s.text === PARAGRAPH_BREAK)).toBe(false);
   });
 });

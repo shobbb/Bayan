@@ -49,3 +49,13 @@
   display: inline;
   color: var(--ink);
 }
+
+/* The headline, tappable but still a headline: same word targets as the body,
+   its own size and centring. The reading size and line-height come from the
+   title tokens so the two treatments cannot drift apart. */
+.arabic-text--title {
+  font-size: var(--text-reading-title-size);
+  line-height: var(--text-reading-title-line);
+  font-weight: 700;
+  text-align: center;
+}
