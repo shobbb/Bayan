@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeArabic } from './normalize';
+import { normalizeArabic, vowelsConflictArabic } from './normalize';
 
 describe('normalizeArabic', () => {
   it('strips harakat from a fully vowelled word', () => {
@@ -88,5 +88,54 @@ describe('normalizeArabic', () => {
   // Bare hamza is a letter in its own right, not a seat.
   it('leaves bare hamza alone, so شيء does not become شي', () => {
     expect(normalizeArabic('شَيْء')).not.toBe(normalizeArabic('شي'));
+  });
+});
+
+describe('vowelsConflictArabic', () => {
+  // The case that prompted this: both are "اشهر" after normalization, and the
+  // corpus gloss for one was being shown on the other.
+  it('separates أَشْهَرِ (most famous) from أَشْهُرٍ (months)', () => {
+    expect(vowelsConflictArabic('أَشْهَرِ', 'أَشْهُرٍ')).toBe(true);
+  });
+
+  it('separates مِنْ (from) from مَنْ (who)', () => {
+    expect(vowelsConflictArabic('مِنْ', 'مَنْ')).toBe(true);
+  });
+
+  it('separates الْعَالَم (the world) from الْعَالِمِ (the scholar)', () => {
+    expect(vowelsConflictArabic('الْعَالَم', 'الْعَالِمِ')).toBe(true);
+  });
+
+  // The final mark is the case ending: it moves with the grammar of the
+  // sentence, never with the word.
+  it('ignores a differing case ending', () => {
+    expect(vowelsConflictArabic('الْكِتَابُ', 'الْكِتَابِ')).toBe(false);
+    expect(vowelsConflictArabic('أَشْهَرِ', 'أَشْهَرُ')).toBe(false);
+  });
+
+  // These texts are vowelled inconsistently. A form with fewer marks is the
+  // same word written more loosely, and refusing its gloss would cost far more
+  // than the homographs are worth.
+  it('says nothing when one side simply leaves a vowel out', () => {
+    expect(vowelsConflictArabic('هوَ', 'هُوَ')).toBe(false);
+    expect(vowelsConflictArabic('الكتاب', 'الْكِتَابُ')).toBe(false);
+  });
+
+  it('says nothing about forms with different letters, which are not comparable', () => {
+    expect(vowelsConflictArabic('وَفِي', 'فِي')).toBe(false);
+    expect(vowelsConflictArabic('الْمَدِينَةِ', 'مَدِينَةٍ')).toBe(false);
+  });
+
+  it('does not treat shadda as a vowel', () => {
+    expect(vowelsConflictArabic('مُدَرِّسٌ', 'مُدَرِسٌ')).toBe(false);
+  });
+
+  it('is symmetric', () => {
+    expect(vowelsConflictArabic('أَشْهُرٍ', 'أَشْهَرِ')).toBe(true);
+  });
+
+  it('says nothing about empty or unvowelled input', () => {
+    expect(vowelsConflictArabic('', '')).toBe(false);
+    expect(vowelsConflictArabic('كتاب', 'كتاب')).toBe(false);
   });
 });

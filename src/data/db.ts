@@ -78,6 +78,13 @@ export interface ArticleReadRecord {
 export interface GlossRecord {
   id: WordId;
   gloss: string;
+  /**
+   * The vowelled form this gloss was written for. Identity is diacritic-blind,
+   * so one id can hold two different words; without the surface there is
+   * nothing to notice that with. Optional — records written before it existed
+   * simply cannot be checked.
+   */
+  surface?: string;
   forms: string | null;
   /** Where it came from, so a generated gloss never overwrites an editorial one. */
   source: 'generated';

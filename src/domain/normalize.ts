@@ -89,3 +89,63 @@ export function normalizeArabic(input: string): WordId {
 
   return s as WordId;
 }
+
+
+/**
+ * Whether two vowelled forms state a vowel differently and therefore are not
+ * the same word.
+ *
+ * Identity here is deliberately diacritic-blind (REQ-11), which is right for
+ * counting — أَشْهَرِ and أَشْهَرُ are one word in two syntactic positions. But it
+ * also collapses genuinely different words onto one key: أَشْهَرِ (most famous)
+ * and أَشْهُرٍ (months) are both "اشهر", and a gloss stored for one was being
+ * shown for the other.
+ *
+ * The test is narrow on purpose, because these texts are vowelled
+ * inconsistently and a loose one is worse than none. Measured over the article
+ * corpus, comparing the *shape* of the two forms flagged 43% of all corpus
+ * glosses, almost all of them the same word written with more or fewer marks.
+ * So a conflict is only reported when:
+ *
+ *   - the two forms have the same letters, so they are comparable at all;
+ *   - both state a mark at the same position, so neither is merely unvowelled;
+ *   - and those marks differ.
+ *
+ * The final mark is skipped: it is the case ending, which varies with grammar
+ * and never with the word. Shadda is ignored for the same reason it is ignored
+ * in identity — it doubles a consonant rather than choosing a vowel.
+ *
+ * That flags 12.5% of corpus glosses, and spot-checking those says most are
+ * real: مِنْ against مَنْ, الْعالَم (the world) against الْعَالِمِ (the scholar),
+ * تَعَلُّمِ (learning) against تُعَلِّمُ (she teaches).
+ */
+export function vowelsConflictArabic(a: string, b: string): boolean {
+  const left = markedLetters(a);
+  const right = markedLetters(b);
+  if (left.length !== right.length || left.length === 0) return false;
+
+  for (let i = 0; i < left.length; i++) {
+    const x = left[i]!;
+    const y = right[i]!;
+    if (normalizeArabic(x.letter) !== normalizeArabic(y.letter)) return false;
+    if (i === left.length - 1) continue; // case ending, not the word
+    if (x.marks && y.marks && x.marks !== y.marks) return true;
+  }
+  return false;
+}
+
+const SHADDA = '\u0651';
+const SINGLE_MARK = new RegExp('[\\u064B-\\u0652\\u0670]');
+
+/** Each letter paired with the marks written on it, tatweel discarded. */
+function markedLetters(surface: string): Array<{ letter: string; marks: string }> {
+  const out: Array<{ letter: string; marks: string }> = [];
+  for (const character of surface.replace(/\u0640/g, '')) {
+    if (SINGLE_MARK.test(character)) {
+      if (character !== SHADDA && out.length > 0) out[out.length - 1]!.marks += character;
+      continue;
+    }
+    out.push({ letter: character, marks: '' });
+  }
+  return out;
+}

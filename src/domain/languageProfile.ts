@@ -6,7 +6,7 @@
  * its own. Ships with a single track active; no track-switching UI yet
  * (REQ-E8).
  */
-import { normalizeArabic } from './normalize';
+import { normalizeArabic, vowelsConflictArabic } from './normalize';
 import type { LanguageProfile, PartOfSpeech, TrackId } from './types';
 
 const MSA_FORMS_LABEL: Record<PartOfSpeech, string> = {
@@ -22,6 +22,7 @@ export const modernStandardArabicProfile: LanguageProfile = {
   name: 'Modern Standard Arabic',
   direction: 'rtl',
   normalize: normalizeArabic,
+  vowelsConflict: vowelsConflictArabic,
   fontStack: "'Amiri', 'Noto Naskh Arabic', serif",
   formsLabel: MSA_FORMS_LABEL,
   promptGuidance:

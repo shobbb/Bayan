@@ -119,6 +119,9 @@ export async function enrichArticle(
         id,
         gloss: entry.gloss.trim(),
         forms: entry.forms?.trim() || null,
+        // Kept so a later article can tell whether this gloss was written for
+        // the word in front of it or for a homograph sharing its id.
+        surface: surfaces.get(id) ?? id,
         source: 'generated' as const,
         createdAt: now,
       }));
@@ -160,12 +163,16 @@ export async function resegment(article: Article): Promise<SegmentedArticle> {
     ),
   ]);
 
-  const known = new Map<WordId, { gloss: string; forms: string | null }>();
+  const known = new Map<WordId, { gloss: string; forms: string | null; surface?: string }>();
   // The cache is laid down first so a corpus gloss, which the learner has
   // actually met, wins over a generated one for the same form.
-  for (const record of cache) known.set(record.id, { gloss: record.gloss, forms: record.forms });
+  for (const record of cache) {
+    known.set(record.id, { gloss: record.gloss, forms: record.forms, surface: record.surface });
+  }
   for (const word of words) {
-    if (word.gloss) known.set(word.id, { gloss: word.gloss, forms: word.forms });
+    if (word.gloss) {
+      known.set(word.id, { gloss: word.gloss, forms: word.forms, surface: word.surface });
+    }
   }
 
   const ctx = { profile, known };

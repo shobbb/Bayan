@@ -38,6 +38,8 @@ interface PhraseEntry {
   forms: string | null;
   /** How many word tokens this phrase spans. */
   length: number;
+  /** The form as the publisher wrote it, for the vowel-conflict check. */
+  term: string;
 }
 
 function phraseKey(words: readonly string[], profile: LanguageProfile): string {
@@ -96,7 +98,12 @@ export function indexGlosses(
     if (words.length === 0) continue;
     const key = phraseKey(words, profile);
     if (key.trim() === '') continue;
-    byPhrase.set(key, { gloss: entry.gloss, forms: entry.forms, length: words.length });
+    byPhrase.set(key, {
+      gloss: entry.gloss,
+      forms: entry.forms,
+      length: words.length,
+      term: entry.term,
+    });
     maxWords = Math.max(maxWords, words.length);
   }
 
@@ -120,8 +127,26 @@ function isArabicWord(token: string): boolean {
 
 export interface SegmentContext {
   profile: LanguageProfile;
-  /** Glosses the learner's corpus already holds, keyed by normalized id. */
-  known: ReadonlyMap<WordId, { gloss: string; forms: string | null }>;
+  /**
+   * Glosses the learner's corpus already holds, keyed by normalized id.
+   *
+   * `surface` is the vowelled form the gloss was recorded against. Identity is
+   * diacritic-blind, so one id can hold two different words — أَشْهَرِ (most
+   * famous) and أَشْهُرٍ (months) are both "اشهر" — and without the surface there
+   * is nothing to notice that with.
+   */
+  known: ReadonlyMap<WordId, { gloss: string; forms: string | null; surface?: string }>;
+}
+
+/**
+ * A stored gloss is refused when the two forms state a vowel differently: same
+ * letters, both vowelled at the same place, and disagreeing. The word then
+ * falls through to no gloss, which is what offers it to the translation pass —
+ * and that pass is given the vowelled form in front of the reader, so it comes
+ * back right.
+ */
+function conflicts(profile: LanguageProfile, token: string, surface?: string): boolean {
+  return surface !== undefined && (profile.vowelsConflict?.(token, surface) ?? false);
 }
 
 /**
@@ -163,6 +188,8 @@ function segmentRun(
               .find(Boolean)
           : undefined);
       if (!entry) continue;
+      // Publisher lists collide on a bare id exactly as the corpus does.
+      if (span === 1 && conflicts(profile, token, entry.term)) continue;
 
       into.push({
         text: window.join(' '),
@@ -179,7 +206,9 @@ function segmentRun(
     // Exact first, then with a proclitic peeled off — never the other way
     // round, so a word that really does start with these letters wins.
     const keys = candidateKeys(profile.normalize(token));
-    const corpus = keys.map((key) => known.get(key)).find(Boolean);
+    const corpus = keys
+      .map((key) => known.get(key))
+      .find((entry) => entry !== undefined && !conflicts(profile, token, entry.surface));
     if (corpus) {
       into.push({
         text: token,

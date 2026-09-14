@@ -756,6 +756,28 @@ Read-only. All computation in `domain/stats/metrics.ts`.
 
 `REQ-28` Acquisition rate = `passed / (passed + stillFailing)`, computed **only over words seen ≥ 2 times**. Words seen once are untested, not failures. Including them understates the figure by roughly 3×.
 
+`REQ-68` Identity is diacritic-blind, so one id can hold two different words.
+أَشْهَرِ (most famous) and أَشْهُرٍ (months) are both `اشهر`, and a gloss stored for
+one was being shown on the other. Identity itself does not change — REQ-11 is
+right for counting, where أَشْهَرِ and أَشْهَرُ are one word in two positions — so a
+stored gloss instead carries **the vowelled form it was written for**, and is
+refused when that form and the word on the page state a vowel differently.
+
+The test is narrow because these texts are vowelled inconsistently and a loose
+one is worse than none. Comparing the overall shape of the two forms flagged 43%
+of all corpus glosses, nearly all of them the same word written with more or
+fewer marks. A conflict is therefore reported only when the two have the same
+letters, both state a mark at the same position, and those marks differ — the
+final mark skipped as the case ending, shadda ignored as not a vowel. That
+flags 12.5%, and most of those are real.
+
+`REQ-69` A refused gloss becomes **no gloss**, not a warning. The word then
+falls through to the translation pass, which is given the vowelled form in front
+of the reader and so comes back right, and the result is cached against that
+form rather than against the bare id. Measured across the 284 articles this
+withdraws 1,369 glosses, 9.3% of those shown — the price of the ones that were
+wrong, paid in a pass that corrects them.
+
 `REQ-29` Never display raw word-row count as vocabulary size. Label it "forms tracked" — multiple inflections of one root are multiple rows and one word.
 
 **Word breakdown**: the per-form view behind the status buckets, so a count can be opened and inspected rather than taken on trust.

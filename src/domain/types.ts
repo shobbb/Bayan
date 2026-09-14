@@ -107,6 +107,12 @@ export interface LanguageProfile {
   readonly name: string;
   readonly direction: 'rtl' | 'ltr';
   normalize(surface: string): WordId;
+  /**
+   * Whether two vowelled forms that share an id are nonetheless different
+   * words. Optional: a track whose script does not write vowels separately has
+   * nothing to compare, and omitting it means "never in conflict".
+   */
+  vowelsConflict?(a: string, b: string): boolean;
   readonly fontStack: string;
   readonly formsLabel: Record<PartOfSpeech, string>; // "past / present / masdar"
   readonly promptGuidance: string; // register, script, vowelling
