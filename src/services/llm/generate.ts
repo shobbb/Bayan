@@ -87,7 +87,7 @@ async function generateAndValidate<T>(
     const completion = await client.complete({
       model: route.model,
       maxTokens: route.maxTokens,
-      temperature: route.temperature,
+      effort: route.effort,
       prompt,
       apiKey,
     });

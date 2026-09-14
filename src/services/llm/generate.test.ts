@@ -3,7 +3,7 @@ import type { ModelRoute } from '@/config/models';
 import type { LlmClient, LlmCompletion } from './client';
 import { generateRound, LlmValidationError } from './generate';
 
-const ROUTE: ModelRoute = { model: 'test-model', maxTokens: 100, temperature: 0.8 };
+const ROUTE: ModelRoute = { model: 'test-model', maxTokens: 100, effort: 'medium' };
 
 const PARAMS = {
   topic: 'science',

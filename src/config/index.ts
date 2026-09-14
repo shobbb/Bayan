@@ -29,7 +29,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * Depth matters more than it looks: Settings writes a single leaf at a time, so
  * an override is typically `{ models: { roundGeneration: { maxTokens: 16000 } } }`.
  * Spreading one level down would replace the whole route object with that
- * fragment and take the model id and temperature with it — the override would
+ * fragment and take the model id and effort with it — the override would
  * appear to work while quietly deleting its siblings.
  *
  * Arrays are replaced rather than concatenated because the only arrays here are

@@ -9,7 +9,15 @@
 export interface LlmCompleteParams {
   model: string;
   maxTokens: number;
-  temperature: number;
+  /**
+   * How much thinking the provider should spend before answering.
+   *
+   * Named for what it does rather than for the provider's field, since the
+   * mapping is this file's business (REQ-E10) — one provider calls it effort,
+   * another might call it reasoning depth, and an older model of the same
+   * provider wants a temperature instead.
+   */
+  effort: string;
   prompt: string;
   apiKey: string;
 }
@@ -52,7 +60,7 @@ interface AnthropicMessagesResponse {
 
 /** Anthropic Messages API. One concrete LlmClient implementation among possibly several. */
 export const anthropicClient: LlmClient = {
-  async complete({ model, maxTokens, temperature, prompt, apiKey }) {
+  async complete({ model, maxTokens, effort, prompt, apiKey }) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -67,7 +75,11 @@ export const anthropicClient: LlmClient = {
       body: JSON.stringify({
         model,
         max_tokens: maxTokens,
-        temperature,
+        // The Claude 5 family removed temperature, top_p and top_k — sending
+        // any of them is a 400 — and replaced them with this. Thinking itself
+        // is left unset: these models run it adaptively by default, and it is
+        // effort that decides how deep.
+        output_config: { effort },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -78,6 +90,8 @@ export const anthropicClient: LlmClient = {
     }
 
     const data = (await response.json()) as AnthropicMessagesResponse;
+    // Found by type rather than by position: with thinking on, the response
+    // opens with thinking blocks and the answer is not content[0].
     const text = data.content?.find((block) => block.type === 'text')?.text;
     if (!text) throw new LlmRequestError('LLM response contained no text content');
     return { text, truncated: data.stop_reason === 'max_tokens' };

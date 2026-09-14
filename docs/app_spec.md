@@ -756,6 +756,25 @@ Read-only. All computation in `domain/stats/metrics.ts`.
 
 `REQ-28` Acquisition rate = `passed / (passed + stillFailing)`, computed **only over words seen ≥ 2 times**. Words seen once are untested, not failures. Including them understates the figure by roughly 3×.
 
+`REQ-72` Requests carry **no sampling parameters**. The current model family
+removed `temperature`, `top_p` and `top_k` — sending any of them is a 400 — and
+put `output_config.effort` in their place. The two are not the same knob:
+temperature set how random the sampling was, effort sets how much thinking is
+spent before answering, and there is no randomness dial any more. Routes
+therefore carry an effort level, not a temperature, and the mapping to the
+provider's field stays inside `services/llm/client.ts` (REQ-E10).
+
+`REQ-73` Effort is set per route by **what it costs to be wrong there**:
+`high` for round generation and diacritization, where REQ-C2 makes vowelling the
+binding constraint; `medium` for glossing, because a gloss is a lookup but a
+wrong one is cached and shown as fact; `low` for distractors, the one route
+where being slightly off is the point.
+
+`REQ-74` Output ceilings account for **thinking**. These models think by
+default and those tokens count against `max_tokens`, so a ceiling sized for the
+visible answer alone truncates mid-JSON and surfaces as a schema failure. For
+the same reason the answer is found by block type, never at `content[0]`.
+
 `REQ-70` Every route runs on **the tier below the top**, as a quality floor
 rather than a cost choice. Everything this app emits is Arabic the learner
 cannot yet check — a wrong gloss, a mis-vowelled passage, a distractor that is

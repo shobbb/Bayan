@@ -115,7 +115,7 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
     fields: QUERY_KINDS.flatMap(({ kind, label, help }) => [
       text(['models', kind, 'model'], `${label} — model`, help, 'claude-sonnet-5'),
       num(['models', kind, 'maxTokens'], `${label} — max tokens`, 'Output ceiling. Too low and the response is cut off mid-JSON, which surfaces as a failed generation.', { min: 256, max: 64000, step: 256 }),
-      num(['models', kind, 'temperature'], `${label} — temperature`, 'Higher is more varied, lower is more predictable.', { min: 0, max: 1, step: 0.1 }),
+      text(['models', kind, 'effort'], `${label} — effort`, 'How much thinking the model spends before answering: low, medium, high, xhigh or max. Higher costs more and is worth it only where being wrong is expensive. This replaced temperature, which the current models reject outright.', 'medium'),
     ]),
   },
   {
