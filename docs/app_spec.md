@@ -756,6 +756,19 @@ Read-only. All computation in `domain/stats/metrics.ts`.
 
 `REQ-28` Acquisition rate = `passed / (passed + stillFailing)`, computed **only over words seen ≥ 2 times**. Words seen once are untested, not failures. Including them understates the figure by roughly 3×.
 
+`REQ-70` Word glossing runs on a **more capable model than generation**. A
+gloss is bought once, cached for the life of the corpus, carried in every
+backup, and then shown as fact every time that word is met again — so the
+marginal cost of a better model is one call per word ever, while the cost of a
+worse one compounds silently. A weak round, by contrast, is read once and its
+damage ends there. This is REQ-C2's escalation applied to the route where
+accuracy rather than vowelling is the binding constraint.
+
+`REQ-71` For that to hold, a bought gloss must be **stored complete**: its text,
+its forms, and the vowelled form it was written for, in the cache and in the
+dump. A restore that dropped any of them would either buy the gloss again or
+keep it and not know which word it belongs to.
+
 `REQ-68` Identity is diacritic-blind, so one id can hold two different words.
 أَشْهَرِ (most famous) and أَشْهُرٍ (months) are both `اشهر`, and a gloss stored for
 one was being shown on the other. Identity itself does not change — REQ-11 is

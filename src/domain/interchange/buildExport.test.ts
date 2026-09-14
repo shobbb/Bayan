@@ -164,6 +164,25 @@ describe('buildStateExport', () => {
     ]);
   });
 
+  // A gloss is paid for once and kept forever, so the dump has to carry enough
+  // to keep it usable: without the form it was written for, a restored cache
+  // cannot tell this word's gloss from a homograph's.
+  it('round-trips the form a bought translation was written for', () => {
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 1, [], [
+      { id: 'اشهر', gloss: 'most famous', forms: null, surface: 'أَشْهَرِ', createdAt: 42 },
+    ]);
+    const parsed = parseStateExport(JSON.parse(serializeStateExport(state)));
+
+    expect(parsed.ok && parsed.value.glosses?.[0]?.surface).toBe('أَشْهَرِ');
+  });
+
+  it('accepts a dump written before the form was carried', () => {
+    const older = { id: 'اشهر', gloss: 'months', forms: null, createdAt: 42 };
+    const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 1, [], [older]);
+
+    expect(parseStateExport(JSON.parse(serializeStateExport(state))).ok).toBe(true);
+  });
+
   it('accepts a dump written before translations were carried', () => {
     const state = buildStateExport([], [], DEFAULT_CATEGORIES, null, 42);
     const older: Record<string, unknown> = { ...state };

@@ -32,6 +32,20 @@ export type ModelRoutes = Record<QueryKind, ModelRoute>;
 const CHEAPEST_MODEL = 'claude-haiku-4-5';
 
 /**
+ * Where a wrong answer is silently wrong and is then kept.
+ *
+ * A gloss is written once and cached for the life of the corpus (§ gloss
+ * cache), carried in every backup, and shown as fact every time that word is
+ * met again — so the marginal cost of a better model is one call per word ever,
+ * and the cost of a worse one compounds. Generation is not like this: a weak
+ * round is read once and its damage ends there.
+ *
+ * This is the escalation REQ-C2 describes, applied to the route where accuracy
+ * rather than vowelling is the binding constraint.
+ */
+const ACCURACY_MODEL = 'claude-sonnet-5';
+
+/**
  * maxTokens is a ceiling, not a reservation — billing follows what the model
  * actually emits, so a generous ceiling costs nothing on a short response and
  * is the difference between working and not on a long one.
@@ -51,6 +65,6 @@ export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
   distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 2000, temperature: 0.9 },
   // ~100 words a call, each answering with a gloss, forms and a part of speech.
   // Low temperature: a gloss is a lookup, not a composition.
-  wordGlossing: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
+  wordGlossing: { model: ACCURACY_MODEL, maxTokens: 8000, temperature: 0.2 },
   diacritization: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
 };

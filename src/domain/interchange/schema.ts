@@ -117,6 +117,13 @@ export const interchangeGlossSchema = z.object({
   id: z.string(),
   gloss: z.string(),
   forms: z.string().nullable(),
+  /**
+   * The vowelled form this gloss was written for. Optional and additive, so the
+   * version stays at 1 (REQ-I1). Carried because without it a restored cache
+   * cannot tell a gloss written for this word from one written for a homograph
+   * sharing its id — the whole point of paying for the gloss once.
+   */
+  surface: z.string().optional(),
   createdAt: z.number(),
 });
 

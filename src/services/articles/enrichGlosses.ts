@@ -85,10 +85,22 @@ export async function enrichArticle(
   const profile = modernStandardArabicProfile;
   const wanted = untranslatedIds(segments, profile);
 
-  // Anything already cached from an earlier article costs nothing to reuse.
-  const cached = new Set((await getGlosses(wanted)).map((record) => record.id));
-  const missing = wanted.filter((id) => !cached.has(id));
   const surfaces = surfacesById(segments, profile);
+
+  // Anything already cached from an earlier article costs nothing to reuse —
+  // unless it was written for a homograph. A cached gloss whose vowelling
+  // conflicts with the word here is one segmentation will refuse to show, so
+  // counting it as done would leave the word blank with nothing left to fill
+  // it: the offer to translate would never stop asking and never succeed.
+  const cached = new Set(
+    (await getGlosses(wanted))
+      .filter(
+        (record) =>
+          !(profile.vowelsConflict?.(surfaces.get(record.id) ?? '', record.surface ?? '') ?? false),
+      )
+      .map((record) => record.id),
+  );
+  const missing = wanted.filter((id) => !cached.has(id));
 
   let filled = 0;
   for (let start = 0; start < missing.length; start += BATCH_SIZE) {

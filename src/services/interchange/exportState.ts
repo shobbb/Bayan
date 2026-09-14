@@ -42,7 +42,13 @@ export async function exportState(
     articleReads,
     // The cache stores its own provenance; the dump carries only the
     // translation, so a restored gloss comes back marked as generated.
-    glosses.map(({ id, gloss, forms, createdAt }) => ({ id, gloss, forms, createdAt })),
+    glosses.map(({ id, gloss, forms, surface, createdAt }) => ({
+      id,
+      gloss,
+      forms,
+      ...(surface ? { surface } : {}),
+      createdAt,
+    })),
   );
 
   return {
