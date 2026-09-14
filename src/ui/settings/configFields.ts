@@ -113,7 +113,7 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
     blurb:
       'One route per query kind, so cost and quality are traded off independently rather than one model app-wide. maxTokens is a ceiling, not a reservation — a generous one costs nothing on a short response and is the difference between working and not on a long one.',
     fields: QUERY_KINDS.flatMap(({ kind, label, help }) => [
-      text(['models', kind, 'model'], `${label} — model`, help, 'claude-haiku-4-5'),
+      text(['models', kind, 'model'], `${label} — model`, help, 'claude-sonnet-5'),
       num(['models', kind, 'maxTokens'], `${label} — max tokens`, 'Output ceiling. Too low and the response is cut off mid-JSON, which surfaces as a failed generation.', { min: 256, max: 64000, step: 256 }),
       num(['models', kind, 'temperature'], `${label} — temperature`, 'Higher is more varied, lower is more predictable.', { min: 0, max: 1, step: 0.1 }),
     ]),

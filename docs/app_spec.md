@@ -756,13 +756,17 @@ Read-only. All computation in `domain/stats/metrics.ts`.
 
 `REQ-28` Acquisition rate = `passed / (passed + stillFailing)`, computed **only over words seen ≥ 2 times**. Words seen once are untested, not failures. Including them understates the figure by roughly 3×.
 
-`REQ-70` Word glossing runs on a **more capable model than generation**. A
-gloss is bought once, cached for the life of the corpus, carried in every
-backup, and then shown as fact every time that word is met again — so the
-marginal cost of a better model is one call per word ever, while the cost of a
-worse one compounds silently. A weak round, by contrast, is read once and its
-damage ends there. This is REQ-C2's escalation applied to the route where
-accuracy rather than vowelling is the binding constraint.
+`REQ-70` Every route runs on **the tier below the top**, as a quality floor
+rather than a cost choice. Everything this app emits is Arabic the learner
+cannot yet check — a wrong gloss, a mis-vowelled passage, a distractor that is
+accidentally correct — and all of it reads as authoritative. The per-call saving
+of the cheapest tier is not worth teaching someone a word that is wrong.
+
+Routes stay per-query-kind (REQ-C2) so any one can be escalated to the top tier
+alone, and every one is editable in Settings. Glossing is the route where that
+matters most in aggregate: a gloss is bought once, cached for the life of the
+corpus, carried in every backup and then shown as fact forever, so a bad one
+compounds where a weak round is read once and ends.
 
 `REQ-71` For that to hold, a bought gloss must be **stored complete**: its text,
 its forms, and the vowelled form it was written for, in the cache and in the

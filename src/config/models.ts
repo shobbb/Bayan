@@ -1,9 +1,11 @@
 /**
  * Model routing (§3.2). Different query kinds have different cost/quality
  * requirements — route them independently rather than hardcoding one model
- * app-wide. Model identifiers are left as placeholders; resolve at setup time
- * (model names change frequently and hardcoding current ones guarantees
- * staleness).
+ * app-wide.
+ *
+ * Every route is editable in Settings, which is where a changed model name is
+ * meant to be fixed: identifiers move faster than releases, so the defaults
+ * below are a starting point rather than a promise.
  */
 export type QueryKind =
   | 'roundGeneration' // story/article + glosses + diacritics
@@ -21,29 +23,21 @@ export interface ModelRoute {
 export type ModelRoutes = Record<QueryKind, ModelRoute>;
 
 /**
- * Cheapest available model on every route while the method is under test —
- * an explicit cost choice, not a quality judgement.
+ * One model on every route: the tier below the top.
  *
- * REQ-C2: diacritization quality is the binding constraint on generation
- * quality. If output vowelling proves unreliable, escalate `roundGeneration`
- * to a more capable model before changing anything else — that is the whole
- * reason routes are per-query-kind rather than one model app-wide.
+ * This is a quality floor rather than a cost choice. Everything the app
+ * produces is Arabic that the learner cannot yet check — a wrong gloss, a
+ * mis-vowelled passage or a distractor that is accidentally correct all read as
+ * authoritative, and the learner has no way to tell. The cheapest tier was
+ * measurably not good enough at that, and the per-call saving is not worth
+ * teaching someone a word that is wrong.
+ *
+ * Routes stay per-query-kind (REQ-C2) so any one of them can be escalated to
+ * the top tier on its own. Diacritization quality remains the binding
+ * constraint on generation, so roundGeneration is the first to move if output
+ * vowelling proves unreliable.
  */
-const CHEAPEST_MODEL = 'claude-haiku-4-5';
-
-/**
- * Where a wrong answer is silently wrong and is then kept.
- *
- * A gloss is written once and cached for the life of the corpus (§ gloss
- * cache), carried in every backup, and shown as fact every time that word is
- * met again — so the marginal cost of a better model is one call per word ever,
- * and the cost of a worse one compounds. Generation is not like this: a weak
- * round is read once and its damage ends there.
- *
- * This is the escalation REQ-C2 describes, applied to the route where accuracy
- * rather than vowelling is the binding constraint.
- */
-const ACCURACY_MODEL = 'claude-sonnet-5';
+const DEFAULT_MODEL = 'claude-sonnet-5';
 
 /**
  * maxTokens is a ceiling, not a reservation — billing follows what the model
@@ -59,12 +53,12 @@ const ACCURACY_MODEL = 'claude-sonnet-5';
  * schema failure.
  */
 export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
-  roundGeneration: { model: CHEAPEST_MODEL, maxTokens: 16000, temperature: 0.8 },
+  roundGeneration: { model: DEFAULT_MODEL, maxTokens: 16000, temperature: 0.8 },
   // ~40 cards x one vowelled sentence, plus the echoed word for matching.
-  sentenceGeneration: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.7 },
-  distractorGeneration: { model: CHEAPEST_MODEL, maxTokens: 2000, temperature: 0.9 },
+  sentenceGeneration: { model: DEFAULT_MODEL, maxTokens: 8000, temperature: 0.7 },
+  distractorGeneration: { model: DEFAULT_MODEL, maxTokens: 2000, temperature: 0.9 },
   // ~100 words a call, each answering with a gloss, forms and a part of speech.
   // Low temperature: a gloss is a lookup, not a composition.
-  wordGlossing: { model: ACCURACY_MODEL, maxTokens: 8000, temperature: 0.2 },
-  diacritization: { model: CHEAPEST_MODEL, maxTokens: 8000, temperature: 0.2 },
+  wordGlossing: { model: DEFAULT_MODEL, maxTokens: 8000, temperature: 0.2 },
+  diacritization: { model: DEFAULT_MODEL, maxTokens: 8000, temperature: 0.2 },
 };
