@@ -40,31 +40,98 @@ function authHeaders(config: SupabaseBackupConfig): Record<string, string> {
 }
 
 /**
- * True when a failed response is really "there is nothing stored here".
+ * What Supabase Storage actually said.
  *
- * Supabase Storage does not answer a missing object with HTTP 404. It answers
- * **400**, carrying the real status in the body:
+ * The HTTP status is not the answer. Storage routinely replies **400** and puts
+ * the real status in the body:
  *
  *   {"statusCode":"404","error":"not_found","message":"Object not found","code":"NoSuchKey"}
+ *   {"statusCode":"403","error":"Unauthorized","message":"new row violates row-level security policy","code":"AccessDenied"}
  *
- * Checking the HTTP status alone therefore turns an empty bucket into a hard
- * error — which is every first-ever backup, since the upload reads before it
- * writes to protect an existing dump. The body is the authority here.
+ * Reporting the HTTP status therefore tells the reader "400" for a missing
+ * bucket policy, which is neither true nor actionable. Everything below reads
+ * the body first and falls back to the status only when there is nothing in it.
+ */
+interface StorageFailure {
+  /** What Supabase means, which is not necessarily response.status. */
+  status: number;
+  message: string;
+  code: string;
+}
+
+function parseFailure(status: number, body: string): StorageFailure {
+  let parsed: Record<string, unknown> = {};
+  try {
+    const candidate: unknown = JSON.parse(body);
+    if (typeof candidate === 'object' && candidate !== null) {
+      parsed = candidate as Record<string, unknown>;
+    }
+  } catch {
+    // Not JSON — a gateway or proxy page. The status is all there is.
+  }
+
+  const stated = Number(parsed.statusCode);
+  return {
+    status: Number.isFinite(stated) && stated > 0 ? stated : status,
+    message: typeof parsed.message === 'string' ? parsed.message : body.trim(),
+    code: typeof parsed.code === 'string' ? parsed.code : String(parsed.error ?? ''),
+  };
+}
+
+/**
+ * True when a failed response is really "there is nothing stored here".
+ *
+ * That is every first-ever backup, since the upload reads before it writes to
+ * protect an existing dump — so getting this wrong made the very first sync
+ * impossible while looking like a hard error.
  *
  * Deliberately narrow: only a body that actually says not-found counts. A 403
  * from a missing storage policy is a different problem and must keep throwing,
  * or a misconfigured bucket would look like an empty one.
+ *
+ * A missing *bucket* is the same trap wearing the same status. Supabase answers
+ * a wrong bucket name with statusCode 404 too, and reading that as an empty
+ * bucket tells someone who has mistyped it that they simply have no backup yet
+ * — the one message guaranteed to stop them looking for the real cause. It has
+ * no NoSuchKey code, and it says so in the message.
  */
-function isObjectMissing(status: number, body: string): boolean {
-  if (status === 404) return true;
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (typeof parsed !== 'object' || parsed === null) return false;
-    const { statusCode, error, code } = parsed as Record<string, unknown>;
-    return statusCode === '404' || statusCode === 404 || error === 'not_found' || code === 'NoSuchKey';
-  } catch {
-    return false;
+function isObjectMissing(failure: StorageFailure): boolean {
+  if (/bucket not found/i.test(failure.message)) return false;
+  return (
+    failure.status === 404 ||
+    failure.code === 'NoSuchKey' ||
+    failure.code === 'not_found'
+  );
+}
+
+/**
+ * Turns a storage failure into something the reader can act on.
+ *
+ * Row-level security earns its own sentence because it is the one failure that
+ * is both common and entirely fixable, and its raw wording — "new row violates
+ * row-level security policy" — describes a Postgres row rather than the bucket
+ * the reader has to go and change. The upload upserts, so it needs both
+ * policies; naming only insert sends people back for the second one.
+ */
+function describeFailure(action: string, config: SupabaseBackupConfig, failure: StorageFailure): string {
+  if (failure.code === 'AccessDenied' || /row-level security/i.test(failure.message)) {
+    return (
+      `Supabase refused the ${action}: the "${config.bucket}" bucket has no policy ` +
+      'letting this key write to it. Add storage policies for insert and update on ' +
+      'that bucket, for the anon role.'
+    );
   }
+
+  if (/bucket not found/i.test(failure.message)) {
+    return `That Supabase project has no bucket named "${config.bucket}".`;
+  }
+
+  if (failure.status === 401 || /jwt|api key/i.test(failure.message)) {
+    return `Supabase rejected the key. Check the project URL and anon key in Settings.`;
+  }
+
+  const detail = failure.message === '' ? '' : `: ${failure.message}`;
+  return `Backup ${action} failed (${failure.status})${detail}`;
 }
 
 /** Uploads the dump, replacing any previous one at the same path. */
@@ -82,11 +149,8 @@ export async function putBackup(config: SupabaseBackupConfig, json: string): Pro
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new RemoteBackupError(
-      `Backup upload failed (${response.status}): ${body}`,
-      response.status,
-    );
+    const failure = parseFailure(response.status, await response.text().catch(() => ''));
+    throw new RemoteBackupError(describeFailure('upload', config, failure), failure.status);
   }
 }
 
@@ -99,11 +163,8 @@ export async function getBackup(config: SupabaseBackupConfig): Promise<string | 
 
   if (response.ok) return response.text();
 
-  const body = await response.text().catch(() => '');
-  if (isObjectMissing(response.status, body)) return null;
+  const failure = parseFailure(response.status, await response.text().catch(() => ''));
+  if (isObjectMissing(failure)) return null;
 
-  throw new RemoteBackupError(
-    `Backup download failed (${response.status}): ${body}`,
-    response.status,
-  );
+  throw new RemoteBackupError(describeFailure('download', config, failure), failure.status);
 }

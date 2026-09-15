@@ -170,3 +170,27 @@ export function parseStateExport(input: unknown): ParseResult {
     })),
   };
 }
+
+/**
+ * Parses a dump straight from text.
+ *
+ * The remote backup arrives as a string from object storage, and every caller
+ * was doing `parseStateExport(JSON.parse(raw))` — which throws a bare
+ * SyntaxError on anything that is not JSON. That is not a theoretical case for
+ * a blob anyone with the bucket can overwrite: a truncated upload or the wrong
+ * file at that path took down the backup path with "Unexpected token <", which
+ * names neither the backup nor what to do about it. A malformed dump is a
+ * failed validation like any other.
+ */
+export function parseStateJson(raw: string): ParseResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return {
+      ok: false,
+      failures: [{ path: '', message: 'The stored backup is not valid JSON.' }],
+    };
+  }
+  return parseStateExport(value);
+}

@@ -893,6 +893,25 @@ Composes the above per round type:
 
 `REQ-37` Export/import is the backup path of record. Surface it prominently, not buried.
 
+`REQ-75` The transport reports **what the storage provider meant, not what it
+sent**. Supabase Storage routinely answers 400 and puts the real status in the
+body, so quoting the HTTP status tells the reader "400" for a missing bucket
+policy — neither true nor actionable. The body is parsed first, and the two
+failures that are common and fixable get named: a missing write policy says
+which bucket needs one and that an upsert needs both insert and update, and a
+wrong bucket name says the project has no such bucket.
+
+`REQ-76` A missing **bucket** is never read as an empty one. It arrives with the
+same 404 as a missing object, and treating it as "nothing backed up yet" tells
+someone who has mistyped the bucket the one thing that stops them looking
+further.
+
+`REQ-77` A stored blob that cannot be parsed **blocks the overwrite** rather
+than crashing or replacing it. The backup path is a file anyone with the bucket
+can write, so unparseable content is reachable, and it may be a dump from a
+newer build — "Back up anyway" is the way through, the same escape hatch the
+shrink guard uses.
+
 `REQ-52` Remote backup writes the whole state as one blob to object storage, not
 as rows. It is a backup, not sync: last-writer-wins over the entire corpus, so
 two devices would clobber each other. Row-level sync is a different design and

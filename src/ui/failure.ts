@@ -9,6 +9,7 @@ import { MissingApiKeyError } from '@/services/rounds/roundService';
 import { LlmValidationError } from '@/services/llm/generate';
 import {
   BackupNotConfiguredError,
+  BackupUnreadableError,
   BackupWouldShrinkError,
 } from '@/services/sync/backupService';
 
@@ -67,6 +68,9 @@ export function describeFailure(error: unknown): Failure {
   // the other by the deliberate "Back up anyway" that lives beside Restore.
   // The shrink guard is a refusal, not a fault, so it says what it protected.
   if (error instanceof BackupNotConfiguredError) {
+    return { message: error.message, detail: null, settingsWillHelp: true };
+  }
+  if (error instanceof BackupUnreadableError) {
     return { message: error.message, detail: null, settingsWillHelp: true };
   }
   if (error instanceof BackupWouldShrinkError) {

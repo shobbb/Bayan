@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildStateExport, exportFilename, serializeStateExport } from './buildExport';
-import { parseStateExport } from './schema';
+import { parseStateExport, parseStateJson } from './schema';
 import { planImport } from './importPlan';
 import { modernStandardArabicProfile } from '@/domain/languageProfile';
 import { DEFAULT_CATEGORIES } from '@/config/categories';
@@ -231,5 +231,35 @@ describe('buildStateExport', () => {
 
     const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
     expect(restored.words[0]!.lastMarkedAt).toBeNull();
+  });
+});
+
+describe('parseStateJson', () => {
+  // Every caller used to do parseStateExport(JSON.parse(raw)), which throws a
+  // bare SyntaxError. The backup blob is a file anyone with the bucket can
+  // overwrite, so "Unexpected token <" was a reachable state on a path that
+  // then names neither the backup nor what to do about it.
+  it('reports unparseable text as a failed dump, not an exception', () => {
+    const parsed = parseStateJson('<html>404 Not Found</html>');
+
+    expect(parsed.ok).toBe(false);
+    expect(!parsed.ok && parsed.failures[0]?.message).toMatch(/not valid JSON/);
+  });
+
+  it('reports an empty blob the same way', () => {
+    expect(parseStateJson('').ok).toBe(false);
+  });
+
+  it('still validates a dump that is JSON but not a dump', () => {
+    const parsed = parseStateJson('{"hello":"world"}');
+
+    expect(parsed.ok).toBe(false);
+    expect(!parsed.ok && parsed.failures.length).toBeGreaterThan(0);
+  });
+
+  it('accepts a real dump', () => {
+    const state = buildStateExport([word('كتاب')], [round('r1')], DEFAULT_CATEGORIES, null, 42);
+
+    expect(parseStateJson(serializeStateExport(state)).ok).toBe(true);
   });
 });

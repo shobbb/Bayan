@@ -8,7 +8,7 @@
  */
 import type { Categories } from '@/config';
 import type { WordId } from '@/domain/types';
-import { parseStateExport, type StateExport } from '@/domain/interchange/schema';
+import { parseStateJson, type StateExport } from '@/domain/interchange/schema';
 import { planImport } from '@/domain/interchange/importPlan';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import { applyImport } from '@/data/interchangeRepository';
@@ -32,6 +32,17 @@ export class BackupNotConfiguredError extends Error {
   constructor() {
     super('Remote backup is not configured. Add a Supabase URL and anon key in Settings.');
     this.name = 'BackupNotConfiguredError';
+  }
+}
+
+/** Something is stored at the backup path that this build cannot read. */
+export class BackupUnreadableError extends Error {
+  constructor() {
+    super(
+      'Something is already stored at the backup path and this app cannot read it. ' +
+        'It may be a backup from a newer version. Use "Back up anyway" in Settings to replace it.',
+    );
+    this.name = 'BackupUnreadableError';
   }
 }
 
@@ -76,7 +87,7 @@ export async function readRemoteStatus(): Promise<RemoteStatus> {
   const raw = await getBackup({ ...credentials, path: BACKUP_PATH });
   if (raw === null) return { configured: true, exists: false };
 
-  const parsed = parseStateExport(JSON.parse(raw));
+  const parsed = parseStateJson(raw);
   if (!parsed.ok) return { configured: true, exists: true };
 
   return { configured: true, exists: true, ...summarize(parsed.value) };
@@ -102,8 +113,15 @@ export async function backUpNow(
   if (!force) {
     const existing = await getBackup(config);
     if (existing !== null) {
-      const parsed = parseStateExport(JSON.parse(existing));
-      if (parsed.ok && parsed.value.rounds.length > dump.roundCount) {
+      const parsed = parseStateJson(existing);
+      if (!parsed.ok) {
+        // Something is stored and cannot be read. It may be a dump from a newer
+        // build, so overwriting it silently is the one outcome that could
+        // destroy a good backup — refuse, and leave "Back up anyway" as the way
+        // through, the same escape hatch the shrink guard uses.
+        throw new BackupUnreadableError();
+      }
+      if (parsed.value.rounds.length > dump.roundCount) {
         throw new BackupWouldShrinkError(dump.roundCount, parsed.value.rounds.length);
       }
     }
@@ -124,7 +142,7 @@ export async function restoreFromBackup(): Promise<BackupResult> {
   const raw = await getBackup(config);
   if (raw === null) throw new Error('There is no backup stored yet.');
 
-  const parsed = parseStateExport(JSON.parse(raw));
+  const parsed = parseStateJson(raw);
   if (!parsed.ok) {
     const first = parsed.failures[0];
     throw new Error(
