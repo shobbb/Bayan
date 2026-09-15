@@ -469,7 +469,7 @@ Restrained. Motion here signals state change; it does not decorate.
 - Tapped-word wash: 100ms, no easing flourish.
 - Drill card reveal: 160ms.
 - Correct/incorrect feedback: colour change plus haptic. No bounce, no scale, no confetti.
-- Screen transitions: a 280ms cross-fade. No slide-in stacks.
+- Screen transitions: a 120ms cross-fade. No slide-in stacks.
 
 `REQ-D9a` The outgoing screen **holds at full opacity** while the incoming one
 fades up over it. Fading both at once is the obvious way to write a cross-fade

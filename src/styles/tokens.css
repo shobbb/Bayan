@@ -61,11 +61,11 @@
      different job from a screen change and must not be retuned by one. */
   --motion-progress: 160ms;
   /**
-   * A screen change. Longer than the 120ms this started at: at that length the
-   * dissolve is over before the eye has followed it, which registers as a cut
-   * with a smear rather than as a transition.
+   * A screen change. Tried at 280ms and it read as slow — most of what made the
+   * old one feel abrupt was the mid-point dip and the eased dissolve rate, not
+   * the duration, and once those were gone the extra length was just waiting.
    */
-  --motion-screen-fade: 280ms;
+  --motion-screen-fade: 120ms;
 }
 
 /* Dark mode is required, not optional (§5.3) — used in the evening for long
