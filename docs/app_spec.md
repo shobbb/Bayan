@@ -469,7 +469,27 @@ Restrained. Motion here signals state change; it does not decorate.
 - Tapped-word wash: 100ms, no easing flourish.
 - Drill card reveal: 160ms.
 - Correct/incorrect feedback: colour change plus haptic. No bounce, no scale, no confetti.
-- Screen transitions: none, or a 120ms fade. No slide-in stacks.
+- Screen transitions: a 120ms cross-fade. No slide-in stacks.
+
+`REQ-D9` The fade is a **cross**-fade, which means it needs the outgoing screen.
+A mount animation cannot provide one — React swaps the tree in a single commit,
+so by the time it runs there is nothing left to fade out of, and the result
+reads as a flash rather than a change. The View Transitions API is what supplies
+it: the browser photographs the page before and after the update and dissolves
+between the two. Where the API is missing the incoming screen fades alone, which
+is half the effect and looks it, but beats an instant swap.
+
+`REQ-D10` Only opacity animates. A transform on an ancestor becomes the
+containing block for `position: fixed` descendants — the gloss panel and the
+bottom nav are both fixed — so a sliding wrapper would drag them out of place
+for the length of the animation. This is the mechanical half of the reason
+there are no slide-in stacks; the other half is that four peer destinations plus
+activities reachable from any of them have no consistent geometry for a slide to
+imply.
+
+`REQ-D11` Transitions mark a change of **screen**, never a re-render of the one
+on display. An article re-segmented after its words are translated stays put:
+dissolving a page into a near-identical copy of itself reads as a glitch.
 
 `REQ-D8` Respect `prefers-reduced-motion`. All of the above become instant.
 

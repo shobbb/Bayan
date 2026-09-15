@@ -26,6 +26,7 @@ import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
 import { describeFailure, type Failure } from '@/ui/failure';
+import { navigate } from '@/ui/transitions';
 import type { Round, RoundType, Word } from '@/domain/types';
 
 /**
@@ -106,7 +107,7 @@ function AppScreens() {
       setFailure(null);
       setGenerating(roundType);
       createRound(roundType, config)
-        .then((round) => setScreen({ name: 'reading', round }))
+        .then((round) => navigate(() => setScreen({ name: 'reading', round })))
         .catch((error: unknown) => setFailure(describeFailure(error)))
         .finally(() => setGenerating(null));
     },
@@ -124,13 +125,14 @@ function AppScreens() {
       return;
     }
     setFailure(null);
-    setScreen({ name: 'reading', round });
+    navigate(() => setScreen({ name: 'reading', round }));
   }, []);
 
   const handleFinishReading = useCallback(
     (round: Round, notKnownIndices: number[]) => {
       void finishRound(round, notKnownIndices).then(() => setRefreshToken((n) => n + 1));
-      setScreen({ name: 'home' }); // REQ-14: completing any activity returns here
+      // REQ-14: completing any activity returns here.
+      navigate(() => setScreen({ name: 'home' }));
     },
     [],
   );
@@ -189,12 +191,14 @@ function AppScreens() {
             return;
           }
           setStudyOpen(false);
-          setScreen({
-            name: 'drill',
-            queue: session.queue,
-            corpus: session.corpus,
-            sentences: session.batch?.exampleSentences ?? {},
-          });
+          navigate(() =>
+            setScreen({
+              name: 'drill',
+              queue: session.queue,
+              corpus: session.corpus,
+              sentences: session.batch?.exampleSentences ?? {},
+            }),
+          );
         })
         .catch((error: unknown) => setFailure(describeFailure(error)))
         .finally(() => setBusy(null));
@@ -228,15 +232,17 @@ function AppScreens() {
     setOpeningArticle(id);
     openArticle(id)
       .then(({ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }) =>
-        setScreen({
-          name: 'article',
-          article,
-          segments,
-          flaggedIndices,
-          untranslated,
-          resumeAt,
-          titleOffset,
-        }),
+        navigate(() =>
+          setScreen({
+            name: 'article',
+            article,
+            segments,
+            flaggedIndices,
+            untranslated,
+            resumeAt,
+            titleOffset,
+          }),
+        ),
       )
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setOpeningArticle(null));
@@ -272,7 +278,7 @@ function AppScreens() {
       void finishArticle(article, segments, notKnownIndices).then(() =>
         setRefreshToken((n) => n + 1),
       );
-      setScreen({ name: 'home' }); // REQ-14
+      navigate(() => setScreen({ name: 'home' })); // REQ-14
     },
     [],
   );
@@ -282,7 +288,7 @@ function AppScreens() {
     setNotice(null);
     // Returning from a drill or a round means the corpus likely moved.
     setRefreshToken((n) => n + 1);
-    setScreen({ name: 'home' });
+    navigate(() => setScreen({ name: 'home' }));
   }, []);
 
   const handleNavigate = useCallback((tab: NavTab) => {
@@ -292,18 +298,33 @@ function AppScreens() {
     // Anything that writes to the corpus may have happened since these screens
     // last read it, so they re-read on every arrival.
     setRefreshToken((n) => n + 1);
-    setScreen({ name: tab });
+    navigate(() => setScreen({ name: tab }));
   }, []);
 
   const handleOpenSettings = useCallback(() => {
     setFailure(null);
-    setScreen({ name: 'settings' });
+    navigate(() => setScreen({ name: 'settings' }));
   }, []);
+
+  /**
+   * Wraps a screen so the no-view-transitions fallback has an element to fade.
+   * Keyed by screen name so React remounts it on a change and the animation
+   * runs again — without the key it would play once, on first mount.
+   *
+   * Opacity only, deliberately: a transform here would become the containing
+   * block for the gloss panel and the bottom nav, which are fixed, and drag
+   * them out of place for the length of the animation.
+   */
+  const screenFrame = (view: ReactNode) => (
+    <div className="screen-transition" key={screen.name}>
+      {view}
+    </div>
+  );
 
   // The four destinations share the bar; reading and drilling do not (§5.1).
   const withNav = (tab: NavTab, view: ReactNode) => (
     <>
-      {view}
+      {screenFrame(view)}
       <BottomNav active={tab} onNavigate={handleNavigate} />
     </>
   );
@@ -321,7 +342,7 @@ function AppScreens() {
 
   if (screen.name === 'article') {
     const { article, segments, flaggedIndices, resumeAt, titleOffset } = screen;
-    return (
+    return screenFrame(
       <ReadingScreen
         segments={segments}
         titleAr={article.titleAr}
@@ -336,7 +357,7 @@ function AppScreens() {
           run: () => {
             // The place is already stored; refresh so Home offers it back.
             setRefreshToken((n) => n + 1);
-            setScreen({ name: 'library' });
+            navigate(() => setScreen({ name: 'library' }));
           },
         }}
         onToggleNotKnown={(index, flagged) => {
@@ -363,7 +384,7 @@ function AppScreens() {
         }
         attribution={{ label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }}
         onFinish={(notKnownIndices) => handleFinishArticle(article, segments, notKnownIndices)}
-      />
+      />,
     );
   }
 
@@ -372,25 +393,25 @@ function AppScreens() {
   }
 
   if (screen.name === 'drill') {
-    return (
+    return screenFrame(
       <DrillScreen
         queue={screen.queue}
         corpus={screen.corpus}
         sentences={screen.sentences}
         onExit={handleBackHome}
-      />
+      />,
     );
   }
 
   if (screen.name === 'reading') {
     const { round } = screen;
-    return (
+    return screenFrame(
       <ReadingScreen
         segments={round.segments}
         titleAr={round.titleAr}
         onExit={{ label: 'Home', run: handleBackHome }}
         onFinish={(notKnownIndices) => handleFinishReading(round, notKnownIndices)}
-      />
+      />,
     );
   }
 

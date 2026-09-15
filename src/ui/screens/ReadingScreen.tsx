@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
 import type { Failure } from '@/ui/failure';
@@ -185,8 +192,13 @@ export function ReadingScreen({
 
   // Put the reader back where they were. Runs once per article: `resumeAt` is
   // read from storage on open and must not fight the scrolling that follows.
+  //
+  // Layout, not effect: this has to happen before the browser paints. A screen
+  // transition photographs the page as soon as React commits, so a scroll
+  // deferred to after paint is a scroll that happens after the photograph —
+  // the article would cross-fade in at the top and then jump.
   const resumedFor = useRef<string | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (resumeAt === null || resumedFor.current === titleAr) return;
     resumedFor.current = titleAr;
     const target = containerRef.current?.querySelector<HTMLElement>(

@@ -2,7 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app';
 import { seedOnFirstRun } from '@/services/seed/firstRunSeed';
+import { markTransitionSupport } from '@/ui/transitions';
 import './styles/global.css';
+import './styles/transitions.css';
+
+// Decided once, before anything renders, so the stylesheet knows whether it is
+// falling back to a plain fade-in.
+markTransitionSupport();
 
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('Root element not found');

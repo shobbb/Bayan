@@ -1,0 +1,78 @@
+/**
+ * Screen transitions (§5.7): a cross-fade, and nothing else.
+ *
+ * The spec rules out slide-in stacks, and the restraint is doing real work
+ * here. A slide implies a spatial relationship — this screen is to the right of
+ * that one — and Bayan's screens are four peer destinations plus activities
+ * reached from any of them, so there is no consistent geometry to imply. A
+ * dissolve claims only that one thing replaced another, which is all that is
+ * true.
+ *
+ * Opacity is also the one property that is safe to animate here. A transform on
+ * an ancestor becomes the containing block for `position: fixed` descendants —
+ * the gloss panel and the bottom nav are both fixed — so a sliding wrapper
+ * would drag them out of position for the length of the animation. Opacity
+ * creates a stacking context but not a containing block, so they stay put.
+ */
+
+/**
+ * The group animation morphs the snapshot's size and position. Both roots are
+ * the same size here so it has nothing to do visually, but it runs for the
+ * UA's own 250ms and keeps the transition overlay alive for twice as long as
+ * the fade — long enough for a tap to land on it rather than on the app.
+ * Everything ends when the token says it ends.
+ */
+::view-transition-group(root) {
+  animation-duration: var(--motion-screen-fade);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* Both halves run the full duration and overlap completely, which is what
+     makes it a dissolve rather than a fade-out followed by a fade-in. */
+  animation-duration: var(--motion-screen-fade);
+  animation-timing-function: ease;
+}
+
+/* The browser's default is a cross-fade already; this states the duration and
+   keeps both halves on the token, so REQ-D8 zeroing it zeroes this too. */
+::view-transition-old(root) {
+  animation-name: screen-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: screen-fade-in;
+}
+
+@keyframes screen-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/**
+ * Fallback where the API is missing: fade the incoming screen only.
+ *
+ * Half a cross-fade, and it looks it — the old screen still disappears in one
+ * frame. It is here so that an older WebView degrades to something softer than
+ * an instant swap rather than to nothing.
+ */
+.no-view-transitions .screen-transition {
+  animation: screen-fade-in var(--motion-screen-fade) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* REQ-D8. The tokens already collapse to 0ms; this removes the animation
+     outright so there is no frame of opacity 0 at all. */
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  .no-view-transitions .screen-transition {
+    animation: none;
+  }
+}
