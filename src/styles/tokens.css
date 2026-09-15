@@ -57,7 +57,15 @@
   --motion-gloss-fade: 120ms;
   --motion-tap-wash: 100ms;
   --motion-drill-reveal: 160ms;
-  --motion-screen-fade: 120ms;
+  /* Advancing the drill's progress bar. Its own token because it is a
+     different job from a screen change and must not be retuned by one. */
+  --motion-progress: 160ms;
+  /**
+   * A screen change. Longer than the 120ms this started at: at that length the
+   * dissolve is over before the eye has followed it, which registers as a cut
+   * with a smear rather than as a transition.
+   */
+  --motion-screen-fade: 280ms;
 }
 
 /* Dark mode is required, not optional (§5.3) — used in the evening for long
@@ -115,6 +123,7 @@
     --motion-gloss-fade: 0ms;
     --motion-tap-wash: 0ms;
     --motion-drill-reveal: 0ms;
+    --motion-progress: 0ms;
     --motion-screen-fade: 0ms;
   }
 }

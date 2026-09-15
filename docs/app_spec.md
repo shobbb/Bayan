@@ -469,7 +469,16 @@ Restrained. Motion here signals state change; it does not decorate.
 - Tapped-word wash: 100ms, no easing flourish.
 - Drill card reveal: 160ms.
 - Correct/incorrect feedback: colour change plus haptic. No bounce, no scale, no confetti.
-- Screen transitions: a 120ms cross-fade. No slide-in stacks.
+- Screen transitions: a 280ms cross-fade. No slide-in stacks.
+
+`REQ-D9a` The outgoing screen **holds at full opacity** while the incoming one
+fades up over it. Fading both at once is the obvious way to write a cross-fade
+and it is what makes it look jerky: the two snapshots are stacked, so when both
+sit near half the page behind shows through both and the whole screen dips
+towards the background at the midpoint. Holding the outgoing one removes the dip
+— the composite is never dimmer than either screen. The incoming fade is linear
+for the same reason: opacity *is* the dissolve, so an eased curve is an eased
+dissolve rate that lingers at the ends and rushes the middle.
 
 `REQ-D9` The fade is a **cross**-fade, which means it needs the outgoing screen.
 A mount animation cannot provide one — React swaps the tree in a single commit,

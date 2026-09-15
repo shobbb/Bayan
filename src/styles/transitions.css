@@ -22,31 +22,43 @@
  * the fade — long enough for a tap to land on it rather than on the app.
  * Everything ends when the token says it ends.
  */
-::view-transition-group(root) {
-  animation-duration: var(--motion-screen-fade);
-}
-
+::view-transition-group(root),
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  /* Both halves run the full duration and overlap completely, which is what
-     makes it a dissolve rather than a fade-out followed by a fade-in. */
   animation-duration: var(--motion-screen-fade);
-  animation-timing-function: ease;
+  animation-fill-mode: both;
 }
 
-/* The browser's default is a cross-fade already; this states the duration and
-   keeps both halves on the token, so REQ-D8 zeroing it zeroes this too. */
+/**
+ * The incoming screen fades up over the outgoing one, which stays fully opaque
+ * underneath for the whole duration.
+ *
+ * Fading both at once is the obvious way to write a cross-fade and it is what
+ * makes it look jerky. The two snapshots are stacked with the new one on top,
+ * so when both sit near 50% the page behind shows through both and the whole
+ * screen dips towards the background at the midpoint — a flicker in the middle
+ * of the movement. Holding the old one at full opacity removes the dip
+ * entirely: the composite goes from one screen to the other without ever being
+ * dimmer than either.
+ */
 ::view-transition-old(root) {
-  animation-name: screen-fade-out;
+  animation-name: screen-hold;
 }
 
 ::view-transition-new(root) {
   animation-name: screen-fade-in;
+  /* Linear, not eased. Opacity is what is being cross-faded, so an eased curve
+     is an eased *dissolve rate* — it lingers at the ends and rushes the middle,
+     which is the other half of what reads as jerky. */
+  animation-timing-function: linear;
 }
 
-@keyframes screen-fade-out {
+@keyframes screen-hold {
+  from {
+    opacity: 1;
+  }
   to {
-    opacity: 0;
+    opacity: 1;
   }
 }
 
