@@ -23,7 +23,8 @@ import {
   type GlossLanguage,
 } from '@/domain/glossLanguage';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
-import type { WordId } from '@/domain/types';
+import type { LanguageProfile, WordId } from '@/domain/types';
+import { phraseId } from '@/domain/wordIdentity';
 import { listWords } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
 import type { GlossRecord } from '@/data/db';
@@ -52,7 +53,7 @@ export function untranslatedIds(
 ): WordId[] {
   const ids = new Set<WordId>();
   for (const segment of segments) {
-    if (segment.gloss === '') ids.add(profile.normalize(segment.text));
+    if (segment.gloss === '') ids.add(phraseId(segment.text, profile));
   }
   return [...ids];
 }
@@ -65,7 +66,7 @@ function surfacesById(
   const out = new Map<WordId, string>();
   for (const segment of segments) {
     if (segment.gloss !== '') continue;
-    const id = profile.normalize(segment.text);
+    const id = phraseId(segment.text, profile);
     if (!out.has(id)) out.set(id, segment.text);
   }
   return out;
@@ -133,9 +134,11 @@ export async function enrichArticle(
 
     // Match on the echoed word, normalized — the model is asked to echo it
     // back exactly, but a stray diacritic should not lose the whole entry.
+    // phraseId, not normalize, so a multi-word expression echoed back lands on
+    // the same key the request was made under.
     const byId = new Map<WordId, (typeof response.glosses)[number]>();
     for (const entry of response.glosses) {
-      byId.set(profile.normalize(entry.word.trim()), entry);
+      byId.set(phraseId(entry.word.trim(), profile), entry);
     }
 
     const records = chunk
@@ -172,6 +175,31 @@ export async function enrichArticle(
   };
 }
 
+/**
+ * Every cache key this article could need: each word in it, plus each of the
+ * publisher's phrases under its own normalized key.
+ *
+ * The phrases have to be asked for explicitly. Splitting the text on whitespace
+ * only ever produces single-token keys, so a phrase's definition would sit in
+ * the cache, paid for, and never be fetched — the article would offer to define
+ * it again on every open.
+ */
+function cacheKeysFor(article: Article, profile: LanguageProfile): WordId[] {
+  const keys = new Set<WordId>();
+
+  for (const token of [article.titleAr, ...article.paragraphs].join(' ').split(/\s+/)) {
+    const id = phraseId(token, profile);
+    if (id) keys.add(id);
+  }
+
+  for (const entry of [...article.vocab, ...article.expressions]) {
+    const id = phraseId(entry.term, profile);
+    if (id) keys.add(id);
+  }
+
+  return [...keys];
+}
+
 export interface SegmentedArticle {
   /** Title segments first, then the body — one stream, one set of indices. */
   segments: ResolvedSegment[];
@@ -194,13 +222,7 @@ export async function resegment(
   const field = glossFieldFor(language);
   const [words, cache] = await Promise.all([
     listWords(DEFAULT_TRACK_ID),
-    getGlosses(
-      [article.titleAr, ...article.paragraphs]
-        .join(' ')
-        .split(/\s+/)
-        .map((token) => profile.normalize(token))
-        .filter(Boolean),
-    ),
+    getGlosses(cacheKeysFor(article, profile)),
   ]);
 
   const known = new Map<WordId, { gloss: string; forms: string | null; surface?: string }>();
@@ -223,11 +245,11 @@ export async function resegment(
   const ctx = {
     profile,
     known,
-    // The publisher's lists are English. In Arabic-only mode they are not an
-    // answer to the question being asked, so they are skipped — which is the
-    // one real cost of the setting: the ~8% the publisher glossed now needs
-    // defining too, once, before the cache covers it like everything else.
-    usePublisherGlosses: language !== 'arabic',
+    // The publisher's English glosses are not an answer to the question Arabic
+    // mode asks, but its phrase boundaries are still the only record of where a
+    // multi-word expression ends — so those are kept and the glosses dropped.
+    // The phrase is then defined in Arabic under its own id, like any word.
+    publisherLists: language === 'arabic' ? ('boundaries' as const) : ('glosses' as const),
   };
   const title = articleTitleSegments(article, ctx);
   return { segments: [...title, ...articleToSegments(article, ctx)], titleOffset: title.length };

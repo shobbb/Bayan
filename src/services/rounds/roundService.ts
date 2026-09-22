@@ -15,6 +15,7 @@ import { getRoundTypeStrategy } from '@/domain/selector/roundTypes';
 import type { SelectionContext } from '@/domain/selector/roundTypes/types';
 import { countDistinctForms, ingestRoundWords } from '@/domain/rounds/ingest';
 import { glossLanguageFor } from '@/domain/glossLanguage';
+import { phraseId } from '@/domain/wordIdentity';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { Round, RoundType, Word } from '@/domain/types';
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -142,7 +143,7 @@ export async function finishRound(
     notKnownSegmentIndices
       .map((index) => round.segments[index])
       .filter((segment) => segment !== undefined && segment.gloss !== null)
-      .map((segment) => profile.normalize(segment!.text)),
+      .map((segment) => phraseId(segment!.text, profile)),
   );
 
   await upsertRound({ ...round, flagCount: flaggedIds.size });

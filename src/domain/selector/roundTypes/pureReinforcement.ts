@@ -4,6 +4,7 @@
  */
 import type { Categories } from '@/config';
 import { PARAGRAPH_BREAK, type Segment, type Word, type WordId } from '@/domain/types';
+import { phraseId } from '@/domain/wordIdentity';
 import { drawWords } from '../wordDraw';
 import { toWordDrawContext } from '../drawContext';
 import { knownWords, type RoundTypeStrategy, type SelectionContext } from './types';
@@ -42,7 +43,7 @@ export const pureReinforcementStrategy: RoundTypeStrategy = {
 
     const unknown = segments
       .filter((segment) => segment.gloss !== null && segment.text !== PARAGRAPH_BREAK)
-      .map((segment) => ({ text: segment.text, id: ctx.profile.normalize(segment.text) }))
+      .map((segment) => ({ text: segment.text, id: phraseId(segment.text, ctx.profile) }))
       .filter((entry) => !known.has(entry.id));
 
     if (unknown.length === 0) return null;

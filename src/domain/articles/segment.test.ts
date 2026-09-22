@@ -3,6 +3,7 @@ import { PARAGRAPH_BREAK } from '@/domain/types';
 import type { WordId } from '@/domain/types';
 import { modernStandardArabicProfile as profile } from '@/domain/languageProfile';
 import { articleToSegments, articleTitleSegments, glossCoverage, indexGlosses } from './segment';
+import { phraseId } from '@/domain/wordIdentity';
 import type { Article } from './types';
 
 function article(overrides: Partial<Article> = {}): Article {
@@ -321,7 +322,7 @@ describe('Arabic-only definitions (§13)', () => {
   // The publisher's lists are editorial English. Showing them would mean the one
   // setting that promises no English delivers it on the hardest words.
   it('skips them when the definitions are meant to be Arabic only', () => {
-    const segments = articleToSegments(withVocab, { ...NO_CORPUS, usePublisherGlosses: false });
+    const segments = articleToSegments(withVocab, { ...NO_CORPUS, publisherLists: 'boundaries' as const });
 
     expect(segments[0]).toMatchObject({ gloss: '', glossSource: null });
   });
@@ -329,7 +330,7 @@ describe('Arabic-only definitions (§13)', () => {
   it('still resolves against the corpus, which holds the Arabic definitions', () => {
     const segments = articleToSegments(withVocab, {
       ...corpus({ الكتاب: 'شَيْءٌ يُقْرَأُ' }),
-      usePublisherGlosses: false,
+      publisherLists: 'boundaries' as const,
     });
 
     expect(segments[0]).toMatchObject({ gloss: 'شَيْءٌ يُقْرَأُ', glossSource: 'corpus' });
@@ -343,7 +344,93 @@ describe('Arabic-only definitions (§13)', () => {
 
     expect(articleTitleSegments(titled, NO_CORPUS)[0]!.gloss).toBe('the book');
     expect(
-      articleTitleSegments(titled, { ...NO_CORPUS, usePublisherGlosses: false })[0]!.gloss,
+      articleTitleSegments(titled, { ...NO_CORPUS, publisherLists: 'boundaries' as const })[0]!.gloss,
     ).toBe('');
+  });
+});
+
+describe('phrase boundaries without publisher glosses (§13)', () => {
+  // Only the publisher knows this is a unit. Word by word it reads "is released
+  // upon him"; no per-word definition assembles "is called" out of that.
+  const idiom = article({
+    paragraphs: ['يُطْلَقُ عَلَيْهِ اسْمٌ.'],
+    expressions: [{ term: 'يُطْلَقُ عَلَيْهِ', gloss: 'is called', forms: null }],
+  });
+
+  const boundaries = { ...NO_CORPUS, publisherLists: 'boundaries' as const };
+
+  it('keeps the expression as one segment', () => {
+    const segments = articleToSegments(idiom, boundaries);
+
+    expect(segments[0]!.text).toBe('يُطْلَقُ عَلَيْهِ');
+    expect(segments[1]!.text).toBe('اسْمٌ');
+  });
+
+  it('leaves the phrase undefined rather than showing the English', () => {
+    const segments = articleToSegments(idiom, boundaries);
+
+    expect(segments[0]).toMatchObject({ gloss: '', glossSource: null });
+  });
+
+  it('shows the phrase once its own definition is held', () => {
+    const known = new Map([
+      [phraseId('يُطْلَقُ عَلَيْهِ', profile), { gloss: 'يُسَمَّى بِهَذَا الاسْمِ', forms: null }],
+    ]);
+    const segments = articleToSegments(idiom, { profile, known, publisherLists: 'boundaries' });
+
+    expect(segments[0]).toMatchObject({
+      gloss: 'يُسَمَّى بِهَذَا الاسْمِ',
+      glossSource: 'corpus',
+    });
+  });
+
+  // Flags and reading progress are stored as segment *indices*, so the two
+  // modes have to agree on where every segment begins and ends. If Arabic mode
+  // dissolved phrases into their words, a word flagged in English mode would
+  // quietly slide along the text when the setting changed.
+  it('produces the same segmentation as English mode, only different glosses', () => {
+    const mixed = article({
+      paragraphs: ['يُطْلَقُ عَلَيْهِ اسْمٌ، وَهُوَ الْكِتَابُ.'],
+      vocab: [{ term: 'الْكِتَابُ', gloss: 'the book', forms: null }],
+      expressions: [{ term: 'يُطْلَقُ عَلَيْهِ', gloss: 'is called', forms: null }],
+    });
+
+    const english = articleToSegments(mixed, NO_CORPUS);
+    const arabic = articleToSegments(mixed, boundaries);
+
+    expect(arabic.map((s) => s.text)).toEqual(english.map((s) => s.text));
+  });
+
+  // A single-word entry contributes no boundary, so it must fall through to the
+  // ordinary lookup — which handles proclitics and vowel conflicts and the
+  // publisher path does not.
+  it('ignores single-word publisher entries entirely', () => {
+    const segments = articleToSegments(
+      article({ vocab: [{ term: 'الْكِتَابُ', gloss: 'the book', forms: null }] }),
+      { ...corpus({ الكتاب: 'شَيْءٌ يُقْرَأُ' }), publisherLists: 'boundaries' },
+    );
+
+    expect(segments[0]).toMatchObject({ gloss: 'شَيْءٌ يُقْرَأُ', glossSource: 'corpus' });
+  });
+});
+
+describe('phraseId', () => {
+  // normalize strips a leading definite article, so run over a whole phrase it
+  // strips the first word's and leaves the rest — making a word's identity
+  // depend on its position inside a phrase.
+  it('normalizes each word, not the joined string', () => {
+    expect(phraseId('المَوادّ الغِذائِيَّة', profile)).toBe('مواد غذاييه');
+    expect(profile.normalize('المَوادّ الغِذائِيَّة')).toBe('مواد الغذاييه');
+  });
+
+  it('is exactly normalize for a single word', () => {
+    for (const word of ['الْكِتَابُ', 'وَفِي', 'مَدْرَسَة']) {
+      expect(phraseId(word, profile)).toBe(profile.normalize(word));
+    }
+  });
+
+  // The publisher's term and the body's wording rarely agree on the article.
+  it('matches a phrase written with or without the definite article', () => {
+    expect(phraseId('المَوادّ الغِذائِيَّة', profile)).toBe(phraseId('مَوادّ غِذائِيَّة', profile));
   });
 });

@@ -8,6 +8,7 @@
 import { PARAGRAPH_BREAK } from '@/domain/types';
 import type { LanguageProfile, Segment, TrackId, Word, WordId } from '@/domain/types';
 import { glossFieldFor, type GlossLanguage } from '@/domain/glossLanguage';
+import { phraseId } from '@/domain/wordIdentity';
 
 /** Segments that carry vocabulary: not punctuation, not a paragraph break. */
 export function glossedSegments(segments: readonly Segment[]): Segment[] {
@@ -26,7 +27,7 @@ export function countDistinctForms(
   profile: LanguageProfile,
 ): number {
   const ids = new Set<WordId>();
-  for (const segment of glossedSegments(segments)) ids.add(profile.normalize(segment.text));
+  for (const segment of glossedSegments(segments)) ids.add(phraseId(segment.text, profile));
   return ids.size;
 }
 
@@ -59,7 +60,7 @@ export function ingestRoundWords(
   const field = glossFieldFor(language);
 
   for (const segment of glossedSegments(segments)) {
-    const id = profile.normalize(segment.text);
+    const id = phraseId(segment.text, profile);
     if (touched.has(id)) continue; // one increment per round, not per occurrence
 
     const incoming = segment.gloss ?? '';

@@ -13,6 +13,7 @@
  * increment could not promise once marks are written on every tap.
  */
 import type { LanguageProfile, Segment, TrackId, Word, WordId } from '@/domain/types';
+import { phraseId } from '@/domain/wordIdentity';
 
 /** A word's mark state before this reading touched it. */
 export interface PriorMark {
@@ -41,7 +42,7 @@ export function wordIdAt(
 ): WordId | null {
   const segment = segments[index];
   if (!segment || segment.gloss === null) return null;
-  return profile.normalize(segment.text);
+  return phraseId(segment.text, profile);
 }
 
 export interface PlanFlagOptions {

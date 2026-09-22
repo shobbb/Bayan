@@ -4,6 +4,7 @@
  * follow identical logic and can never diverge (REQ-I4).
  */
 import type { LanguageProfile, Round, TrackId, Word, WordId } from '@/domain/types';
+import { phraseId } from '@/domain/wordIdentity';
 import type { InterchangeRound, InterchangeWord, StateExport } from './schema';
 
 export type ImportMode = 'merge' | 'replace' | 'dryRun';
@@ -155,8 +156,8 @@ export function planImport(
     // REQ-I3: normalize the surface and merge on the resulting id, so multiple
     // inflections of one lemma collapse into a single record.
     const id = incoming.id
-      ? profile.normalize(incoming.id)
-      : profile.normalize(incoming.surface);
+      ? phraseId(incoming.id, profile)
+      : phraseId(incoming.surface, profile);
 
     const candidate = toWord(incoming, id, trackId);
     const current = wordsById.get(id);

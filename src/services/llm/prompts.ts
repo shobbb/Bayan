@@ -135,7 +135,9 @@ Echo each word back exactly as supplied so the glosses can be matched to it.`;
  */
 const ARABIC_GLOSS_INSTRUCTIONS = `You are defining Arabic words in Arabic, for a learner who is past translating.
 
-For each supplied word, write a short definition IN SIMPLE ARABIC. Every definition must:
+Some entries are multi-word expressions rather than single words. Define the expression as a whole — what it means in use, not what its words mean separately.
+
+For each supplied entry, write a short definition IN SIMPLE ARABIC. Every definition must:
 - be a short phrase, typically 2-6 words — a definition, not a one-word synonym,
 - use only common, high-frequency Arabic that a learner would meet early; never explain a word with one that is rarer than it,
 - never use the headword itself, or another form of its root, inside the definition,

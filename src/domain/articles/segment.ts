@@ -13,9 +13,14 @@
  * Publisher glosses are editorial and outrank the corpus deliberately: they
  * were written for this sentence, where a corpus gloss was written for some
  * other one.
+ *
+ * `SegmentContext.publisherLists` splits step 1-2 in half: the publisher's
+ * lists say both where a phrase ends and what it means, and Arabic-only mode
+ * (§13) wants the first without the second. See that field.
  */
 import { PARAGRAPH_BREAK } from '@/domain/types';
 import type { LanguageProfile, Segment, WordId } from '@/domain/types';
+import { phraseId } from '@/domain/wordIdentity';
 import type { Article, ArticleGloss, GlossSource } from './types';
 
 /**
@@ -42,8 +47,8 @@ interface PhraseEntry {
   term: string;
 }
 
-function phraseKey(words: readonly string[], profile: LanguageProfile): string {
-  return words.map((word) => profile.normalize(word)).join(' ');
+function phraseKey(words: readonly string[], profile: LanguageProfile): WordId {
+  return phraseId(words.join(' '), profile);
 }
 
 /**
@@ -137,28 +142,26 @@ export interface SegmentContext {
    */
   known: ReadonlyMap<WordId, { gloss: string; forms: string | null; surface?: string }>;
   /**
-   * Whether the publisher's own vocabulary and expression lists may be used
-   * (§13).
+   * What the publisher's vocabulary and expression lists are used for (§13).
    *
-   * True everywhere except Arabic-only mode, where they cannot be: they are
-   * editorial *English* glosses, and showing them would mean the one setting
+   * Those lists do two separable jobs: they say **where a phrase begins and
+   * ends**, and they say **what it means in English**. Under Arabic-only
+   * definitions the second is unusable — showing it would mean the one setting
    * that promises no English delivers it on the words the publisher thought
-   * hardest. Skipping them costs the article's multi-word expressions as
-   * tappable units too, since those are the same list.
+   * hardest — but the first is not, and it is not recoverable from anywhere
+   * else. Only the publisher knows that "يُطْلَقُ عَلَيْهِ" is a unit; word by
+   * word it reads "is released upon him", and no per-word definition will ever
+   * assemble "is called" out of that.
    *
-   * Defaults to true, which is what every caller meant before the setting
-   * existed.
+   * - `'glosses'` (the default): boundaries and English glosses, as before.
+   * - `'boundaries'`: boundaries only. A multi-word entry still groups into one
+   *   tappable segment, but its meaning is looked up in `known` under the
+   *   phrase's own id, exactly as a single word is — so the phrase is defined
+   *   in Arabic by the same pass, cached under the same key, and costs the same
+   *   one call. A single-word entry is ignored outright, since the ordinary
+   *   lookup below handles those and handles them better.
    */
-  usePublisherGlosses?: boolean;
-}
-
-/** The publisher's lists, or an empty index when they are not to be used. */
-function publisherIndex(
-  article: Article,
-  ctx: SegmentContext,
-): { byPhrase: Map<string, PhraseEntry>; maxWords: number } {
-  if (ctx.usePublisherGlosses === false) return { byPhrase: new Map(), maxWords: 1 };
-  return indexGlosses(article, ctx.profile);
+  publisherLists?: 'glosses' | 'boundaries';
 }
 
 /**
@@ -196,30 +199,52 @@ function segmentRun(
       continue;
     }
 
+    // Under 'boundaries' the publisher's spans are still honoured, but only
+    // where they group more than one word — a single-word entry has no boundary
+    // to contribute, so it drops through to the ordinary lookup below.
+    const boundariesOnly = ctx.publisherLists === 'boundaries';
+    const minSpan = boundariesOnly ? 2 : 1;
+
     // Longest phrase first, so a multi-word expression is one tappable unit
     // rather than being shadowed by a single-word entry for its first word.
     let matched = false;
-    for (let span = Math.min(maxWords, tokens.length - cursor); span >= 1; span--) {
+    for (let span = Math.min(maxWords, tokens.length - cursor); span >= minSpan; span--) {
       const window = tokens.slice(cursor, cursor + span);
       if (!window.every(isWord)) continue;
 
+      const key = phraseKey(window, profile);
       const entry =
-        byPhrase.get(phraseKey(window, profile)) ??
+        byPhrase.get(key) ??
         (span === 1
-          ? candidateKeys(phraseKey(window, profile) as WordId)
-              .map((key) => byPhrase.get(key))
+          ? candidateKeys(key as WordId)
+              .map((candidate) => byPhrase.get(candidate))
               .find(Boolean)
           : undefined);
       if (!entry) continue;
       // Publisher lists collide on a bare id exactly as the corpus does.
       if (span === 1 && conflicts(profile, token, entry.term)) continue;
 
-      into.push({
-        text: window.join(' '),
-        gloss: entry.gloss,
-        forms: entry.forms,
-        glossSource: 'publisher',
-      });
+      if (boundariesOnly) {
+        // The span is the publisher's; the meaning is not. A phrase is looked
+        // up under its own id, so it is defined, cached and counted by exactly
+        // the machinery a single word is — and when nothing holds it yet, the
+        // empty gloss offers the whole phrase to the definition pass rather
+        // than its words one at a time.
+        const held = known.get(key as WordId);
+        into.push({
+          text: window.join(' '),
+          gloss: held?.gloss ?? '',
+          forms: held?.forms ?? null,
+          glossSource: held ? 'corpus' : null,
+        });
+      } else {
+        into.push({
+          text: window.join(' '),
+          gloss: entry.gloss,
+          forms: entry.forms,
+          glossSource: 'publisher',
+        });
+      }
       cursor += span;
       matched = true;
       break;
@@ -273,7 +298,7 @@ function segmentRun(
  * glosses and the same corpus, so a word met here is the same word met below.
  */
 export function articleTitleSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
-  const { byPhrase, maxWords } = publisherIndex(article, ctx);
+  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
   const segments: ResolvedSegment[] = [];
   segmentRun(article.titleAr, byPhrase, maxWords, ctx, segments);
   return segments;
@@ -284,7 +309,7 @@ export function articleTitleSegments(article: Article, ctx: SegmentContext): Res
  * matching what the reader already renders for generated rounds.
  */
 export function articleToSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
-  const { byPhrase, maxWords } = publisherIndex(article, ctx);
+  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
   const segments: ResolvedSegment[] = [];
 
   article.paragraphs.forEach((paragraph, index) => {

@@ -962,11 +962,23 @@ again. So the prompt asks for a short phrase in commoner words than the
 headword, never using the headword or its root, fully vowelled, with no English
 anywhere.
 
-`REQ-82` **Publisher glosses are unusable in this mode.** An article's
-vocabulary and expression lists are editorial English, so they are skipped
-entirely — including the multi-word expressions they make tappable. This is the
-setting's one real cost: the ~8% the publisher glossed needs defining too, once,
-before the cache covers it like everything else.
+`REQ-82` **The publisher's lists say two separable things** — where a phrase
+begins and ends, and what it means in English. Arabic-only mode drops the
+second and keeps the first, because only the publisher knows that
+"يُطْلَقُ عَلَيْهِ" is a unit: word by word it reads "is released upon him", and
+no per-word definition assembles "is called" out of that. A multi-word entry
+stays one tappable segment and is defined in Arabic under its own id; a
+single-word entry is ignored, since the ordinary corpus lookup handles those
+better. Segmentation is therefore identical in both modes, which matters because
+flags and reading progress are stored as segment indices.
+
+`REQ-85` **One span of text becomes one WordId, one way** (`domain/wordIdentity`):
+normalize each whitespace-separated word, join with a single space. Not
+`normalize(wholePhrase)`, which strips the first word's definite article and
+leaves every other one's — making a word's identity depend on its position
+inside a phrase. Measured over the 284 imported articles, per-word keys match
+625 of the 1,194 multi-word publisher entries against the body text;
+whole-string keys match 592.
 
 `REQ-75` The transport reports **what the storage provider meant, not what it
 sent**. Supabase Storage routinely answers 400 and puts the real status in the
