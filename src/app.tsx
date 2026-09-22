@@ -25,6 +25,7 @@ import { enrichArticle } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
+import { glossLanguageFor } from '@/domain/glossLanguage';
 import { describeFailure, type Failure } from '@/ui/failure';
 import { navigate } from '@/ui/transitions';
 import type { Round, RoundType, Word } from '@/domain/types';
@@ -225,12 +226,13 @@ function AppScreens() {
   // Articles are third-party reading material, not generated rounds: they never
   // reach the selector. What they do share is the corpus — finishing one writes
   // Words through the same ingestion a round uses.
-  const handleOpenArticle = useCallback((id: string) => {
+  const handleOpenArticle = useCallback(
+    (id: string) => {
     setFailure(null);
     setEnrichFailure(null);
     setEnrichNotice(null);
     setOpeningArticle(id);
-    openArticle(id)
+    openArticle(id, glossLanguageFor(config.generation.arabicOnlyDefinitions))
       .then(({ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }) =>
         navigate(() =>
           setScreen({
@@ -246,7 +248,9 @@ function AppScreens() {
       )
       .catch((error: unknown) => setFailure(describeFailure(error)))
       .finally(() => setOpeningArticle(null));
-  }, []);
+    },
+    [config],
+  );
 
   // REQ-A10: asked for, never automatic — it is a model call on the reader's
   // own key, and REQ-15 rules out spending it unprompted.
@@ -275,12 +279,15 @@ function AppScreens() {
 
   const handleFinishArticle = useCallback(
     (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
-      void finishArticle(article, segments, notKnownIndices).then(() =>
-        setRefreshToken((n) => n + 1),
-      );
+      void finishArticle(
+        article,
+        segments,
+        notKnownIndices,
+        glossLanguageFor(config.generation.arabicOnlyDefinitions),
+      ).then(() => setRefreshToken((n) => n + 1));
       navigate(() => setScreen({ name: 'home' })); // REQ-14
     },
-    [],
+    [config],
   );
 
   const handleBackHome = useCallback(() => {

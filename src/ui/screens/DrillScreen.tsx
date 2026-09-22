@@ -10,7 +10,9 @@ import {
 } from '@/domain/drills/session';
 import type { DrillOutcome, PrepareContext } from '@/domain/drills/types';
 import type { Grade, Word } from '@/domain/types';
+import { glossFor, glossLanguageFor } from '@/domain/glossLanguage';
 import { recordAnswer, undoAnswer } from '@/services/batch/batchService';
+import { Definition } from '@/ui/drills/Definition';
 import { FlashcardView } from '@/ui/drills/FlashcardView';
 import { MultipleChoiceView } from '@/ui/drills/MultipleChoiceView';
 import { WriteInView } from '@/ui/drills/WriteInView';
@@ -52,14 +54,17 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
 
   const roundSize = config.algorithm.drill.roundSize;
 
+  const glossLanguage = glossLanguageFor(config.generation.arabicOnlyDefinitions);
+
   const ctx = useMemo<PrepareContext>(
     () => ({
       corpus,
       sentences,
       maxLevenshteinDistance: config.algorithm.grading.maxLevenshteinDistance,
+      glossLanguage,
       random: Math.random,
     }),
-    [corpus, sentences, config],
+    [corpus, sentences, config, glossLanguage],
   );
 
   const entry = session[index];
@@ -178,7 +183,7 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
     const keepReviewing = () => {
       // Carry the counts so a review pass reads as the same session continuing.
       setCarried({ known, stillLearning });
-      setSession(reviewQueueFor(summary.missed, session));
+      setSession(reviewQueueFor(summary.missed, session, glossLanguage));
       setResults([]);
       setIndex(0);
       setOutcome(null);
@@ -206,7 +211,11 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
                     <span dir="rtl" lang="ar" className="drill-screen__missed-arabic">
                       {word.surface}
                     </span>
-                    <span className="drill-screen__note">{word.gloss}</span>
+                    <Definition
+                      text={glossFor(word, glossLanguage)}
+                      language={glossLanguage}
+                      className="drill-screen__missed-gloss"
+                    />
                   </li>
                 ))}
               </ul>

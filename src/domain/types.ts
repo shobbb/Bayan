@@ -31,6 +31,15 @@ export interface Word {
   trackId: TrackId;
   surface: string; // vowelled display form
   gloss: string; // English, 1-3 words; '' when unknown — see needsEnrichment
+  /**
+   * The same word defined in simple Arabic, for the Arabic-only setting (§13).
+   *
+   * Held beside the English gloss rather than replacing it: both are real
+   * assets — one imported, one bought — and a setting that invalidated either,
+   * or that could not be switched back without paying twice, would be a
+   * one-way door. Absent until the word has been defined in Arabic.
+   */
+  glossAr?: string | null;
   forms: string | null; // "كَتَبَ / يَكْتُبُ / كِتَابَة" | "جَانِب / جَوَانِب"
   /** null when the source didn't classify it; imported data often hasn't. */
   partOfSpeech: PartOfSpeech | null;

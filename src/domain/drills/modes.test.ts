@@ -31,6 +31,7 @@ function ctx(overrides: Partial<PrepareContext> = {}): PrepareContext {
     corpus: [],
     sentences: {},
     maxLevenshteinDistance: 2,
+    glossLanguage: 'english',
     random: () => 0.5,
     ...overrides,
   };
@@ -138,7 +139,7 @@ describe('distractor adjacency (REQ-25)', () => {
       word('unrelated', 'quickly', { partOfSpeech: 'particle' as PartOfSpeech, roundIds: ['r9'] }),
     ];
 
-    expect(pickDistractors(target, corpus, 1, () => 0.5)).toEqual(['notebook']);
+    expect(pickDistractors(target, corpus, 1, () => 0.5, 'english')).toEqual(['notebook']);
   });
 
   it('falls back to co-occurrence when part of speech is unknown', () => {
@@ -150,14 +151,63 @@ describe('distractor adjacency (REQ-25)', () => {
       word('apart', 'river', { roundIds: ['r9'] }),
     ];
 
-    expect(pickDistractors(target, corpus, 1, () => 0.5)).toEqual(['shelf']);
+    expect(pickDistractors(target, corpus, 1, () => 0.5, 'english')).toEqual(['shelf']);
   });
 
   it('skips words with no gloss to offer', () => {
     const target = word('t', 'book');
     const corpus = [target, word('blank', ''), word('usable', 'house')];
 
-    expect(pickDistractors(target, corpus, 2, () => 0.5)).toEqual(['house']);
+    expect(pickDistractors(target, corpus, 2, () => 0.5, 'english')).toEqual(['house']);
+  });
+
+  // The whole reason Arabic multiple choice needs no extra model call: the
+  // wrong answers are other real definitions the corpus already holds.
+  it('draws Arabic distractors from the Arabic definitions', () => {
+    const target = word('t', 'book', { glossAr: 'شَيْءٌ يُقْرَأُ', roundIds: ['r1'] });
+    const corpus = [
+      target,
+      word('together', 'shelf', { glossAr: 'مَكَانٌ لِلْكُتُبِ', roundIds: ['r1'] }),
+      word('englishOnly', 'river', { roundIds: ['r1'] }),
+    ];
+
+    expect(pickDistractors(target, corpus, 2, () => 0.5, 'arabic')).toEqual(['مَكَانٌ لِلْكُتُبِ']);
+  });
+});
+
+describe('Arabic-only definitions (§13)', () => {
+  it('puts the Arabic definition on the answer side of a flashcard', () => {
+    const item = getDrillMode('flashcard').prepare(
+      word('a', 'book', { glossAr: 'شَيْءٌ يُقْرَأُ' }),
+      ctx({ glossLanguage: 'arabic' }),
+    );
+
+    expect(item.answer).toBe('شَيْءٌ يُقْرَأُ');
+    expect(item.answerLanguage).toBe('arabic');
+  });
+
+  it('marks the Arabic option correct in multiple choice', () => {
+    const target = word('t', 'book', { glossAr: 'شَيْءٌ يُقْرَأُ', roundIds: ['r1'] });
+    const corpus = [target, word('b', 'shelf', { glossAr: 'مَكَانٌ لِلْكُتُبِ', roundIds: ['r1'] })];
+    const item = getDrillMode('multipleChoice').prepare(
+      target,
+      ctx({ corpus, glossLanguage: 'arabic' }),
+    );
+
+    expect(item.options[item.correctIndex]).toBe('شَيْءٌ يُقْرَأُ');
+    // No English anywhere, which is the entire promise of the setting.
+    expect(item.options.some((option) => /[A-Za-z]/.test(option))).toBe(false);
+  });
+
+  // Never falls back to English: a learner shown one has been told the setting
+  // does not work, and an empty answer is what routes the word to translation.
+  it('leaves the answer empty rather than falling back to English', () => {
+    const item = getDrillMode('flashcard').prepare(
+      word('a', 'book'),
+      ctx({ glossLanguage: 'arabic' }),
+    );
+
+    expect(item.answer).toBe('');
   });
 });
 

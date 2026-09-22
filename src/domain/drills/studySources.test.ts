@@ -44,6 +44,7 @@ function ctx(words: Word[], overrides: Partial<StudySourceContext> = {}): StudyS
     scheduler: activeScheduler,
     now: NOW,
     markedWithinDays: 7,
+    glossLanguage: 'english',
     ...overrides,
   };
 }

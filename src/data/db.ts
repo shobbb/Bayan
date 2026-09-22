@@ -79,6 +79,18 @@ export interface GlossRecord {
   id: WordId;
   gloss: string;
   /**
+   * The same word defined in simple Arabic, for the Arabic-only setting (§13).
+   *
+   * Beside the English gloss rather than in place of it, for the reason a Word
+   * carries both: each was paid for once, and a setting that threw either away
+   * would charge for it again on the way back. Absent until asked for — the two
+   * are filled independently, so a record commonly holds one and not the other.
+   *
+   * Not indexed, so no schema version is needed: Dexie stores the whole object
+   * either way and only indexed fields appear in the store declaration.
+   */
+  glossAr?: string | null;
+  /**
    * The vowelled form this gloss was written for. Identity is diacritic-blind,
    * so one id can hold two different words; without the surface there is
    * nothing to notice that with. Optional — records written before it existed

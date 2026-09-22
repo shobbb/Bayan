@@ -33,6 +33,7 @@ function toInterchangeWord(word: Word): InterchangeWord {
     id: word.id,
     surface: word.surface,
     gloss: word.gloss === '' ? null : word.gloss,
+    glossAr: word.glossAr ?? null,
     forms: word.forms,
     partOfSpeech: word.partOfSpeech,
     seenCount: word.seenCount,

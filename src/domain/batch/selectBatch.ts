@@ -6,6 +6,7 @@
  * on a schedule or as a side effect of reading.
  */
 import type { Word, WordId } from '@/domain/types';
+import { hasGloss, type GlossLanguage } from '@/domain/glossLanguage';
 import { missRate } from '@/domain/selector/wordDraw';
 
 export interface BatchSelection {
@@ -32,6 +33,11 @@ export interface BatchOptions {
    * deliberately narrow batch with the oldest records in the corpus.
    */
   markedSince?: number | null;
+  /**
+   * Which definition counts as the answer side (§13). Defaults to English,
+   * which is what every caller meant before the setting existed.
+   */
+  glossLanguage?: GlossLanguage;
 }
 
 /**
@@ -47,8 +53,8 @@ function isMarkedSince(word: Word, since: number): boolean {
 }
 
 /** Whether a word is drillable at all: met, and with an answer side (REQ-23). */
-function isDrillable(word: Word): boolean {
-  return word.seenCount > 0 && word.gloss.trim() !== '';
+function isDrillable(word: Word, language: GlossLanguage): boolean {
+  return word.seenCount > 0 && hasGloss(word, language);
 }
 
 /**
@@ -56,10 +62,14 @@ function isDrillable(word: Word): boolean {
  * shown has no miss rate to rank on, and drilling it would be introducing
  * vocabulary rather than reinforcing it.
  */
-function candidates(words: readonly Word[], markedSince: number | null): Word[] {
+function candidates(
+  words: readonly Word[],
+  markedSince: number | null,
+  language: GlossLanguage,
+): Word[] {
   return words.filter(
     (word) =>
-      isDrillable(word) &&
+      isDrillable(word, language) &&
       (markedSince === null || isMarkedSince(word, markedSince)),
   );
 }
@@ -71,8 +81,9 @@ export function selectBatch(
   options: BatchOptions = {},
 ): BatchSelection {
   const markedSince = options.markedSince ?? null;
+  const language = options.glossLanguage ?? 'english';
 
-  const ranked = candidates(words, markedSince).sort(
+  const ranked = candidates(words, markedSince, language).sort(
     (a, b) =>
       missRate(b) - missRate(a) ||
       b.unclearCount - a.unclearCount ||
@@ -86,7 +97,7 @@ export function selectBatch(
   const untranslated = words.filter(
     (word) =>
       word.seenCount > 0 &&
-      word.gloss.trim() === '' &&
+      !hasGloss(word, language) &&
       (markedSince === null || isMarkedSince(word, markedSince)),
   ).length;
 

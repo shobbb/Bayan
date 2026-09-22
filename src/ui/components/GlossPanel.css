@@ -81,12 +81,21 @@
   color: var(--ink-muted);
 }
 
-.gloss-panel__english {
+.gloss-panel__definition {
   margin-top: var(--space-1);
   font-family: var(--font-english);
   font-size: var(--text-gloss-english-size);
   line-height: var(--text-gloss-english-line);
   color: var(--ink);
+}
+
+/* An Arabic definition is a phrase of vowelled Arabic, so it gets the naskh
+   face and the same line-height the Arabic above it uses — at the English
+   line-height the tashkeel collides with the headword's descenders. */
+.gloss-panel__definition--arabic {
+  font-family: var(--font-arabic);
+  font-size: var(--text-gloss-arabic-size);
+  line-height: var(--text-gloss-arabic-line);
 }
 
 .gloss-panel__placeholder {
@@ -95,7 +104,7 @@
   color: var(--ink-muted);
 }
 
-.gloss-panel__english--empty {
+.gloss-panel__definition--empty {
   color: var(--ink-muted);
   font-style: italic;
 }

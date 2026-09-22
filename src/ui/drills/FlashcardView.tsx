@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { DrillItem, SelfReport } from '@/domain/drills/types';
+import { Definition } from './Definition';
 import './drills.css';
 
 export interface FlashcardViewProps {
@@ -51,7 +52,7 @@ export function FlashcardView({ item, onRespond }: FlashcardViewProps) {
         )}
 
         {flipped ? (
-          <span className="drill__gloss">{item.word.gloss}</span>
+          <Definition text={item.answer} language={item.answerLanguage} />
         ) : (
           <span className="drill__flip-hint">Tap to flip</span>
         )}

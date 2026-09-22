@@ -83,6 +83,25 @@
   max-width: 24ch;
 }
 
+/* An Arabic definition is Arabic text and is set as such: the naskh face, the
+   same generous line-height the prompt above it uses so tashkeel is not clipped,
+   and a wider measure, since a definition is a phrase where an English gloss was
+   one or two words. Without the line-height the vowel marks — the whole point of
+   the app's typography (REQ-C2) — collide with the line above. */
+.drill__gloss--arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.6rem;
+  line-height: 2.2;
+  max-width: 30ch;
+}
+
+.drill__option-text--arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.35rem;
+  line-height: 2;
+  display: block;
+}
+
 .drill__controls {
   padding: var(--space-4) var(--space-5) var(--space-6);
   padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));

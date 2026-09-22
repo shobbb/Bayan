@@ -1,4 +1,5 @@
 import type { DrillItem, DrillOutcome } from '@/domain/drills/types';
+import { Definition } from './Definition';
 import './drills.css';
 
 export interface MultipleChoiceViewProps {
@@ -9,7 +10,8 @@ export interface MultipleChoiceViewProps {
 }
 
 /**
- * §10.3. Arabic prompt, four English options as full-width tap targets. On
+ * §10.3. Arabic prompt, four options as full-width tap targets — English
+ * glosses, or Arabic definitions under the Arabic-only setting (§13). On
  * selection the correct option is marked and, when wrong, the chosen one is
  * marked too — so the learner sees both.
  */
@@ -56,7 +58,11 @@ export function MultipleChoiceView({
                 disabled={answered}
                 onClick={() => onRespond(index)}
               >
-                {option}
+                <Definition
+                  text={option}
+                  language={item.answerLanguage}
+                  className="drill__option-text"
+                />
               </button>
             </li>
           ))}

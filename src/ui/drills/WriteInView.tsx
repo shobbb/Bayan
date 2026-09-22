@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DrillItem, DrillOutcome } from '@/domain/drills/types';
+import { Definition } from './Definition';
 import './drills.css';
 
 export interface WriteInViewProps {
@@ -56,7 +57,9 @@ export function WriteInView({
             <p className={outcome.correct ? 'drill__verdict--right' : 'drill__verdict--wrong'}>
               {outcome.correct ? 'Correct' : 'Not quite'}
             </p>
-            <p className="drill__gloss">{outcome.canonical}</p>
+            <p>
+              <Definition text={outcome.canonical} language={outcome.canonicalLanguage} />
+            </p>
             {outcome.acceptedAs && (
               <p className="drill__hint">You wrote “{outcome.acceptedAs}”.</p>
             )}

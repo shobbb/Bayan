@@ -10,12 +10,21 @@
  * can be tested without rendering.
  */
 import type { Grade, Word } from '@/domain/types';
+import type { GlossLanguage } from '@/domain/glossLanguage';
 
 export type DrillModeId = 'flashcard' | 'multipleChoice' | 'writeIn';
 
 export interface DrillItem {
   readonly mode: DrillModeId;
   readonly word: Word;
+  /**
+   * The definition being drilled, in whichever language the setting selects
+   * (§13) — resolved here rather than in the views so that no component has to
+   * read config to know which of the word's two glosses is the answer.
+   */
+  readonly answer: string;
+  /** Which language `answer` is in, so a view can set direction and font. */
+  readonly answerLanguage: GlossLanguage;
   /** Arabic example sentence from the batch, when one was generated (§9). */
   readonly sentence: string | null;
   /** Multiple-choice options, already shuffled. Empty for other modes. */
@@ -39,6 +48,12 @@ export interface PrepareContext {
   sentences: Readonly<Record<string, string>>;
   /** Typo tolerance for written answers (REQ-26). */
   maxLevenshteinDistance: number;
+  /**
+   * Which of the word's two definitions is the answer side (§13). Decides what
+   * is shown, what the distractors are drawn from, and what a typed answer is
+   * matched against.
+   */
+  glossLanguage: GlossLanguage;
   random: () => number;
 }
 
@@ -51,6 +66,8 @@ export interface DrillOutcome {
   correct: boolean;
   /** The canonical gloss, shown on both correct and incorrect responses (REQ-26). */
   canonical: string;
+  /** Which language `canonical` is in, so a view can set direction and font. */
+  canonicalLanguage: GlossLanguage;
   /** Set when typo tolerance credited an inexact answer (REQ-41). */
   acceptedAs?: string;
 }

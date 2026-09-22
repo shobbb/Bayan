@@ -61,6 +61,15 @@ export const interchangeWordSchema = z.object({
    * ignores keys it does not know (REQ-I1).
    */
   lastMarkedAt: z.number().nullable().optional(),
+  /**
+   * The same word defined in simple Arabic (§13). Optional and additive, so the
+   * version stays at 1 for the same reason as lastMarkedAt (REQ-I1).
+   *
+   * Carried for the reason the gloss cache is: these were bought from the model
+   * one word at a time, and a restore that dropped them would charge the reader
+   * for them again.
+   */
+  glossAr: z.string().nullable().optional(),
   roundIds: z.array(z.string()),
   srs: srsStateSchema.nullable(),
 });
@@ -116,6 +125,8 @@ export const interchangeArticleReadSchema = z.object({
 export const interchangeGlossSchema = z.object({
   id: z.string(),
   gloss: z.string(),
+  /** The Arabic definition, when one has been bought (§13). Additive; version stays 1. */
+  glossAr: z.string().nullable().optional(),
   forms: z.string().nullable(),
   /**
    * The vowelled form this gloss was written for. Optional and additive, so the

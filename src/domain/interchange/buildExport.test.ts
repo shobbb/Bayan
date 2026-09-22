@@ -15,6 +15,7 @@ function word(surface: string, overrides: Partial<Word> = {}): Word {
     trackId: TRACK,
     surface,
     gloss: 'gloss',
+    glossAr: null,
     forms: null,
     partOfSpeech: 'noun',
     seenCount: 3,
@@ -231,6 +232,35 @@ describe('buildStateExport', () => {
 
     const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
     expect(restored.words[0]!.lastMarkedAt).toBeNull();
+  });
+
+  // Arabic definitions are bought one word at a time, so a dump that dropped
+  // them would charge for them again — the same reason the gloss cache rides
+  // along (§13, REQ-I1).
+  it('round-trips the Arabic definition beside the English one', () => {
+    const words = [word('كتاب', { glossAr: 'شَيْءٌ يُقْرَأُ' })];
+
+    const dumped = serializeStateExport(buildStateExport(words, [], DEFAULT_CATEGORIES, null, 1));
+    const parsed = parseStateExport(JSON.parse(dumped));
+    if (!parsed.ok) throw new Error('export failed to validate');
+
+    const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
+    expect(restored.words[0]!.glossAr).toBe('شَيْءٌ يُقْرَأُ');
+    expect(restored.words[0]!.gloss).toBe('gloss');
+  });
+
+  // Additive, so the version stays at 1 and an older dump still restores.
+  it('accepts a dump written before Arabic definitions existed', () => {
+    const state = buildStateExport([word('كتاب')], [], DEFAULT_CATEGORIES, null, 1);
+    const older = JSON.parse(serializeStateExport(state)) as { words: Record<string, unknown>[] };
+    delete older.words[0]!.glossAr;
+
+    const parsed = parseStateExport(older);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const restored = planImport(parsed.value, { words: [], rounds: [] }, PROFILE, TRACK, 'replace');
+    expect(restored.words[0]!.glossAr).toBeNull();
   });
 });
 

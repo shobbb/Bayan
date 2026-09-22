@@ -63,6 +63,7 @@ function toWord(incoming: InterchangeWord, id: WordId, trackId: TrackId): Word {
     trackId,
     surface: incoming.surface,
     gloss,
+    glossAr: incoming.glossAr ?? null,
     forms: incoming.forms,
     partOfSpeech: incoming.partOfSpeech,
     seenCount: incoming.seenCount,
@@ -89,6 +90,10 @@ function mergeWords(existing: Word, incoming: Word): Word {
     ...existing,
     surface: incoming.surface || existing.surface,
     gloss,
+    // The two definitions merge independently: a dump can carry either, and
+    // taking the longer of each is the same REQ-I3 rule applied twice rather
+    // than one side's silence erasing the other's answer.
+    glossAr: longer(existing.glossAr ?? null, incoming.glossAr ?? null),
     forms: longer(existing.forms, incoming.forms),
     partOfSpeech: existing.partOfSpeech ?? incoming.partOfSpeech,
     seenCount: existing.seenCount + incoming.seenCount,

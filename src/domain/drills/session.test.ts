@@ -5,6 +5,7 @@ import {
   roundBoundsFor,
   isCheckpoint,
   reviewQueueFor,
+  modeRotationFor,
   MODE_ROTATION,
 } from './session';
 import { sm2Scheduler } from '@/domain/srs/scheduler';
@@ -45,6 +46,7 @@ describe('session queue', () => {
       words,
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue.map((entry) => entry.word.id).sort()).toEqual(['b1', 'b2', 'due']);
@@ -57,6 +59,7 @@ describe('session queue', () => {
       words,
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue.map((entry) => entry.word.id)).toEqual(['b1']);
@@ -69,6 +72,7 @@ describe('session queue', () => {
       words,
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue).toHaveLength(1);
@@ -87,6 +91,7 @@ describe('session queue', () => {
       words,
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue.map((entry) => entry.word.id)).toEqual(['b1', 'd1', 'b2', 'd2', 'b3']);
@@ -99,6 +104,7 @@ describe('session queue', () => {
       words,
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue.map((entry) => entry.mode)).toEqual([...MODE_ROTATION, ...MODE_ROTATION]);
@@ -110,6 +116,7 @@ describe('session queue', () => {
       words: [word('present')],
       scheduler: sm2Scheduler,
       now: NOW,
+      glossLanguage: 'english',
     });
 
     expect(queue).toEqual([]);
@@ -168,7 +175,7 @@ describe('rounds (§10.6)', () => {
 describe('review pass (§10.5)', () => {
   it('covers exactly the missed words', () => {
     const missed = [word('a'), word('b')];
-    const review = reviewQueueFor(missed, []);
+    const review = reviewQueueFor(missed, [], 'english');
 
     expect(review.map((entry) => entry.word.id)).toEqual(['a', 'b']);
   });
@@ -179,18 +186,73 @@ describe('review pass (§10.5)', () => {
     const missed = [word('a')];
     const previous = [{ word: word('a'), mode: 'flashcard' as const }];
 
-    expect(reviewQueueFor(missed, previous)[0]!.mode).toBe('multipleChoice');
+    expect(reviewQueueFor(missed, previous, 'english')[0]!.mode).toBe('multipleChoice');
   });
 
   it('wraps around the rotation from the last mode', () => {
     const missed = [word('a')];
     const previous = [{ word: word('a'), mode: 'writeIn' as const }];
 
-    expect(reviewQueueFor(missed, previous)[0]!.mode).toBe('flashcard');
+    expect(reviewQueueFor(missed, previous, 'english')[0]!.mode).toBe('flashcard');
   });
 
   it('returns nothing when nothing was missed', () => {
-    expect(reviewQueueFor([], [])).toEqual([]);
+    expect(reviewQueueFor([], [], 'english')).toEqual([]);
+  });
+
+  // A card missed in write-in before the setting was turned on names a mode the
+  // Arabic rotation does not contain. The review pass has to place it anyway.
+  it('places a word whose last mode is not in the current rotation', () => {
+    const missed = [word('a', { glossAr: 'تَعْرِيفٌ' })];
+    const previous = [{ word: word('a'), mode: 'writeIn' as const }];
+
+    expect(reviewQueueFor(missed, previous, 'arabic')[0]!.mode).toBe('flashcard');
+  });
+});
+
+describe('Arabic-only definitions (§13)', () => {
+  it('drops write-in from the rotation', () => {
+    expect(modeRotationFor('arabic')).toEqual(['flashcard', 'multipleChoice']);
+    expect(modeRotationFor('english')).toEqual(MODE_ROTATION);
+  });
+
+  it('rotates only the two remaining modes across a session', () => {
+    const words = Array.from({ length: 4 }, (_, i) =>
+      word(`w${i}`, { glossAr: `تَعْرِيفُ ${i}` }),
+    );
+    const queue = buildSessionQueue({
+      batchWordIds: words.map((w) => w.id),
+      words,
+      scheduler: sm2Scheduler,
+      now: NOW,
+      glossLanguage: 'arabic',
+    });
+
+    expect(queue.map((entry) => entry.mode)).toEqual([
+      'flashcard',
+      'multipleChoice',
+      'flashcard',
+      'multipleChoice',
+    ]);
+  });
+
+  // The setting can be turned on over a batch built in English. Those words are
+  // owed an Arabic definition; a blank card is a worse way to say so.
+  it('leaves out a word with no definition in the active language', () => {
+    const words = [
+      word('defined', { glossAr: 'مَعْنًى بَسِيطٌ' }),
+      word('englishOnly'),
+      word('dueButEnglishOnly', { srs: dueSrs }),
+    ];
+    const queue = buildSessionQueue({
+      batchWordIds: ['defined', 'englishOnly'] as WordId[],
+      words,
+      scheduler: sm2Scheduler,
+      now: NOW,
+      glossLanguage: 'arabic',
+    });
+
+    expect(queue.map((entry) => entry.word.id)).toEqual(['defined']);
   });
 });
 

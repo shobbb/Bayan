@@ -2,6 +2,7 @@
  * The three drill modes (§10.2–10.4). Each owns its grading (REQ-E3).
  */
 import type { Grade, Word } from '@/domain/types';
+import { glossFor } from '@/domain/glossLanguage';
 import { pickDistractors, shuffle } from './distractors';
 import { levenshtein } from './levenshtein';
 import {
@@ -20,7 +21,15 @@ function sentenceFor(word: Word, ctx: PrepareContext): string | null {
 }
 
 function baseItem(word: Word, ctx: PrepareContext, mode: DrillItem['mode']): DrillItem {
-  return { mode, word, sentence: sentenceFor(word, ctx), options: [], correctIndex: -1 };
+  return {
+    mode,
+    word,
+    answer: glossFor(word, ctx.glossLanguage),
+    answerLanguage: ctx.glossLanguage,
+    sentence: sentenceFor(word, ctx),
+    options: [],
+    correctIndex: -1,
+  };
 }
 
 /**
@@ -52,28 +61,45 @@ export const flashcardMode: DrillModeLogic = {
     return {
       grade: gradeForSelfReport(report),
       correct: report === 'known',
-      canonical: item.word.gloss,
+      canonical: item.answer,
+      canonicalLanguage: item.answerLanguage,
     };
   },
 };
 
-/** §10.3. Four English options over an Arabic prompt. */
+/**
+ * §10.3. Four options over an Arabic prompt — English glosses, or Arabic
+ * definitions when the setting asks for them (§13).
+ *
+ * The distractors come out in the right language for free: they are drawn from
+ * the corpus rather than written by a model, so asking for the same field the
+ * answer came from is the whole of the change.
+ */
 export const multipleChoiceMode: DrillModeLogic = {
   id: 'multipleChoice',
   label: 'Multiple choice',
 
   prepare(word, ctx) {
-    const distractors = pickDistractors(word, ctx.corpus, OPTION_COUNT - 1, ctx.random);
+    const answer = glossFor(word, ctx.glossLanguage);
+    const distractors = pickDistractors(
+      word,
+      ctx.corpus,
+      OPTION_COUNT - 1,
+      ctx.random,
+      ctx.glossLanguage,
+    );
     // REQ-40: shuffled per presentation — a stable correct position is
     // learnable and would corrupt the signal.
-    const options = shuffle([word.gloss.trim(), ...distractors], ctx.random);
+    const options = shuffle([answer, ...distractors], ctx.random);
 
     return {
       mode: 'multipleChoice',
       word,
+      answer,
+      answerLanguage: ctx.glossLanguage,
       sentence: sentenceFor(word, ctx),
       options,
-      correctIndex: options.indexOf(word.gloss.trim()),
+      correctIndex: options.indexOf(answer),
     };
   },
 
@@ -82,7 +108,8 @@ export const multipleChoiceMode: DrillModeLogic = {
     return {
       grade: correct ? 'good' : 'again',
       correct,
-      canonical: item.word.gloss,
+      canonical: item.answer,
+      canonicalLanguage: item.answerLanguage,
     };
   },
 };
@@ -98,17 +125,18 @@ export const writeInMode: DrillModeLogic = {
 
   grade(response, item, ctx) {
     const typed = String(response ?? '').trim();
-    const canonical = item.word.gloss;
+    const canonical = item.answer;
+    const canonicalLanguage = item.answerLanguage;
     const normalized = typed.toLowerCase();
     const accepted = glossAlternatives(canonical);
 
     if (typed === '') {
-      return { grade: 'again', correct: false, canonical };
+      return { grade: 'again', correct: false, canonical, canonicalLanguage };
     }
 
     // Any listed sense counts, exactly (REQ-26).
     if (accepted.includes(normalized)) {
-      return { grade: 'good', correct: true, canonical };
+      return { grade: 'good', correct: true, canonical, canonicalLanguage };
     }
 
     // Otherwise allow a near miss, and report what was typed so the learner
@@ -120,10 +148,10 @@ export const writeInMode: DrillModeLogic = {
 
     if (nearest <= ctx.maxLevenshteinDistance) {
       // Credited, but graded below an exact recall: it was not quite known.
-      return { grade: 'hard', correct: true, canonical, acceptedAs: typed };
+      return { grade: 'hard', correct: true, canonical, canonicalLanguage, acceptedAs: typed };
     }
 
-    return { grade: 'again', correct: false, canonical, acceptedAs: typed };
+    return { grade: 'again', correct: false, canonical, canonicalLanguage, acceptedAs: typed };
   },
 };
 

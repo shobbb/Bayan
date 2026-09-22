@@ -306,3 +306,44 @@ describe('articleTitleSegments', () => {
     expect(segments.some((s) => s.text === PARAGRAPH_BREAK)).toBe(false);
   });
 });
+
+describe('Arabic-only definitions (§13)', () => {
+  const withVocab = article({
+    vocab: [{ term: 'الْكِتَابُ', gloss: 'the book', forms: null }],
+    expressions: [],
+  });
+
+  it('uses the publisher glosses by default', () => {
+    const segments = articleToSegments(withVocab, NO_CORPUS);
+    expect(segments[0]).toMatchObject({ gloss: 'the book', glossSource: 'publisher' });
+  });
+
+  // The publisher's lists are editorial English. Showing them would mean the one
+  // setting that promises no English delivers it on the hardest words.
+  it('skips them when the definitions are meant to be Arabic only', () => {
+    const segments = articleToSegments(withVocab, { ...NO_CORPUS, usePublisherGlosses: false });
+
+    expect(segments[0]).toMatchObject({ gloss: '', glossSource: null });
+  });
+
+  it('still resolves against the corpus, which holds the Arabic definitions', () => {
+    const segments = articleToSegments(withVocab, {
+      ...corpus({ الكتاب: 'شَيْءٌ يُقْرَأُ' }),
+      usePublisherGlosses: false,
+    });
+
+    expect(segments[0]).toMatchObject({ gloss: 'شَيْءٌ يُقْرَأُ', glossSource: 'corpus' });
+  });
+
+  it('applies to the headline on the same terms', () => {
+    const titled = article({
+      titleAr: 'الْكِتَابُ',
+      vocab: [{ term: 'الْكِتَابُ', gloss: 'the book', forms: null }],
+    });
+
+    expect(articleTitleSegments(titled, NO_CORPUS)[0]!.gloss).toBe('the book');
+    expect(
+      articleTitleSegments(titled, { ...NO_CORPUS, usePublisherGlosses: false })[0]!.gloss,
+    ).toBe('');
+  });
+});

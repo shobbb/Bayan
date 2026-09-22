@@ -42,9 +42,13 @@ export async function exportState(
     articleReads,
     // The cache stores its own provenance; the dump carries only the
     // translation, so a restored gloss comes back marked as generated.
-    glosses.map(({ id, gloss, forms, surface, createdAt }) => ({
+    glosses.map(({ id, gloss, glossAr, forms, surface, createdAt }) => ({
       id,
       gloss,
+      // Listed field by field rather than spread, so a field added to the cache
+      // is either carried deliberately or not at all — the last time this was a
+      // spread, `surface` went missing from every dump without a test noticing.
+      ...(glossAr ? { glossAr } : {}),
       forms,
       ...(surface ? { surface } : {}),
       createdAt,

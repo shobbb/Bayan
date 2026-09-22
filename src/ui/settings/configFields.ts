@@ -154,6 +154,19 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
     ],
   },
   {
+    id: 'definitions',
+    title: 'Definitions',
+    blurb:
+      'What language words are defined in. Both definitions are kept, so switching back costs nothing and buys nothing twice.',
+    fields: [
+      bool(
+        ['generation', 'arabicOnlyDefinitions'],
+        'Arabic only',
+        'Define words in simple Arabic instead of English, while reading and on cards. Writing an answer is dropped in this mode — typing Arabic on an English keyboard measures the keyboard, not the recall — so sessions run flashcards and multiple choice. Words already defined in English keep those definitions; their Arabic ones are written the first time they are asked for.',
+      ),
+    ],
+  },
+  {
     id: 'grading',
     title: 'Grading',
     blurb: 'How forgiving written answers are.',

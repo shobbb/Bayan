@@ -76,6 +76,23 @@
   color: var(--ink);
 }
 
+.drill-screen__missed-gloss {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink-muted);
+  text-align: end;
+}
+
+/* An Arabic definition in this list is a phrase, not a word, so it is allowed
+   the room and the line-height its tashkeel needs rather than being squeezed
+   into the slot an English gloss fitted. */
+.drill-screen__missed-gloss--arabic {
+  font-family: var(--font-arabic);
+  font-size: 1.1rem;
+  line-height: 2;
+  max-width: 22ch;
+}
+
 /* Two running counts (§10.1). Plain numbers, no bars or badges — this is
    information about the session, not a score to react to (REQ-15). */
 .drill-screen__counts {

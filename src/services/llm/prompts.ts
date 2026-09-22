@@ -5,6 +5,7 @@
  * directives here; it never requires branching or duplicating this
  * function.
  */
+import type { GlossLanguage } from '@/domain/glossLanguage';
 
 const BASE_ROUND_INSTRUCTIONS = `You are generating a short reading passage for a language learner.
 
@@ -24,6 +25,23 @@ Segment rules:
 - Punctuation is its own segment with "gloss": null and "forms": null.
 - Mark paragraph breaks with a segment where "text" is exactly "¶" and "gloss" is null.`;
 
+/**
+ * What a generated round's segment glosses become under Arabic-only mode (§13).
+ *
+ * Injected as an override rather than by forking BASE_ROUND_INSTRUCTIONS: the
+ * segment rules, the JSON shape and the diacritics requirement are all
+ * unchanged, and two near-identical templates would drift apart the first time
+ * one of them was edited.
+ */
+const ARABIC_ROUND_GLOSS_OVERRIDE = `Override the gloss rule above: each word's "gloss" must be a short DEFINITION IN SIMPLE ARABIC, not an English translation.
+
+- A short phrase, typically 2-6 words, in common high-frequency Arabic.
+- Fully vowelled, like the rest of the passage.
+- Never the word itself or another form of its root.
+- No English anywhere in a gloss.
+
+"titleEn" is unaffected and stays English — it is how the round is listed, not something the learner reads to understand the text.`;
+
 export interface RoundPromptParams {
   topic: string;
   format: string;
@@ -35,11 +53,14 @@ export interface RoundPromptParams {
   languageGuidance: string;
   minWords: number;
   maxWords: number;
+  /** Which language the segment glosses are written in (§13). */
+  glossLanguage?: GlossLanguage;
 }
 
 export function buildRoundGenerationPrompt(params: RoundPromptParams): string {
   const sections = [
     BASE_ROUND_INSTRUCTIONS,
+    params.glossLanguage === 'arabic' ? ARABIC_ROUND_GLOSS_OVERRIDE : '',
     params.languageGuidance,
     ...params.directives,
     `Topic: ${params.topic}`,
@@ -102,16 +123,52 @@ Respond with strict JSON only, no prose before or after and no markdown code fen
 
 Echo each word back exactly as supplied so the glosses can be matched to it.`;
 
+/**
+ * The Arabic-only variant (§13).
+ *
+ * Not a translation of the English instructions. A one-to-three-word English
+ * gloss is a *translation*; the Arabic equivalent of that is a synonym, which
+ * is either a word the learner also does not know or the same word again. What
+ * works monolingually is a short definition in plainer words than the headword
+ * — which is why this asks for a phrase rather than a word, and why it names a
+ * vocabulary ceiling instead of a length in words.
+ */
+const ARABIC_GLOSS_INSTRUCTIONS = `You are defining Arabic words in Arabic, for a learner who is past translating.
+
+For each supplied word, write a short definition IN SIMPLE ARABIC. Every definition must:
+- be a short phrase, typically 2-6 words — a definition, not a one-word synonym,
+- use only common, high-frequency Arabic that a learner would meet early; never explain a word with one that is rarer than it,
+- never use the headword itself, or another form of its root, inside the definition,
+- define the word AS GIVEN, keeping its inflection: a plural is defined as a plural, a past-tense verb as a past action,
+- be fully vowelled (tashkeel on every letter), like the rest of the app's Arabic,
+- contain NO English at all — not a word, not a gloss in brackets.
+
+A proper noun is defined by what it is: "دَوْلَةٌ فِي الخَلِيجِ العَرَبِيِّ" for قطر, not the name again.
+
+Also give, where it applies:
+- "forms": the word's principal parts, e.g. "كَتَبَ / يَكْتُبُ / كِتَابَة" for a verb or "جَانِب / جَوَانِب" for a noun. Use null for particles, pronouns and proper nouns.
+- "partOfSpeech": one of verb, noun, adjective, particle, phrase. Use null if none fits.
+
+Respond with strict JSON only, no prose before or after and no markdown code fence:
+{ "glosses": [ { "word": string, "gloss": string, "forms": string | null, "partOfSpeech": string | null } ] }
+
+Echo each word back exactly as supplied so the definitions can be matched to it.`;
+
 export interface GlossPromptParams {
   /** Surface forms to gloss, exactly as they appear in the text. */
   words: string[];
   /** LanguageProfile.promptGuidance for the active track. */
   languageGuidance: string;
+  /** Which language the definitions themselves are written in (§13). */
+  glossLanguage?: GlossLanguage;
 }
 
 export function buildGlossPrompt(params: GlossPromptParams): string {
+  const instructions =
+    params.glossLanguage === 'arabic' ? ARABIC_GLOSS_INSTRUCTIONS : BASE_GLOSS_INSTRUCTIONS;
+
   return [
-    BASE_GLOSS_INSTRUCTIONS,
+    instructions,
     params.languageGuidance,
     `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
   ].join('\n\n');

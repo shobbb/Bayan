@@ -14,6 +14,7 @@ import { planRound } from '@/domain/selector/roundPlanner';
 import { getRoundTypeStrategy } from '@/domain/selector/roundTypes';
 import type { SelectionContext } from '@/domain/selector/roundTypes/types';
 import { countDistinctForms, ingestRoundWords } from '@/domain/rounds/ingest';
+import { glossLanguageFor } from '@/domain/glossLanguage';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { Round, RoundType, Word } from '@/domain/types';
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -82,6 +83,7 @@ export async function createRound(
       languageGuidance: profile.promptGuidance,
       minWords: config.generation.targetWordCount.min,
       maxWords: config.generation.targetWordCount.max,
+      glossLanguage: glossLanguageFor(config.generation.arabicOnlyDefinitions),
     },
     route,
     apiKey,
@@ -117,6 +119,7 @@ export async function createRound(
     DEFAULT_TRACK_ID,
     profile,
     now,
+    glossLanguageFor(config.generation.arabicOnlyDefinitions),
   );
 
   await upsertRound(round);

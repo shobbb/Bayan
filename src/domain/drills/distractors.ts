@@ -16,6 +16,7 @@
  * corpus that has not been enriched.
  */
 import type { Word } from '@/domain/types';
+import { glossFor, type GlossLanguage } from '@/domain/glossLanguage';
 
 function adjacencyTier(target: Word, candidate: Word, targetRounds: ReadonlySet<string>): number {
   const samePos =
@@ -32,18 +33,25 @@ function adjacencyTier(target: Word, candidate: Word, targetRounds: ReadonlySet<
  * Returns up to `count` distinct glosses to sit alongside the target's own.
  * Glosses are de-duplicated against the target so an option can never be
  * quietly correct twice.
+ *
+ * `language` selects which of a word's two definitions the options are drawn
+ * from (§13). Drawing from the corpus rather than from a model is what makes
+ * Arabic distractors free: the wrong answers are other real definitions the
+ * learner's own corpus already holds, in the same language as the right one.
+ * Words not yet defined in that language are simply not candidates.
  */
 export function pickDistractors(
   target: Word,
   corpus: readonly Word[],
   count: number,
   random: () => number,
+  language: GlossLanguage,
 ): string[] {
   const targetRounds = new Set(target.roundIds);
-  const takenGlosses = new Set([target.gloss.trim().toLowerCase()]);
+  const takenGlosses = new Set([glossFor(target, language).toLowerCase()]);
 
   const candidates = corpus
-    .filter((word) => word.id !== target.id && word.gloss.trim() !== '')
+    .filter((word) => word.id !== target.id && glossFor(word, language) !== '')
     .map((word) => ({ word, tier: adjacencyTier(target, word, targetRounds), key: random() }))
     // Sort by tier, then randomly within a tier so the same distractors do not
     // recur for a given word.
@@ -52,7 +60,7 @@ export function pickDistractors(
   const chosen: string[] = [];
   for (const candidate of candidates) {
     if (chosen.length >= count) break;
-    const gloss = candidate.word.gloss.trim();
+    const gloss = glossFor(candidate.word, language);
     const key = gloss.toLowerCase();
     if (takenGlosses.has(key)) continue;
     takenGlosses.add(key);

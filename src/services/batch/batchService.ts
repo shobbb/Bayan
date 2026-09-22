@@ -15,6 +15,7 @@ import {
   type StudySourceContext,
   type StudySourceId,
 } from '@/domain/drills/studySources';
+import { glossLanguageFor } from '@/domain/glossLanguage';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { Batch, Grade, Word, WordId } from '@/domain/types';
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -50,11 +51,15 @@ export async function generateBatch(
 
   const words = await listWords(DEFAULT_TRACK_ID);
   const markedWithinDays = config.algorithm.batch.markedWithinDays;
+  const glossLanguage = glossLanguageFor(config.generation.arabicOnlyDefinitions);
   const selection = selectBatch(
     words,
     config.algorithm.batch.defaultSize,
     config.algorithm.batch.warnAboveSize,
-    { markedSince: markedWithinDays > 0 ? now - markedWithinDays * 86_400_000 : null },
+    {
+      markedSince: markedWithinDays > 0 ? now - markedWithinDays * 86_400_000 : null,
+      glossLanguage,
+    },
   );
 
   if (selection.wordIds.length === 0) {
@@ -62,9 +67,15 @@ export async function generateBatch(
     // flagged in an article but never translated is wrong, and hides the one
     // action that would fix it.
     if (selection.untranslated > 0) {
+      // In Arabic-only mode this count includes words that *do* have an English
+      // gloss, so "waiting on a translation" would read as a contradiction to
+      // anyone looking at them in the word list. Say which definition is
+      // missing, and name the setting, since turning it off is a real fix.
       throw new Error(
-        `${selection.untranslated} word(s) are waiting on a translation before they can be drilled. ` +
-          'Open the article they came from and translate it.',
+        glossLanguage === 'arabic'
+          ? `${selection.untranslated} word(s) have no Arabic definition yet. Open an article they appear in to have them defined, or turn off "Arabic only" in Settings.`
+          : `${selection.untranslated} word(s) are waiting on a translation before they can be drilled. ` +
+            'Open the article they came from and translate it.',
       );
     }
     throw new Error(
@@ -170,6 +181,7 @@ async function studyContext(config: AppConfig, now: number): Promise<StudySource
     scheduler: activeScheduler,
     now,
     markedWithinDays: config.algorithm.drill.markedWithinDays,
+    glossLanguage: glossLanguageFor(config.generation.arabicOnlyDefinitions),
   };
 }
 

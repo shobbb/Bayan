@@ -123,3 +123,60 @@ describe('ingestRoundWords', () => {
     expect(rows.map((row) => row.id)).toEqual([PROFILE.normalize('كتاب')]);
   });
 });
+
+describe('Arabic-only definitions (§13)', () => {
+  // The one way this setting could destroy something: an Arabic definition
+  // written into `gloss` would overwrite an English one nobody asked about.
+  it('writes an Arabic definition to glossAr, leaving the English gloss alone', () => {
+    const existing = [word('كتاب', { gloss: 'book' })];
+    const rows = ingestRoundWords(
+      [segment('كِتَاب', 'شَيْءٌ يُقْرَأُ')],
+      existing,
+      'r1',
+      TRACK,
+      PROFILE,
+      500,
+      'arabic',
+    );
+
+    expect(rows[0]!.gloss).toBe('book');
+    expect(rows[0]!.glossAr).toBe('شَيْءٌ يُقْرَأُ');
+  });
+
+  it('creates a new word with only the Arabic side filled', () => {
+    const rows = ingestRoundWords(
+      [segment('كِتَاب', 'شَيْءٌ يُقْرَأُ')],
+      [],
+      'r1',
+      TRACK,
+      PROFILE,
+      500,
+      'arabic',
+    );
+
+    expect(rows[0]!.gloss).toBe('');
+    expect(rows[0]!.glossAr).toBe('شَيْءٌ يُقْرَأُ');
+  });
+
+  it('does not overwrite an Arabic definition it already holds', () => {
+    const existing = [word('كتاب', { glossAr: 'التَّعْرِيفُ الأَوَّلُ' })];
+    const rows = ingestRoundWords(
+      [segment('كِتَاب', 'تَعْرِيفٌ آخَرُ')],
+      existing,
+      'r1',
+      TRACK,
+      PROFILE,
+      500,
+      'arabic',
+    );
+
+    expect(rows[0]!.glossAr).toBe('التَّعْرِيفُ الأَوَّلُ');
+  });
+
+  it('defaults to English, which is what every caller meant before the setting', () => {
+    const rows = ingestRoundWords([segment('كِتَاب', 'book')], [], 'r1', TRACK, PROFILE, 500);
+
+    expect(rows[0]!.gloss).toBe('book');
+    expect(rows[0]!.glossAr).toBeNull();
+  });
+});

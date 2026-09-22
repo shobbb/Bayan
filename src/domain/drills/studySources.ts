@@ -12,6 +12,7 @@
  */
 import type { Word, WordId } from '@/domain/types';
 import type { Scheduler } from '@/domain/srs/scheduler';
+import { hasGloss, type GlossLanguage } from '@/domain/glossLanguage';
 import { missRate } from '@/domain/selector/wordDraw';
 import { buildSessionQueue, withModes, type QueueEntry } from './session';
 
@@ -25,6 +26,12 @@ export interface StudySourceContext {
   now: number;
   /** Window for the recently-marked source, in days. */
   markedWithinDays: number;
+  /**
+   * Which definitions this session drills (§13). It decides both the mode
+   * rotation and what counts as drillable: a word defined in English only has
+   * no answer side in an Arabic-only session, so it is not a card yet.
+   */
+  glossLanguage: GlossLanguage;
 }
 
 export interface StudySource {
@@ -37,9 +44,9 @@ export interface StudySource {
 
 const DAY_MS = 86_400_000;
 
-/** A word can only be a card if it has an answer side (REQ-23). */
-function isDrillable(word: Word): boolean {
-  return word.gloss.trim() !== '';
+/** A word can only be a card if it has an answer side (REQ-23), in this language. */
+function isDrillable(word: Word, language: GlossLanguage): boolean {
+  return hasGloss(word, language);
 }
 
 export function markedSince(ctx: StudySourceContext): number {
@@ -56,7 +63,10 @@ export function markedSince(ctx: StudySourceContext): number {
 export function recentlyMarkedWords(ctx: StudySourceContext): Word[] {
   const since = markedSince(ctx);
   return ctx.words.filter(
-    (word) => isDrillable(word) && word.lastMarkedAt != null && word.lastMarkedAt >= since,
+    (word) =>
+      isDrillable(word, ctx.glossLanguage) &&
+      word.lastMarkedAt != null &&
+      word.lastMarkedAt >= since,
   );
 }
 
@@ -114,6 +124,7 @@ export const STUDY_SOURCES: readonly StudySource[] = [
         words: ctx.words,
         scheduler: ctx.scheduler,
         now: ctx.now,
+        glossLanguage: ctx.glossLanguage,
       }),
   },
   {
@@ -123,7 +134,11 @@ export const STUDY_SOURCES: readonly StudySource[] = [
     // Deliberately not interleaved with due cards. Choosing this source is a
     // statement about what to study; folding the whole due pile back in would
     // make the choice meaningless.
-    build: (ctx) => withModes(orderBySpacing(recentlyMarkedWords(ctx), ctx.scheduler, ctx.now)),
+    build: (ctx) =>
+      withModes(
+        orderBySpacing(recentlyMarkedWords(ctx), ctx.scheduler, ctx.now),
+        ctx.glossLanguage,
+      ),
   },
 ];
 

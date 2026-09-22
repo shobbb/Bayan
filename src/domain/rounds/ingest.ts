@@ -7,6 +7,7 @@
  */
 import { PARAGRAPH_BREAK } from '@/domain/types';
 import type { LanguageProfile, Segment, TrackId, Word, WordId } from '@/domain/types';
+import { glossFieldFor, type GlossLanguage } from '@/domain/glossLanguage';
 
 /** Segments that carry vocabulary: not punctuation, not a paragraph break. */
 export function glossedSegments(segments: readonly Segment[]): Segment[] {
@@ -36,6 +37,13 @@ export function countDistinctForms(
  *
  * unclearCount is deliberately untouched here — it is driven by the reader's
  * "didn't know" flag, not by exposure.
+ *
+ * `language` says what language the segments' glosses are in, and so which of
+ * the word's two definition fields they belong in (§13). Getting this wrong is
+ * the one way the Arabic-only setting could destroy something: an Arabic
+ * definition written into `gloss` would overwrite an English one that was never
+ * asked about and cannot be recovered. The two fields are filled separately and
+ * neither is ever read as the other.
  */
 export function ingestRoundWords(
   segments: readonly Segment[],
@@ -44,34 +52,44 @@ export function ingestRoundWords(
   trackId: TrackId,
   profile: LanguageProfile,
   now: number,
+  language: GlossLanguage = 'english',
 ): Word[] {
   const byId = new Map<WordId, Word>(existing.map((word) => [word.id, word]));
   const touched = new Map<WordId, Word>();
+  const field = glossFieldFor(language);
 
   for (const segment of glossedSegments(segments)) {
     const id = profile.normalize(segment.text);
     if (touched.has(id)) continue; // one increment per round, not per occurrence
 
+    const incoming = segment.gloss ?? '';
     const current = byId.get(id);
     if (current) {
+      // Only the field this round's glosses were written in is touched, and
+      // only when it is empty — an existing definition is never overwritten.
+      const held = (current[field] ?? '').trim();
       touched.set(id, {
         ...current,
         surface: segment.text, // the vowelled form as last displayed
-        gloss: current.gloss || (segment.gloss ?? ''),
+        [field]: held || incoming,
         forms: current.forms ?? segment.forms,
         seenCount: current.seenCount + 1,
         lastSeenAt: now,
         roundIds: current.roundIds.includes(roundId)
           ? current.roundIds
           : [...current.roundIds, roundId],
-        needsEnrichment: (current.gloss || segment.gloss) ? undefined : true,
+        // needsEnrichment is the fill-missing-*English*-glosses hook (REQ-I5),
+        // so it tracks `gloss` whichever language this round was read in.
+        needsEnrichment:
+          (field === 'gloss' ? held || incoming : current.gloss) ? undefined : true,
       });
     } else {
       touched.set(id, {
         id,
         trackId,
         surface: segment.text,
-        gloss: segment.gloss ?? '',
+        gloss: field === 'gloss' ? incoming : '',
+        glossAr: field === 'glossAr' ? incoming : null,
         forms: segment.forms,
         partOfSpeech: null,
         seenCount: 1,

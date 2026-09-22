@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { ArabicText } from '@/ui/components/ArabicText';
 import { GlossPanel, type GlossPanelItem } from '@/ui/components/GlossPanel';
+import { useConfig } from '@/ui/context/ConfigContext';
+import { glossLanguageFor } from '@/domain/glossLanguage';
 import type { Failure } from '@/ui/failure';
 import type { Segment } from '@/domain/types';
 import { DEMO_SEGMENTS, DEMO_TITLE_AR } from './demoRound';
@@ -119,6 +121,8 @@ export function ReadingScreen({
   onProgress,
   titleOffset = 0,
 }: ReadingScreenProps) {
+  const config = useConfig();
+  const arabicOnly = config.generation.arabicOnlyDefinitions;
   // Two independent highlights:
   //  - activeIndex     the one word being viewed now; a transient highlight
   //                    that moves to whatever word was tapped last.
@@ -302,9 +306,16 @@ export function ReadingScreen({
               aria-busy={enrich.busy}
               onClick={enrich.run}
             >
-              {enrich.busy
-                ? `Translating ${enrich.count} words…`
-                : `Translate ${enrich.count} untranslated words`}
+              {/* "Translate" is the wrong verb in Arabic-only mode: nothing is
+                  being translated, and many of these words already carry an
+                  English gloss the reader can see in the word list. */}
+              {arabicOnly
+                ? enrich.busy
+                  ? `Defining ${enrich.count} words…`
+                  : `Define ${enrich.count} words in Arabic`
+                : enrich.busy
+                  ? `Translating ${enrich.count} words…`
+                  : `Translate ${enrich.count} untranslated words`}
             </button>
           )}
 
@@ -379,6 +390,7 @@ export function ReadingScreen({
 
       <GlossPanel
         item={glossItem}
+        language={glossLanguageFor(arabicOnly)}
         isNotKnown={activeIsNotKnown}
         onToggleNotKnown={handleToggleNotKnown}
       />

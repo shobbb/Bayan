@@ -720,6 +720,19 @@ the choice opens. The counts move with every reading and every answered card,
 and choosing between two stale numbers is choosing between two things that are
 no longer true.
 
+`REQ-83` Under Arabic-only definitions (§13) the rotation is **flashcard and
+multiple choice only**. Write-in is dropped, not softened: it is the strictest
+path because producing the answer is harder than recognising it, but that holds
+only when producing it is what is being measured. Typing an Arabic definition on
+an English keyboard measures the keyboard — the learner who knows the word
+perfectly still fails, and the one who reaches for a transliteration tool has
+left the retrieval entirely.
+
+`REQ-84` Arabic multiple-choice distractors need **no extra model call**. They
+are drawn from the corpus exactly as the English ones are (REQ-25), just from
+the other field — so the wrong answers are other real definitions the learner's
+own corpus already holds, in the same language as the right one.
+
 **The interaction model is Quizlet's, not Anki's.** This is a deliberate choice and not a default: it is the app the learner actually uses, and a study loop they already have in their fingers costs nothing to learn. Concretely that means a card that flips, a two-way self-report, running counts of what is known versus still being learned, short rounds with a checkpoint between them, and a follow-up pass narrowed to what was missed. Where the two traditions disagree, follow Quizlet.
 
 The visual language is still §5's — cool neutrals, one signal colour, no gradients or shadows. Borrow the mechanics, not the styling.
@@ -737,7 +750,7 @@ The visual language is still §5's — cool neutrals, one signal colour, no grad
 
 - **Front:** base forms on one line, example sentence below in a lighter weight. Arabic only.
 - Tap anywhere on the card to flip.
-- **Back:** English gloss, large and alone. Front content stays visible above it so the pairing is seen together.
+- **Back:** the definition, large and alone — the English gloss, or the Arabic definition under REQ-78. Arabic definitions are set in the naskh face at the prompt's line-height, since tashkeel needs the room. Front content stays visible above it so the pairing is seen together.
 - Two response buttons: `Still learning` and `Know it`. Nothing else.
 - `REQ-39` The self-report is two-way. A mode reports what happened — known or not — and the mapping onto scheduler grades lives in one place, not in the view. Four-way self-grading is Anki's model and is not used here: it asks the learner to predict a scheduling interval mid-recall, which is a worse signal than what the graded modes measure directly.
 - `REQ-47` The graded modes derive a finer grade from what the learner actually did — an exact answer, a typo-tolerated near miss, a wrong answer — rather than asking. Derived granularity is kept; self-reported granularity is not.
@@ -745,7 +758,7 @@ The visual language is still §5's — cool neutrals, one signal colour, no grad
 ### 10.3 `MultipleChoiceView`
 
 - **Prompt:** base forms + example sentence, Arabic only.
-- Four English options, vertically stacked, full-width tap targets.
+- Four options, vertically stacked, full-width tap targets — English glosses, or Arabic definitions under REQ-78.
 - On selection: correct choice turns green, incorrect turns red and the correct one is also highlighted. Brief pause, then advance.
 - `REQ-25` Distractors share the target's part of speech and come from semantically adjacent words in the corpus. Random distractors make items trivially solvable and produce meaningless grading data.
 - `REQ-40` Option order is randomized per presentation. A stable correct-position is learnable and corrupts the signal.
@@ -917,10 +930,43 @@ Composes the above per round type:
 - Model selection for generation.
 - **Config overrides** — everything in `config/algorithm.ts` and `config/models.ts` is editable here (batch size, draw weights, bandit `C`, model per query kind). Show each value's default alongside the current setting, with a per-value reset.
 - **Notifications**: opt-in daily reminder, time picker. Off by default.
+- **Definitions**: **Arabic only** — define words in simple Arabic instead of English.
 - **Export**: full JSON dump of all stores, written via the Filesystem plugin and shareable via the Share sheet.
 - **Import**: restore from dump, with a destructive-action confirmation.
 
 `REQ-37` Export/import is the backup path of record. Surface it prominently, not buried.
+
+`REQ-78` **Arabic-only definitions.** One setting
+(`generation.arabicOnlyDefinitions`) moves the answer side of the app from
+English to simple Arabic: what the model is asked for, what the gloss panel and
+the cards show, and which drill modes run. It is the point at which translating
+has become the slower path, so the app stops offering it.
+
+`REQ-79` The two definitions are held **side by side**, never one replacing the
+other. `Word.glossAr` sits beside `Word.gloss`, and the gloss cache carries both
+for the same reason: a corpus of imported English glosses and a cache of bought
+ones are each real assets, and a setting that invalidated either — or that could
+not be switched back without paying twice — would be a one-way door, not a
+setting. Ingestion writes only the field matching the language being read in.
+
+`REQ-80` A definition is **never substituted across languages**. A word with no
+Arabic definition shows nothing rather than its English gloss: a learner who
+asked for Arabic and is shown English has been told the setting does not work,
+and an empty definition is what routes the word to the translation pass. The
+same rule makes such a word not a card yet (REQ-23) rather than a blank one.
+
+`REQ-81` The Arabic prompt asks for a **definition, not a synonym**. A
+one-to-three-word English gloss is a translation; its Arabic equivalent is a
+synonym, which is either a word the learner also does not know or the same word
+again. So the prompt asks for a short phrase in commoner words than the
+headword, never using the headword or its root, fully vowelled, with no English
+anywhere.
+
+`REQ-82` **Publisher glosses are unusable in this mode.** An article's
+vocabulary and expression lists are editorial English, so they are skipped
+entirely — including the multi-word expressions they make tappable. This is the
+setting's one real cost: the ~8% the publisher glossed needs defining too, once,
+before the cache covers it like everything else.
 
 `REQ-75` The transport reports **what the storage provider meant, not what it
 sent**. Supabase Storage routinely answers 400 and puts the real status in the

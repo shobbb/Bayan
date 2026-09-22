@@ -1,3 +1,4 @@
+import type { GlossLanguage } from '@/domain/glossLanguage';
 import './GlossPanel.css';
 
 export interface GlossPanelItem {
@@ -8,6 +9,8 @@ export interface GlossPanelItem {
 
 export interface GlossPanelProps {
   item: GlossPanelItem | null;
+  /** Which language the definition is written in (§13); English by default. */
+  language?: GlossLanguage;
   /** Whether the word currently shown is flagged "didn't know". */
   isNotKnown: boolean;
   /** Toggle the "didn't know" flag on the word currently shown. */
@@ -25,7 +28,13 @@ export interface GlossPanelProps {
  * The "Didn't know" control is the one thing that makes a word's highlight
  * persist: a plain tap is transient, this flag is durable.
  */
-export function GlossPanel({ item, isNotKnown, onToggleNotKnown }: GlossPanelProps) {
+export function GlossPanel({
+  item,
+  language = 'english',
+  isNotKnown,
+  onToggleNotKnown,
+}: GlossPanelProps) {
+  const arabic = language === 'arabic';
   return (
     <div className="gloss-panel" role="status" aria-live="polite">
       {item ? (
@@ -40,10 +49,18 @@ export function GlossPanel({ item, isNotKnown, onToggleNotKnown }: GlossPanelPro
                 tracked and still flaggable — say that rather than showing a
                 blank row that reads as a rendering fault. */}
             {item.gloss ? (
-              <div className="gloss-panel__english">{item.gloss}</div>
+              <div
+                dir={arabic ? 'rtl' : 'ltr'}
+                lang={arabic ? 'ar' : 'en'}
+                className={
+                  'gloss-panel__definition' + (arabic ? ' gloss-panel__definition--arabic' : '')
+                }
+              >
+                {item.gloss}
+              </div>
             ) : (
-              <div className="gloss-panel__english gloss-panel__english--empty">
-                No translation yet
+              <div className="gloss-panel__definition gloss-panel__definition--empty">
+                {arabic ? 'No Arabic definition yet' : 'No translation yet'}
               </div>
             )}
           </div>

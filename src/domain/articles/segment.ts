@@ -136,6 +136,29 @@ export interface SegmentContext {
    * is nothing to notice that with.
    */
   known: ReadonlyMap<WordId, { gloss: string; forms: string | null; surface?: string }>;
+  /**
+   * Whether the publisher's own vocabulary and expression lists may be used
+   * (§13).
+   *
+   * True everywhere except Arabic-only mode, where they cannot be: they are
+   * editorial *English* glosses, and showing them would mean the one setting
+   * that promises no English delivers it on the words the publisher thought
+   * hardest. Skipping them costs the article's multi-word expressions as
+   * tappable units too, since those are the same list.
+   *
+   * Defaults to true, which is what every caller meant before the setting
+   * existed.
+   */
+  usePublisherGlosses?: boolean;
+}
+
+/** The publisher's lists, or an empty index when they are not to be used. */
+function publisherIndex(
+  article: Article,
+  ctx: SegmentContext,
+): { byPhrase: Map<string, PhraseEntry>; maxWords: number } {
+  if (ctx.usePublisherGlosses === false) return { byPhrase: new Map(), maxWords: 1 };
+  return indexGlosses(article, ctx.profile);
 }
 
 /**
@@ -250,7 +273,7 @@ function segmentRun(
  * glosses and the same corpus, so a word met here is the same word met below.
  */
 export function articleTitleSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
-  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
+  const { byPhrase, maxWords } = publisherIndex(article, ctx);
   const segments: ResolvedSegment[] = [];
   segmentRun(article.titleAr, byPhrase, maxWords, ctx, segments);
   return segments;
@@ -261,7 +284,7 @@ export function articleTitleSegments(article: Article, ctx: SegmentContext): Res
  * matching what the reader already renders for generated rounds.
  */
 export function articleToSegments(article: Article, ctx: SegmentContext): ResolvedSegment[] {
-  const { byPhrase, maxWords } = indexGlosses(article, ctx.profile);
+  const { byPhrase, maxWords } = publisherIndex(article, ctx);
   const segments: ResolvedSegment[] = [];
 
   article.paragraphs.forEach((paragraph, index) => {

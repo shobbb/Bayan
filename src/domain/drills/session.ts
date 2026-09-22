@@ -7,10 +7,29 @@
  */
 import type { Word, WordId } from '@/domain/types';
 import type { Scheduler } from '@/domain/srs/scheduler';
+import { hasGloss, type GlossLanguage } from '@/domain/glossLanguage';
 import type { DrillModeId } from './types';
 
 /** Rotation order. Recognition first, free recall last — increasing difficulty. */
 export const MODE_ROTATION: readonly DrillModeId[] = ['flashcard', 'multipleChoice', 'writeIn'];
+
+/**
+ * The same rotation with writing dropped, for Arabic-only definitions (§13).
+ *
+ * Not a softening of the method. Write-in is the strictest retrieval path
+ * because producing the answer is harder than recognising it — but that holds
+ * only when producing it is the part being measured. Typing an Arabic
+ * definition on an English keyboard measures the keyboard: the learner who
+ * knows the word perfectly still fails, and the one who reaches for a
+ * transliteration tool has left the retrieval entirely. What remains is the two
+ * modes whose difficulty is still about the word.
+ */
+export const ARABIC_MODE_ROTATION: readonly DrillModeId[] = ['flashcard', 'multipleChoice'];
+
+/** The rotation for the active definition language. */
+export function modeRotationFor(language: GlossLanguage): readonly DrillModeId[] {
+  return language === 'arabic' ? ARABIC_MODE_ROTATION : MODE_ROTATION;
+}
 
 export interface QueueEntry {
   word: Word;
@@ -38,6 +57,8 @@ export interface BuildQueueOptions {
   words: readonly Word[];
   scheduler: Scheduler;
   now: number;
+  /** Which definitions the session drills, which decides the rotation (§13). */
+  glossLanguage: GlossLanguage;
 }
 
 /**
@@ -47,11 +68,17 @@ export interface BuildQueueOptions {
  * Separate from queue building because the order is decided upstream — by the
  * batch/due interleave here, or by the spacing sort a study source applies
  * (see studySources.ts) — and the mode rotation is the same either way.
+ *
+ * The language is a required argument rather than one defaulting to English:
+ * a call site that forgot it would quietly ask an Arabic-only learner to type
+ * an English answer, and that failure is invisible until it is in front of
+ * somebody mid-session.
  */
-export function withModes(words: readonly Word[]): QueueEntry[] {
+export function withModes(words: readonly Word[], language: GlossLanguage): QueueEntry[] {
+  const rotation = modeRotationFor(language);
   return words.map((word, index) => ({
     word,
-    mode: MODE_ROTATION[index % MODE_ROTATION.length]!,
+    mode: rotation[index % rotation.length]!,
   }));
 }
 
@@ -65,19 +92,30 @@ export function buildSessionQueue({
   words,
   scheduler,
   now,
+  glossLanguage,
 }: BuildQueueOptions): QueueEntry[] {
   const byId = new Map(words.map((word) => [word.id, word]));
 
+  // A word with no definition in the active language has no answer side, so it
+  // is not a card (REQ-23). This bites when the setting changes under an
+  // existing batch: those words are still owed an Arabic definition, and a
+  // blank card is a worse way to say so than simply not dealing it.
+  const drillable = (word: Word) => hasGloss(word, glossLanguage);
+
   const batch = batchWordIds
     .map((id) => byId.get(id))
-    .filter((word): word is Word => word !== undefined);
+    .filter((word): word is Word => word !== undefined && drillable(word));
 
   const batchIds = new Set(batch.map((word) => word.id));
   const due = words.filter(
-    (word) => !batchIds.has(word.id) && word.srs !== null && scheduler.isDue(word.srs, now),
+    (word) =>
+      !batchIds.has(word.id) &&
+      word.srs !== null &&
+      scheduler.isDue(word.srs, now) &&
+      drillable(word),
   );
 
-  return withModes(interleave(batch, due));
+  return withModes(interleave(batch, due), glossLanguage);
 }
 
 export interface SessionSummary {
@@ -138,12 +176,21 @@ export function isCheckpoint(queueLength: number, roundSize: number, index: numb
  * than repeating the one the word was just missed in — a second look through
  * the same retrieval path mostly measures short-term memory of the last screen.
  */
-export function reviewQueueFor(missed: readonly Word[], previous: readonly QueueEntry[]): QueueEntry[] {
+export function reviewQueueFor(
+  missed: readonly Word[],
+  previous: readonly QueueEntry[],
+  language: GlossLanguage,
+): QueueEntry[] {
+  const rotation = modeRotationFor(language);
   const lastMode = new Map(previous.map((entry) => [entry.word.id, entry.mode]));
 
   return missed.map((word, index) => {
     const seen = lastMode.get(word.id);
-    const offset = seen === undefined ? 0 : MODE_ROTATION.indexOf(seen) + 1;
-    return { word, mode: MODE_ROTATION[(offset + index) % MODE_ROTATION.length]! };
+    // indexOf is -1 for a mode not in this rotation — a card missed in write-in
+    // before the setting changed — which lands the offset back at 0 rather than
+    // throwing away the "not the same mode again" intent entirely.
+    const seenAt = seen === undefined ? -1 : rotation.indexOf(seen);
+    const offset = seenAt === -1 ? 0 : seenAt + 1;
+    return { word, mode: rotation[(offset + index) % rotation.length]! };
   });
 }

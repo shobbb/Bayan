@@ -21,6 +21,7 @@ import {
   rebaseIndices,
   resumeIndex,
 } from '@/domain/articles/progress';
+import type { GlossLanguage } from '@/domain/glossLanguage';
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
@@ -138,7 +139,11 @@ export async function saveReadingProgress(
  * consults the learner's corpus — a word learned yesterday should be glossed
  * today, and a segmentation cached at import would never know.
  */
-export async function openArticle(id: string, now = Date.now()): Promise<OpenedArticle> {
+export async function openArticle(
+  id: string,
+  language: GlossLanguage = 'english',
+  now = Date.now(),
+): Promise<OpenedArticle> {
   const [bundle, previous] = await Promise.all([loadArticles(), getArticleRead(id)]);
 
   const article = bundle.articles.find((candidate) => candidate.id === id);
@@ -148,7 +153,7 @@ export async function openArticle(id: string, now = Date.now()): Promise<OpenedA
   // consults the learner's corpus and the gloss cache — a word learned or
   // translated yesterday should be glossed today, and a segmentation cached at
   // import would never know.
-  const { segments, titleOffset } = await resegment(article);
+  const { segments, titleOffset } = await resegment(article, language);
 
   // Moved onto the current base and written straight back, so everything after
   // this point works in one numbering. The headline joining the segment stream
@@ -249,12 +254,24 @@ export async function finishArticle(
   article: Article,
   segments: readonly ResolvedSegment[],
   notKnownIndices: readonly number[],
+  language: GlossLanguage = 'english',
   now = Date.now(),
 ): Promise<void> {
   const profile = modernStandardArabicProfile;
   const existing = await listWords(DEFAULT_TRACK_ID);
 
-  const touched = ingestRoundWords(segments, existing, article.id, DEFAULT_TRACK_ID, profile, now);
+  // The segments carry whichever definitions the article was read with, so
+  // ingestion is told which field they belong in — otherwise an Arabic
+  // definition would be written over an English one nobody asked about.
+  const touched = ingestRoundWords(
+    segments,
+    existing,
+    article.id,
+    DEFAULT_TRACK_ID,
+    profile,
+    now,
+    language,
+  );
   await upsertWords(touched);
 
   const record = await getArticleRead(article.id);
