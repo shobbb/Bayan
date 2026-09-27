@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ModelRoute } from '@/config/models';
 import type { LlmClient, LlmCompletion } from './client';
-import { generateRound, LlmValidationError } from './generate';
+import { generateGlosses, generateRound, LlmValidationError } from './generate';
 
 const ROUTE: ModelRoute = { model: 'test-model', maxTokens: 100, effort: 'medium' };
 
@@ -103,5 +103,67 @@ describe('generateRound', () => {
     // REQ-17: the raw response stays available for inspection.
     expect(error.rawResponse).toBe('{"titleAr":"عُنْ');
     expect(error.describe()).toContain('عُنْ');
+  });
+});
+
+describe('generateGlosses', () => {
+  const GLOSS_PARAMS = { words: ['كِتَاب'], languageGuidance: 'Modern Standard Arabic.' };
+
+  const TRUNCATED_ARABIC = `{ "glosses": [
+{ "word": "مُبَاشَرَةً", "gloss": "بِدُونِ تَأْخِيرٍ", "forms": null, "partOfSpeech": "adjective" },
+{ "word": "إِلَى", "gloss": "حَرْفٌ يُفِيدُ الاتِّجَاهَ", "forms": null, "partOfSpeech": "particle" },
+{ "word": "وَكَانَ", "gloss": "وَكَانَ ذَلِكَ فِي المَا`;
+
+  it('returns a clean response as-is', async () => {
+    const client = clientReturning({
+      text: JSON.stringify({ glosses: [{ word: 'كِتَاب', gloss: 'book' }] }),
+      truncated: false,
+    });
+
+    const response = await generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 1, client);
+
+    expect(response.glosses).toHaveLength(1);
+  });
+
+  // The entries that arrived are correct and already paid for. Throwing them
+  // away costs the learner the whole call — for a long article, most of the
+  // cost of reading it.
+  it('recovers the definitions that arrived when the budget ran out', async () => {
+    const client = clientReturning({ text: TRUNCATED_ARABIC, truncated: true });
+
+    const response = await generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 1, client);
+
+    expect(response.glosses.map((entry) => entry.word)).toEqual(['مُبَاشَرَةً', 'إِلَى']);
+  });
+
+  // A truncation is a budget problem, not a compliance problem: retrying spends
+  // another full generation to arrive at the same cut-off.
+  it('does not retry a truncated response before salvaging it', async () => {
+    const client = clientReturning({ text: TRUNCATED_ARABIC, truncated: true });
+
+    await generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 3, client);
+
+    expect(client.calls).toBe(1);
+  });
+
+  // Nothing usable means the budget is too small to answer even one word, which
+  // is the operator's problem to fix — and the error says how.
+  it('still fails when the cut came before the first entry closed', async () => {
+    const client = clientReturning({ text: '{ "glosses": [ { "word": "كِت', truncated: true });
+
+    await expect(generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 1, client)).rejects.toBeInstanceOf(
+      LlmValidationError,
+    );
+  });
+
+  it('still fails on a malformed response that was not truncated', async () => {
+    const client = clientReturning(
+      { text: 'not json', truncated: false },
+      { text: 'still not json', truncated: false },
+    );
+
+    await expect(generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 1, client)).rejects.toBeInstanceOf(
+      LlmValidationError,
+    );
   });
 });

@@ -33,11 +33,22 @@ import { getApiKey } from '@/services/platform/storage';
 import { MissingApiKeyError } from '@/services/rounds/roundService';
 
 /**
- * Words per request. Large enough that a typical article is one call, small
- * enough to stay well inside the route's output budget — a truncated response
- * costs the whole batch, and the budget is the thing that bit round generation.
+ * Words per request, by the language the definitions are written in.
+ *
+ * An English gloss is one to three words; an Arabic definition is a phrase of
+ * two to six, fully vowelled, and vowelled Arabic tokenizes far worse than
+ * English — every diacritic is its own token. The same 100 words therefore cost
+ * several times as much output to answer in Arabic, which is what ran the route
+ * out of budget mid-array the first time this setting was used in anger.
+ *
+ * Sized down rather than up because the request is also cheaper to retry when
+ * it is smaller: the words that do not arrive stay untranslated and the next
+ * tap asks for them again.
  */
-const BATCH_SIZE = 100;
+const BATCH_SIZE: Record<GlossLanguage, number> = {
+  english: 100,
+  arabic: 35,
+};
 
 export interface EnrichmentResult {
   /** Words that had no translation before this ran. */
@@ -118,9 +129,10 @@ export async function enrichArticle(
   );
   const missing = wanted.filter((id) => !cached.has(id));
 
+  const batchSize = BATCH_SIZE[language];
   let filled = 0;
-  for (let start = 0; start < missing.length; start += BATCH_SIZE) {
-    const chunk = missing.slice(start, start + BATCH_SIZE);
+  for (let start = 0; start < missing.length; start += batchSize) {
+    const chunk = missing.slice(start, start + batchSize);
     const response = await generateGlosses(
       {
         words: chunk.map((id) => surfaces.get(id) ?? id),

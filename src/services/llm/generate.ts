@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { ModelRoute } from '@/config/models';
 import { anthropicClient, type LlmClient } from './client';
 import {
+  llmGlossSchema,
   llmGlossesResponseSchema,
   llmRoundResponseSchema,
   llmSentencesResponseSchema,
@@ -14,6 +15,7 @@ import {
   type LlmRoundResponse,
   type LlmSentencesResponse,
 } from './schemas';
+import { salvageEntries } from './salvage';
 import {
   buildGlossPrompt,
   buildRoundGenerationPrompt,
@@ -146,7 +148,15 @@ export async function generateSentences(
   return generateAndValidate(client, route, apiKey, prompt, llmSentencesResponseSchema, maxRetries);
 }
 
-/** Batched glosses for words met in reading but never translated (REQ-A10). */
+/**
+ * Batched glosses for words met in reading but never translated (REQ-A10).
+ *
+ * The one route that survives running out of output budget. Its response is a
+ * list of independent answers, so the entries that arrived before the cut are
+ * correct and already paid for; returning them makes a truncation a partial
+ * fill rather than a lost call, and the words that did not arrive stay
+ * untranslated, which is the state the next tap already handles.
+ */
 export async function generateGlosses(
   params: GlossPromptParams,
   route: ModelRoute,
@@ -155,5 +165,27 @@ export async function generateGlosses(
   client: LlmClient = anthropicClient,
 ): Promise<LlmGlossesResponse> {
   const prompt = buildGlossPrompt(params);
-  return generateAndValidate(client, route, apiKey, prompt, llmGlossesResponseSchema, maxRetries);
+  try {
+    return await generateAndValidate(
+      client,
+      route,
+      apiKey,
+      prompt,
+      llmGlossesResponseSchema,
+      maxRetries,
+    );
+  } catch (error) {
+    if (!(error instanceof LlmValidationError) || !error.truncated) throw error;
+
+    const glosses = salvageEntries(error.rawResponse, (value) => {
+      const parsed = llmGlossSchema.safeParse(value);
+      return parsed.success ? parsed.data : null;
+    });
+
+    // Nothing usable came back, so the budget is too small to answer even one
+    // word. That is the operator's problem to fix and the error says how.
+    if (glosses.length === 0) throw error;
+
+    return { glosses };
+  }
 }

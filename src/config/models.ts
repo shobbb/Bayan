@@ -72,9 +72,16 @@ export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
   // Wrong answers for multiple choice — the one route where being slightly off
   // is the point, and a card survives a weak distractor.
   distractorGeneration: { model: DEFAULT_MODEL, maxTokens: 8000, effort: 'low' },
-  // ~100 words a call, each answering with a gloss, forms and a part of speech.
-  // A gloss is a lookup rather than a composition, but a wrong one is kept and
-  // shown as fact, so this does not go below medium.
-  wordGlossing: { model: DEFAULT_MODEL, maxTokens: 8000, effort: 'medium' },
+  // A batch of words a call, each answering with a gloss, forms and a part of
+  // speech. A gloss is a lookup rather than a composition, but a wrong one is
+  // kept and shown as fact, so this does not go below medium.
+  //
+  // 16,000 rather than 8,000 because this route also answers in Arabic (§13),
+  // where a definition is a vowelled phrase rather than a one-word translation,
+  // and because thinking tokens are billed against the same ceiling — at
+  // `medium` effort a visible chunk of the budget is spent before the first
+  // character of JSON. The ceiling is not a reservation, so the larger number
+  // costs nothing on the English batches that never approach it.
+  wordGlossing: { model: DEFAULT_MODEL, maxTokens: 16000, effort: 'medium' },
   diacritization: { model: DEFAULT_MODEL, maxTokens: 8000, effort: 'high' },
 };

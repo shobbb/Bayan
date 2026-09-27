@@ -972,6 +972,23 @@ single-word entry is ignored, since the ordinary corpus lookup handles those
 better. Segmentation is therefore identical in both modes, which matters because
 flags and reading progress are stored as segment indices.
 
+`REQ-86` **A truncated gloss response is salvaged, not discarded.** The gloss
+route answers with a list of independent entries, so everything that closed
+before the cut is correct and already paid for; the complete entries are
+returned and the rest stay untranslated, which is the state the next tap
+already handles. Round generation is excluded deliberately — half a passage is
+not a shorter round, it is a text that stops mid-sentence. Only a list of
+independent answers can be cut in half and still be right.
+
+`REQ-87` **Batch size follows the language of the answer.** An English gloss is
+one to three words; an Arabic definition is a vowelled phrase of two to six,
+and vowelled Arabic tokenizes far worse — every diacritic is its own token. The
+same 100 words cost several times the output to answer in Arabic, which is what
+exhausted the route mid-array the first time the setting was used for real. 100
+words an English call, 35 an Arabic one. Thinking tokens are billed against the
+same ceiling, so the route's budget covers reasoning before the first character
+of JSON.
+
 `REQ-85` **One span of text becomes one WordId, one way** (`domain/wordIdentity`):
 normalize each whitespace-separated word, join with a single space. Not
 `normalize(wholePhrase)`, which strips the first word's definite article and
