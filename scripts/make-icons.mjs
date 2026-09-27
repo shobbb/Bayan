@@ -139,10 +139,26 @@ function toOpaqueRgb(png) {
 const root = fileURLToPath(new URL('..', import.meta.url));
 const font = readFileSync(`${root}src/assets/fonts/Amiri-Bold.woff2`).toString('base64');
 
+/**
+ * `kind` decides the composition, not just the size.
+ *
+ * An icon is a mark filling its tile: gradient ground, word sized to the frame.
+ * A splash is the same word alone on the app's own ground colour, small and
+ * centred — @capacitor/assets crops one square to every device aspect ratio, so
+ * anything near an edge is lost on some phone. The ratios below keep the ink
+ * inside the narrowest crop a tall handset takes.
+ *
+ * The 1024 icon and 2732 splashes are what @capacitor/assets reads; the three
+ * public/ files are the web build's own and predate the native shell.
+ */
 const TARGETS = [
-  ['public/icon-512.png', 512],
-  ['public/icon-192.png', 192],
-  ['public/apple-touch-icon.png', 180],
+  ['public/icon-512.png', 512, 'icon'],
+  ['public/icon-192.png', 192, 'icon'],
+  ['public/apple-touch-icon.png', 180, 'icon'],
+  // Native sources. Regenerate these and run `npm run assets` after `cap add ios`.
+  ['assets/icon.png', 1024, 'icon'],
+  ['assets/splash.png', 2732, 'splash'],
+  ['assets/splash-dark.png', 2732, 'splashDark'],
 ];
 
 const html = `<!doctype html>
@@ -162,16 +178,19 @@ const tab = await browser.newPage();
 await tab.setContent(html);
 await tab.evaluate(() => document.fonts.load('700 100px Amiri').then(() => document.fonts.ready));
 
-for (const [file, size] of TARGETS) {
-  const { dataUrl, report } = await tab.evaluate((px) => {
+for (const [file, size, kind] of TARGETS) {
+  const { dataUrl, report } = await tab.evaluate(({ px, kind }) => {
     const VOWELLED = 'بَيَان';
     const BARE = 'بيان';
     // Fractions of the canvas the ink may occupy. Height binds here — the
     // marks sit well above the letters — and the resulting width lands near
     // 0.5, comfortably inside the 80% safe circle a maskable or adaptive crop
     // keeps, so nothing clips on any platform.
-    const FIT_W = 0.78;
-    const FIT_H = 0.56;
+    // A splash is cropped to each device's aspect ratio, so its mark sits well
+    // inside the square — roughly a quarter of the frame, which survives the
+    // narrowest crop a tall handset takes.
+    const FIT_W = kind === 'icon' ? 0.78 : 0.26;
+    const FIT_H = kind === 'icon' ? 0.56 : 0.19;
 
     const canvas = document.getElementById('c');
     canvas.width = px;
@@ -208,11 +227,19 @@ for (const [file, size] of TARGETS) {
     const x = px / 2 + (box.left - box.right) / 2;
     const y = px / 2 + (box.ascent - box.descent) / 2;
 
-    const bg = ctx.createLinearGradient(0, 0, px, px);
-    bg.addColorStop(0, '#12293f');
-    bg.addColorStop(0.54, '#2e5e8c');
-    bg.addColorStop(1, '#4d93bd');
-    ctx.fillStyle = bg;
+    // The splash matches capacitor.config.ts's backgroundColor exactly, so the
+    // native launch image and the first painted frame are the same colour and
+    // there is no flash between them. The icon keeps its gradient: a tile is a
+    // mark, a splash is the app already starting.
+    if (kind === 'icon') {
+      const bg = ctx.createLinearGradient(0, 0, px, px);
+      bg.addColorStop(0, '#12293f');
+      bg.addColorStop(0.54, '#2e5e8c');
+      bg.addColorStop(1, '#4d93bd');
+      ctx.fillStyle = bg;
+    } else {
+      ctx.fillStyle = kind === 'splashDark' ? '#14161a' : '#f7f7f5';
+    }
     ctx.fillRect(0, 0, px, px);
 
     ctx.font = `700 ${fontSize}px Amiri`;
@@ -220,7 +247,7 @@ for (const [file, size] of TARGETS) {
     // amber letterforms and leaves only the tashkeel showing.
     ctx.fillStyle = '#f5b53f';
     ctx.fillText(VOWELLED, x, y);
-    ctx.fillStyle = '#fbf7f0';
+    ctx.fillStyle = kind === 'splash' ? '#1c1c1a' : '#fbf7f0';
     ctx.fillText(BARE, x, y);
 
     return {
@@ -232,7 +259,7 @@ for (const [file, size] of TARGETS) {
         advanceMatches: Math.abs(ink(BARE, fontSize).advance - box.advance) < 0.01,
       },
     };
-  }, size);
+  }, { px: size, kind });
 
   if (!report.advanceMatches) {
     throw new Error(

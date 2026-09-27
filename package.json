@@ -14,7 +14,9 @@
     "lint": "eslint .",
     "cap:sync": "npm run build && cap sync",
     "cap:add:ios": "cap add ios",
-    "cap:add:android": "cap add android"
+    "cap:add:android": "cap add android",
+    "icons": "node scripts/make-icons.mjs",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#12293f' --splashBackgroundColor '#f7f7f5' --splashBackgroundColorDark '#14161a'"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.2",
@@ -32,6 +34,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.2",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
