@@ -273,29 +273,37 @@ for (const [file, size, kind] of TARGETS) {
   // Read the file we just wrote back through the browser and compare it to the
   // canvas pixels. A hand-rolled PNG encoder that is subtly wrong would produce
   // a plausible-looking file, so this checks rather than assumes.
+  //
+  // Both sides cross as base64 data URLs and are decoded natively. The obvious
+  // spelling — handing `evaluate` the raw samples as an array — makes Playwright
+  // JSON-serialize one element per byte: three million for a 1024 icon, which is
+  // merely slow, and twenty-two million for a 2732 splash, which does not finish.
+  // The comparison itself was never the expensive part.
   const drift = await tab.evaluate(
-    async ({ dataUrl: written, expected, px }) => {
-      const bitmap = await createImageBitmap(
-        await (await fetch(written)).blob(),
-      );
+    async ({ dataUrl: written, expectedUrl, px }) => {
+      const bitmap = await createImageBitmap(await (await fetch(written)).blob());
       const check = document.createElement('canvas');
       check.width = px;
       check.height = px;
       const ctx = check.getContext('2d');
       ctx.drawImage(bitmap, 0, 0);
       const actual = ctx.getImageData(0, 0, px, px).data;
+      const expected = new Uint8Array(await (await fetch(expectedUrl)).arrayBuffer());
+
       let worst = 0;
       for (let p = 0; p < px * px; p++) {
         for (let c = 0; c < 3; c++) {
-          worst = Math.max(worst, Math.abs(actual[p * 4 + c] - expected[p * 3 + c]));
+          const diff = Math.abs(actual[p * 4 + c] - expected[p * 3 + c]);
+          if (diff > worst) worst = diff;
         }
-        worst = Math.max(worst, 255 - actual[p * 4 + 3]);
+        const opacity = 255 - actual[p * 4 + 3];
+        if (opacity > worst) worst = opacity;
       }
       return worst;
     },
     {
       dataUrl: `data:image/png;base64,${flattened.png.toString('base64')}`,
-      expected: [...flattened.rgb],
+      expectedUrl: `data:application/octet-stream;base64,${flattened.rgb.toString('base64')}`,
       px: size,
     },
   );
