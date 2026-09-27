@@ -15,6 +15,16 @@ export interface GenerationConfig {
    * English keyboard measures the keyboard.
    */
   arabicOnlyDefinitions: boolean;
+  /**
+   * Answer with the on-device model rather than the hosted one (§13).
+   *
+   * Free, offline and unmetered, which is what makes open-ended use
+   * affordable — but smaller than the hosted route, so it is opt-in and the
+   * two are meant to be compared on real text rather than argued about.
+   * Ignored where there is no on-device model: a browser, or hardware without
+   * Apple Intelligence or Gemini Nano.
+   */
+  useLocalModel: boolean;
   /** Approx share of unseen vocabulary in a generated round, by round type. */
   newWordDensity: Record<RoundType, number>;
 }
@@ -24,6 +34,7 @@ export const DEFAULT_GENERATION_CONFIG: GenerationConfig = {
   maxValidationRetries: 1,
   requireFullDiacritics: true,
   arabicOnlyDefinitions: false,
+  useLocalModel: false,
   newWordDensity: {
     explore: 0.2,
     reinforcement: 0.08,

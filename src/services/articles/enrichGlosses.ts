@@ -29,6 +29,9 @@ import { listWords } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
 import type { GlossRecord } from '@/data/db';
 import { generateGlosses } from '@/services/llm/generate';
+import { anthropicClient } from '@/services/llm/client';
+import { localLlmClient } from '@/services/llm/localClient';
+import { localModelSupported } from '@/services/platform/localModel';
 import { getApiKey } from '@/services/platform/storage';
 import { MissingApiKeyError } from '@/services/rounds/roundService';
 
@@ -97,8 +100,14 @@ export async function enrichArticle(
   config: AppConfig,
   now = Date.now(),
 ): Promise<{ result: EnrichmentResult; segments: ResolvedSegment[] }> {
-  const apiKey = await getApiKey();
-  if (!apiKey) throw new MissingApiKeyError();
+  // The on-device model is keyless by nature, so the key is only required when
+  // the hosted route is the one that will answer. Demanding it regardless would
+  // block the one path that exists precisely to need nothing.
+  const local = config.generation.useLocalModel && localModelSupported();
+  const client = local ? localLlmClient : anthropicClient;
+
+  const apiKey = local ? '' : ((await getApiKey()) ?? '');
+  if (!local && !apiKey) throw new MissingApiKeyError();
 
   const profile = modernStandardArabicProfile;
   const language = glossLanguageFor(config.generation.arabicOnlyDefinitions);
@@ -142,6 +151,7 @@ export async function enrichArticle(
       config.models.wordGlossing,
       apiKey,
       config.generation.maxValidationRetries,
+      client,
     );
 
     // Match on the echoed word, normalized — the model is asked to echo it

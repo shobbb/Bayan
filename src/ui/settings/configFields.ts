@@ -164,6 +164,11 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
         'Arabic only',
         'Define words in simple Arabic instead of English, while reading and on cards. Writing an answer is dropped in this mode — typing Arabic on an English keyboard measures the keyboard, not the recall — so sessions run flashcards and multiple choice. Words already defined in English keep those definitions; their Arabic ones are written the first time they are asked for.',
       ),
+      bool(
+        ['generation', 'useLocalModel'],
+        'Use the on-device model',
+        'Answer with the model built into the phone instead of the hosted one. Free, works offline, and costs nothing per word — but it is a much smaller model, so compare the two on real text before trusting it. Has no effect in a browser, or on hardware without Apple Intelligence or Gemini Nano; the hosted route is used there regardless.',
+      ),
     ],
   },
   {

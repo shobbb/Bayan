@@ -156,7 +156,21 @@ describe('generateGlosses', () => {
     );
   });
 
-  it('still fails on a malformed response that was not truncated', async () => {
+  // The on-device model reports no stop reason, so a cut-off answer arrives
+  // looking like a plain format failure. Salvage has to fire on both.
+  it('salvages a malformed response even when truncation was never declared', async () => {
+    const partial = '{ "glosses": [ { "word": "a", "gloss": "one" }, { "word": "b", "gl';
+    const client = clientReturning(
+      { text: partial, truncated: false },
+      { text: partial, truncated: false },
+    );
+
+    const response = await generateGlosses(GLOSS_PARAMS, ROUTE, 'key', 1, client);
+
+    expect(response.glosses.map((entry) => entry.word)).toEqual(['a']);
+  });
+
+  it('still fails when a malformed response has nothing to recover', async () => {
     const client = clientReturning(
       { text: 'not json', truncated: false },
       { text: 'still not json', truncated: false },

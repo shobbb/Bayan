@@ -175,7 +175,12 @@ export async function generateGlosses(
       maxRetries,
     );
   } catch (error) {
-    if (!(error instanceof LlmValidationError) || !error.truncated) throw error;
+    // Salvaged on any validation failure, not only a declared truncation. A
+    // provider that reports no stop reason — the on-device model does not —
+    // cannot tell us it ran out of room, and a small model's JSON fails in the
+    // same shape whether it was cut off or simply stopped following the format.
+    // Either way the entries that closed are complete and worth keeping.
+    if (!(error instanceof LlmValidationError)) throw error;
 
     const glosses = salvageEntries(error.rawResponse, (value) => {
       const parsed = llmGlossSchema.safeParse(value);
