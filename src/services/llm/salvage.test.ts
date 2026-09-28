@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { completeObjectsInFirstArray, salvageEntries } from './salvage';
+import {
+  completeObjectsInFirstArray,
+  normalizeStructuralPunctuation,
+  recoverObjects,
+  salvageEntries,
+} from './salvage';
 import { llmGlossSchema } from './schemas';
 
 const accept = (value: unknown) => {
@@ -74,5 +79,50 @@ describe('salvageEntries', () => {
       '{ "glosses": [ { "word": "a", "gloss": "one" }, { "word": "b" }, { "word": "c", "gloss": "three" } ] }';
 
     expect(salvageEntries(mixed, accept).map((entry) => entry.word)).toEqual(['a', 'c']);
+  });
+
+  // The exact on-device failure: a single word wrapped in markdown fences, the
+  // block looped several times with each copy restarted mid-object, and an
+  // Arabic comma used as the separator. Only the last copy closed.
+  it('recovers one word from fenced, looped, Arabic-comma output', () => {
+    const looped =
+      '```json\n[\n  {\n    "word": "عَادِيًّا",\n    "gloss": "بَرَأَةً"،\n' +
+      '```json\n[\n  {\n    "word": "عَادِيًّا",\n    "gloss": "بَرَأَةً"،\n    "forms": null,\n    "part' +
+      '```json\n[\n  {\n    "word": "عَادِيًّا",\n    "gloss": "بَرَأَةً",\n    "forms": null,\n    "partOfSpeech": "phrase"\n  }\n]\n```';
+
+    const entries = salvageEntries(looped, accept);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]!.word).toBe('عَادِيًّا');
+    expect(entries[0]!.gloss).toBe('بَرَأَةً');
+  });
+
+  // An Arabic comma between fields is structural, not part of the gloss.
+  it('parses an object whose separators are Arabic commas', () => {
+    const arabicCommas =
+      '{ "glosses": [ { "word": "a"، "gloss": "one"، "forms": null، "partOfSpeech": "noun" } ] }';
+
+    expect(salvageEntries(arabicCommas, accept).map((e) => e.gloss)).toEqual(['one']);
+  });
+});
+
+describe('normalizeStructuralPunctuation', () => {
+  it('replaces an Arabic comma between fields but not one inside a gloss', () => {
+    const input = '{ "gloss": "a، b"، "forms": null }';
+
+    expect(normalizeStructuralPunctuation(input)).toBe('{ "gloss": "a، b", "forms": null }');
+  });
+});
+
+describe('recoverObjects', () => {
+  it('collapses identical repeated objects to one', () => {
+    const repeated = '{ "word": "a" } junk { "word": "a" }';
+
+    expect(recoverObjects(repeated)).toEqual(['{ "word": "a" }']);
+  });
+
+  it('skips an object that never closed and keeps the one that did', () => {
+    const partial = '{ "word": "open" [ { "word": "closed" }';
+
+    expect(recoverObjects(partial)).toEqual(['{ "word": "closed" }']);
   });
 });

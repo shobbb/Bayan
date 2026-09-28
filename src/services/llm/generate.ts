@@ -15,7 +15,7 @@ import {
   type LlmRoundResponse,
   type LlmSentencesResponse,
 } from './schemas';
-import { salvageEntries } from './salvage';
+import { salvageEntries, normalizeStructuralPunctuation } from './salvage';
 import {
   buildGlossPrompt,
   buildRoundGenerationPrompt,
@@ -70,7 +70,14 @@ export class LlmValidationError extends Error {
 function extractJson(text: string): unknown {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
   const candidate = fenced?.[1] ?? text;
-  return JSON.parse(candidate);
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    // A small on-device model generating Arabic emits ، and ؛ as separators
+    // where JSON wants ASCII; normalize them (outside strings) rather than
+    // spending a whole retry to arrive at the same invalid punctuation.
+    return JSON.parse(normalizeStructuralPunctuation(candidate));
+  }
 }
 
 async function generateAndValidate<T>(

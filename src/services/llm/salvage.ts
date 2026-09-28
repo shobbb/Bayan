@@ -71,22 +71,124 @@ export function completeObjectsInFirstArray(raw: string): string[] {
 }
 
 /**
+ * Arabic punctuation the model used where JSON structure was meant, normalized
+ * to ASCII — but only outside strings, so an Arabic gloss that itself contains a
+ * comma is left untouched. A small on-device model generating Arabic emits ،
+ * (U+060C) and ؛ (U+061B) as separators; that is invalid JSON and loses the
+ * whole object to `JSON.parse` even when every value in it is correct.
+ */
+export function normalizeStructuralPunctuation(text: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (const char of text) {
+    if (escaped) {
+      out += char;
+      escaped = false;
+      continue;
+    }
+    if (inString) {
+      out += char;
+      if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      out += char;
+    } else if (char === '،' || char === '؛') {
+      out += ',';
+    } else {
+      out += char;
+    }
+  }
+  return out;
+}
+
+/**
+ * Every balanced `{…}` object anywhere in `raw`, deduplicated.
+ *
+ * The last resort when `completeObjectsInFirstArray` finds nothing, which is how
+ * a small on-device model's output arrives: wrapped in markdown fences, and
+ * looped — the array restarted several times, each restart opening braces the
+ * previous copy never closed, so the array-scoped scan's depth never returns to
+ * zero and it reports no complete object. Scanning outward from each `{`
+ * independently recovers the one copy that did close. Identical repeats collapse
+ * to one; a value's inner braces stay put because string state is tracked.
+ */
+export function recoverObjects(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (let i = 0; i < raw.length; i++) {
+    if (raw[i] !== '{') continue;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let j = i; j < raw.length; j++) {
+      const char = raw[j]!;
+      if (escaped) {
+        escaped = false;
+      } else if (inString) {
+        if (char === '\\') escaped = true;
+        else if (char === '"') inString = false;
+      } else if (char === '"') {
+        inString = true;
+      } else if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          const text = raw.slice(i, j + 1);
+          const key = text.replace(/\s+/g, ' ').trim();
+          if (!seen.has(key)) {
+            seen.add(key);
+            out.push(text);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+/** JSON.parse, retried once with structural Arabic punctuation normalized. */
+function parseTolerant(text: string): unknown | undefined {
+  try {
+    return JSON.parse(text);
+  } catch {
+    try {
+      return JSON.parse(normalizeStructuralPunctuation(text));
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+/**
  * Parses each complete object and keeps the ones that survive `accept`.
  *
  * Entries are validated individually rather than as a list, so one malformed
- * answer costs that answer and not the batch.
+ * answer costs that answer and not the batch. The clean-truncation scan runs
+ * first; only when it recovers nothing does the aggressive whole-string scan
+ * take over, so a well-formed response's results are unchanged and unduplicated.
  */
 export function salvageEntries<T>(raw: string, accept: (value: unknown) => T | null): T[] {
-  const out: T[] = [];
-  for (const text of completeObjectsInFirstArray(raw)) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      continue;
+  const collect = (texts: string[]): T[] => {
+    const out: T[] = [];
+    for (const text of texts) {
+      const parsed = parseTolerant(text);
+      if (parsed === undefined) continue;
+      const accepted = accept(parsed);
+      if (accepted !== null) out.push(accepted);
     }
-    const accepted = accept(parsed);
-    if (accepted !== null) out.push(accepted);
-  }
-  return out;
+    return out;
+  };
+
+  const primary = collect(completeObjectsInFirstArray(raw));
+  if (primary.length > 0) return primary;
+  return collect(recoverObjects(raw));
 }
