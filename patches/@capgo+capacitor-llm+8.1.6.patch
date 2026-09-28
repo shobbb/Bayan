@@ -1,8 +1,46 @@
 diff --git a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-index 2981ba1..d90d7f6 100644
+index 2981ba1..c4717c2 100644
 --- a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
 +++ b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-@@ -323,6 +323,173 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -55,6 +55,15 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+ 
+     #if canImport(LiteRTLM)
+     private var liteRtEngine: LiteRTLM.Engine?
++    /**
++     * The model load in flight, so the next one can wait for it.
++     *
++     * Task rather than a lock because the load is async: a lock held across an
++     * await is how you get a deadlock, and what needs enforcing here is not
++     * mutual exclusion over an instant but that one multi-gigabyte allocation
++     * has finished and been released before the next begins.
++     */
++    private var modelLoadTask: Task<Void, Never>?
+     private var liteRtChats: [String: LiteRTLM.Conversation] = [:]
+     private var liteRtTopk: Int = 40
+     private var liteRtTemperature: Float = 0.8
+@@ -110,7 +119,20 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+ 
+         case .liteRtLm:
+             #if canImport(LiteRTLM)
+-            Task {
++            // Loads are chained, never concurrent. Each one maps gigabytes, and
++            // two resident at once is more memory than the device has — the
++            // second allocation is the one that dies, so two overlapping calls
++            // kill the app rather than merely wasting work.
++            let previousLoad = modelLoadTask
++            modelLoadTask = Task {
++                await previousLoad?.value
++
++                // Released here, after the wait, as well as synchronously in
++                // setModel above. A load that finished while this one queued
++                // will have assigned the engine again in the meantime, and the
++                // point is that nothing large is held when the next allocates.
++                liteRtEngine = nil
++
+                 do {
+                     let modelURL = try resolveModelURL(path: path, modelType: modelType)
+                     let engine = try await initializeLiteRtEngine(
+@@ -323,6 +345,173 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
          }
      }
  
@@ -176,7 +214,7 @@ index 2981ba1..d90d7f6 100644
      @objc func downloadModel(_ call: CAPPluginCall) {
          guard let urlString = call.getString("url") else {
              call.reject("URL is required")
-@@ -336,55 +503,43 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -336,55 +525,43 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
  
          let filename = call.getString("filename") ?? url.lastPathComponent
  
@@ -263,7 +301,7 @@ index 2981ba1..d90d7f6 100644
          downloadTask.resume()
      }
  
-@@ -690,6 +845,27 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
+@@ -690,6 +867,27 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
  
      func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
                      didFinishDownloadingTo location: URL) {
