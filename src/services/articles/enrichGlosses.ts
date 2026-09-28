@@ -25,6 +25,7 @@ import {
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { LanguageProfile, WordId } from '@/domain/types';
 import { phraseId } from '@/domain/wordIdentity';
+import { contextsByKey } from '@/domain/articles/context';
 import { judgeArabicDefinition } from '@/domain/glossQuality';
 import { getWord, listWords, upsertWord } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
@@ -155,6 +156,11 @@ export async function enrichArticle(
   const wanted = untranslatedIds(segments, profile);
 
   const surfaces = surfacesById(segments, profile);
+  // Keyed by surface, not by id, because the prompt lists surfaces and the
+  // response is matched back by the echoed word.
+  const contexts = contextsByKey(segments, (segment) =>
+    segment.gloss === '' ? segment.text : null,
+  );
 
   // Anything already cached from an earlier article costs nothing to reuse —
   // unless it was written for a homograph. A cached gloss whose vowelling
@@ -235,6 +241,7 @@ export async function enrichArticle(
         response = await generateGlosses(
           {
             words: chunk.map((id) => surfaces.get(id) ?? id),
+            contexts,
             languageGuidance: profile.promptGuidance,
             glossLanguage: language,
             terse: client === localLlmClient,
@@ -355,12 +362,19 @@ export async function enrichArticle(
  * see it, so the reader needs a way to say so. Without it a wrong definition is
  * permanent, because Define is offered only where there is nothing.
  */
+export interface EnrichWordOptions {
+  now?: number;
+  /** Ask again for a word that already has a definition. */
+  replace?: boolean;
+  /** The sentence the word was met in, which is most of what makes a small model usable. */
+  context?: string;
+}
+
 export async function enrichWord(
   article: Article,
   surface: string,
   config: AppConfig,
-  now = Date.now(),
-  replace = false,
+  { now = Date.now(), replace = false, context }: EnrichWordOptions = {},
 ): Promise<{ filled: boolean; segments: ResolvedSegment[] }> {
   const local = config.generation.useLocalModel && localModelSupported();
   const hostedKey = (await getApiKey()) ?? '';
@@ -392,6 +406,7 @@ export async function enrichWord(
     const response = await generateGlosses(
       {
         words: [surface],
+        contexts: context ? new Map([[surface, context]]) : undefined,
         languageGuidance: profile.promptGuidance,
         glossLanguage: language,
         terse: client === localLlmClient,

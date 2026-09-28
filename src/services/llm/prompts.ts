@@ -145,7 +145,9 @@ For each supplied entry, write a short definition IN SIMPLE ARABIC. Every defini
 - be fully vowelled (tashkeel on every letter), like the rest of the app's Arabic,
 - contain NO English at all — not a word, not a gloss in brackets.
 
-A proper noun is defined by what it is: "دَوْلَةٌ فِي الخَلِيجِ العَرَبِيِّ" for قطر, not the name again.
+Where an entry is followed by "— in:" and a sentence, that is the sentence it was met in. Use it to settle which sense is meant, and which reading an unvowelled form takes. Define the entry itself, never the sentence.
+
+A proper noun is defined by what it is: "دَوْلَةٌ فِي الخَلِيجِ العَرَبِيِّ" for قطر, not the name again. Its sentence is usually what tells you which kind of thing it is — a town, a person, a company.
 
 Also give, where it applies:
 - "forms": the word's principal parts, e.g. "كَتَبَ / يَكْتُبُ / كِتَابَة" for a verb or "جَانِب / جَوَانِب" for a noun. Use null for particles, pronouns and proper nouns.
@@ -170,10 +172,12 @@ Echo each word back exactly as supplied so the definitions can be matched to it.
  * and `partOfSpeech` entirely — both are optional downstream, and every field
  * asked for is another thing to get wrong.
  */
-const ARABIC_GLOSS_INSTRUCTIONS_TERSE = `عَرِّف الكلمة العربية التالية بالعربية.
+const ARABIC_GLOSS_INSTRUCTIONS_TERSE = `عَرِّف الكلمة العربية التالية بالعربية، كما وردت في الجملة.
 
 Rules:
 - Answer in Arabic only. No English.
+- Use the sentence to work out which meaning is intended.
+- Define the word itself, not the sentence.
 - Put full tashkeel on every letter.
 - Do not use the word itself in your answer.
 - 2 to 5 words.
@@ -187,6 +191,15 @@ Example:
 export interface GlossPromptParams {
   /** Surface forms to gloss, exactly as they appear in the text. */
   words: string[];
+  /**
+   * The sentence each word was met in, by surface form. Optional, and absent
+   * for a word with no surrounding text.
+   *
+   * Sent because a bare word is a recall question and a word in its sentence is
+   * a reading question, and a small model is far better at the second. See
+   * domain/articles/context.
+   */
+  contexts?: ReadonlyMap<string, string>;
   /** LanguageProfile.promptGuidance for the active track. */
   languageGuidance: string;
   /** Which language the definitions themselves are written in (§13). */
@@ -206,12 +219,28 @@ export function buildGlossPrompt(params: GlossPromptParams): string {
   // register guidance and a bulleted list on top would put back exactly the
   // load it exists to remove.
   if (arabic && params.terse) {
-    return `${ARABIC_GLOSS_INSTRUCTIONS_TERSE}\n\nWord: ${params.words[0] ?? ''}`;
+    const word = params.words[0] ?? '';
+    const sentence = params.contexts?.get(word);
+    // The sentence leads, because it is what the word is to be read against.
+    return sentence
+      ? `${ARABIC_GLOSS_INSTRUCTIONS_TERSE}\n\nSentence: ${sentence}\nWord: ${word}`
+      : `${ARABIC_GLOSS_INSTRUCTIONS_TERSE}\n\nWord: ${word}`;
   }
+
+  // One line per word, carrying its sentence where there is one. Repeating a
+  // shared sentence costs input tokens, which are the cheap ones, and keeping
+  // each word beside its own context is what stops the model pairing them up
+  // wrongly across a batch of thirty-five.
+  const listed = params.words
+    .map((word) => {
+      const sentence = params.contexts?.get(word);
+      return sentence ? `- ${word} — in: ${sentence}` : `- ${word}`;
+    })
+    .join('\n');
 
   return [
     arabic ? ARABIC_GLOSS_INSTRUCTIONS : BASE_GLOSS_INSTRUCTIONS,
     params.languageGuidance,
-    `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
+    `Words:\n${listed}`,
   ].join('\n\n');
 }

@@ -23,6 +23,7 @@ import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
 import { reconcileDownloadedModels } from '@/services/platform/localModel';
 import { DOWNLOADABLE_MODELS } from '@/config/localModels';
+import { sentenceAround } from '@/domain/articles/context';
 import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
 import { enrichArticle, enrichWord } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
@@ -318,7 +319,12 @@ function AppScreens() {
       if (!target) return;
       setEnrichFailure(null);
       setDefiningIndex(index);
-      enrichWord(article, target.text, config, Date.now(), replace)
+      // The sentence goes with it: a word alone is a recall question for the
+      // model, a word in its sentence is a reading question.
+      enrichWord(article, target.text, config, {
+        replace,
+        context: sentenceAround(segments, index),
+      })
         .then(({ segments: filled }) => {
           setScreen({
             name: 'article',
