@@ -19,15 +19,33 @@
 
 .gloss-panel__content {
   width: 100%;
+  height: 100%;
   display: flex;
+  /* Short content sits centred as before; long content starts at the top, so
+     the first line of a definition is the one you see rather than its middle. */
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   animation: gloss-panel-fade var(--motion-gloss-fade) ease-out;
 }
 
+/*
+  An Arabic definition is a phrase, not a word, and can run past the panel's
+  fixed height. The height is the point — §5.5 wants content changing without
+  the panel moving, and it is what the reading area reserves space against — so
+  the overflow scrolls inside rather than growing the panel or being clipped.
+
+  Only this column scrolls; the flag button stays put beside it, because a
+  control that scrolled out of reach while reading a long definition would be
+  worse than the overflow.
+*/
 .gloss-panel__text {
   min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  /* Momentum scrolling in the WebView, and no scroll chaining into the article
+     behind when the definition reaches its end. */
+  overscroll-behavior: contain;
 }
 
 /* The durable-flag control. A background wash on the pressed state, never a
