@@ -93,7 +93,10 @@ export function SettingsScreen() {
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(() => activeModelName());
   const [modelBusy, setModelBusy] = useState<string | null>(null);
-  const [modelProgress, setModelProgress] = useState(0);
+  // Null until a real progress event arrives. The plugin only emits them when
+  // the server sent a Content-Length, and the Hugging Face CDN often does not —
+  // so a percentage here would be a number the app does not have.
+  const [modelProgress, setModelProgress] = useState<number | null>(null);
   const [modelStatus, setModelStatus] = useState<string | null>(null);
 
   /**
@@ -105,7 +108,7 @@ export function SettingsScreen() {
    */
   async function fetchModel(choice: LocalModelChoice) {
     setModelBusy(choice.id);
-    setModelProgress(0);
+    setModelProgress(null);
     setModelStatus(null);
     try {
       await downloadModel({
@@ -514,7 +517,9 @@ export function SettingsScreen() {
         <h2 className="settings-screen__section-title">On-device model</h2>
         <p className="settings-screen__note">
           Which model answers when “Use the on-device model” is on. The system model needs no
-          download; the others are fetched once and kept. Download on wifi — these are large.
+          download; the others are fetched once and kept. Download on wifi — these are large, and
+          a percentage only appears when the server declares the file’s size, which some do not.
+          No percentage does not mean no progress; leave the app open until it finishes.
         </p>
 
         <p className="settings-screen__value">{activeModel}</p>
@@ -528,7 +533,9 @@ export function SettingsScreen() {
               onClick={() => void fetchModel(choice)}
             >
               {modelBusy === choice.id
-                ? `Downloading… ${modelProgress}%`
+                ? modelProgress === null
+                  ? 'Downloading…'
+                  : `Downloading… ${modelProgress}%`
                 : `Download ${choice.label} (${choice.approxDownload})`}
             </button>
             <p className="settings-screen__note">{choice.note}</p>
