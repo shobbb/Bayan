@@ -309,10 +309,37 @@ let selected: string | null = null;
  * Idempotent: selecting a model is setup, not per-request configuration, and
  * re-selecting a multi-gigabyte model on every word would be ruinous.
  */
-async function ensureModelSelected(): Promise<void> {
+/**
+ * Selections run one at a time, never side by side.
+ *
+ * Loading a model maps gigabytes into memory, and the native side starts each
+ * load in its own task without serialising them — so two overlapping selections
+ * are two engines resident at once, which on an eight-gigabyte phone is not a
+ * slowdown but a crash.
+ *
+ * Overlap was easy to cause and easy to miss: the guard below compares against
+ * `selected`, which is only assigned after the load finishes, so two callers
+ * arriving during a load both saw "not selected yet" and both started one.
+ * Tapping Use while anything else asked for a definition was enough.
+ */
+let selecting: Promise<void> = Promise.resolve();
+
+function ensureModelSelected(): Promise<void> {
+  // Chained rather than rejected: a definition asked for mid-switch should wait
+  // for the switch and then run, not fail because the reader changed models.
+  const next = selecting.catch(() => undefined).then(selectNow);
+  // The queue must not stay poisoned by one failure.
+  selecting = next.catch(() => undefined);
+  return next;
+}
+
+async function selectNow(): Promise<void> {
   const downloaded = activeDownloadedPath();
   const path = downloaded ?? systemModelName();
   if (!path) throw new LocalModelUnavailableError('No on-device model on this platform.');
+  // Re-read inside the queue, not before it: by the time this runs the wanted
+  // model may already be the loaded one, and reloading it would cost the same
+  // gigabytes as loading a different one.
   if (selected === path) return;
 
   await CapgoLLM.setModel(downloaded ? { path, modelType: 'litertlm' } : { path });
@@ -377,7 +404,9 @@ export async function downloadModel({
 /** Goes back to the operating system's model. Downloaded files are left alone. */
 export async function selectSystemModel(): Promise<void> {
   remember(ACTIVE_KEY, null);
-  selected = null;
+  // `selected` is deliberately left alone: it records what the native side
+  // currently holds, and ensureModelSelected compares the new target against
+  // it. Clearing it here forced a reload of a model already in memory.
   await ensureModelSelected();
 }
 
@@ -394,7 +423,6 @@ export async function selectDownloadedModel(filename: string): Promise<void> {
     throw new LocalModelUnavailableError(`${filename} has not been downloaded.`);
   }
   remember(ACTIVE_KEY, path);
-  selected = null;
   await ensureModelSelected();
 }
 

@@ -15,7 +15,10 @@ vi.mock('@capacitor/core', () => ({
     getPlatform: () => 'ios',
   },
 }));
-vi.mock('@capgo/capacitor-llm', () => ({ CapgoLLM: {} }));
+const setModel = vi.fn();
+vi.mock('@capgo/capacitor-llm', () => ({
+  CapgoLLM: { setModel: (...args: unknown[]) => setModel(...args) },
+}));
 
 const stat = vi.fn();
 vi.mock('@capacitor/filesystem', () => ({
@@ -28,6 +31,8 @@ const {
   downloadedModels,
   downloadedPathFor,
   reconcileDownloadedModels,
+  selectDownloadedModel,
+  selectSystemModel,
   usingDownloadedModel,
   wasInterrupted,
 } = await import('./localModel');
@@ -38,6 +43,8 @@ const QWEN = '/var/app/Documents/qwen3_4b_mixed_int4.litertlm';
 beforeEach(() => {
   localStorage.clear();
   stat.mockReset();
+  setModel.mockReset();
+  setModel.mockResolvedValue(undefined);
 });
 
 /** What Filesystem.stat returns for a file that is there. */
@@ -206,5 +213,67 @@ describe('reconcileDownloadedModels', () => {
 
     expect(downloadedPathFor('gemma-4-E2B-it.litertlm')).toBe(GEMMA);
     expect(activeDownloadedPath()).toBe(GEMMA);
+  });
+});
+
+describe('loading a model', () => {
+  function haveBoth() {
+    localStorage.setItem(
+      'localModelFiles',
+      JSON.stringify({ 'gemma-4-E2B-it.litertlm': GEMMA, 'qwen3_4b_mixed_int4.litertlm': QWEN }),
+    );
+  }
+
+  // The module remembers what the native side is holding, and that survives
+  // between tests. Each starts from the system model so the assertions below
+  // are about this test's calls and not the previous one's leftovers.
+  beforeEach(async () => {
+    await selectSystemModel();
+    setModel.mockClear();
+  });
+
+  // The crash this exists to prevent: each load maps gigabytes, the native side
+  // starts each in its own task, and two resident at once is more memory than
+  // the phone has.
+  it('never loads two models at the same time', async () => {
+    haveBoth();
+    let release: (() => void) | undefined;
+    setModel.mockImplementation(() => new Promise<void>((resolve) => { release = resolve; }));
+
+    const first = selectDownloadedModel('gemma-4-E2B-it.litertlm');
+    const second = selectDownloadedModel('qwen3_4b_mixed_int4.litertlm');
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    release?.();
+    await first;
+    await second;
+
+    // One load, not two — and for the model last asked for. Because the target
+    // is read inside the queue rather than captured when the tap happens, a
+    // selection superseded before it starts is skipped entirely rather than
+    // loaded and immediately replaced.
+    expect(setModel).toHaveBeenCalledTimes(1);
+    expect(setModel).toHaveBeenCalledWith({ path: QWEN, modelType: 'litertlm' });
+  });
+
+  it('does not reload the model already loaded', async () => {
+    haveBoth();
+    await selectDownloadedModel('gemma-4-E2B-it.litertlm');
+    await selectDownloadedModel('gemma-4-E2B-it.litertlm');
+
+    expect(setModel).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps serving after a failed load', async () => {
+    haveBoth();
+    setModel.mockRejectedValueOnce(new Error('out of memory'));
+
+    await expect(selectDownloadedModel('gemma-4-E2B-it.litertlm')).rejects.toThrow('out of memory');
+    // One failure must not poison the queue for everything after it.
+    await selectDownloadedModel('qwen3_4b_mixed_int4.litertlm');
+
+    expect(setModel).toHaveBeenLastCalledWith({ path: QWEN, modelType: 'litertlm' });
   });
 });
