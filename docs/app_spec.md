@@ -728,6 +728,30 @@ an English keyboard measures the keyboard — the learner who knows the word
 perfectly still fails, and the one who reaches for a transliteration tool has
 left the retrieval entirely.
 
+`REQ-88` **A definition is judged before it is stored.** Most of what the
+Arabic prompt asks for is mechanically checkable — no English, fully vowelled,
+not built from the headword's own root, not run on — and anything failing is
+discarded and re-asked of the hosted route. The asymmetry is the reason: the
+learner cannot check the Arabic (REQ-C2), so a wrong definition is read as
+fact, and refusing one costs a single call where showing it teaches a word
+wrong. The vowelling floor is 0.40 diacritics per letter, set below the
+sparsest of the 274 fully vowelled articles in the corpus (0.44–0.90, median
+0.81) so the two populations separate without a judgement call.
+
+`REQ-89` **The on-device model was measured and is not good enough for Arabic
+definitions.** Apple Intelligence's on-device model, asked one word at a time
+with a four-rule brief, returned fluent and correctly vowelled Arabic that did
+not define the word — "sport" as "the school", "foodstuffs" as a run of
+unrelated phrases. Batching and a six-constraint prompt were tried first and
+were worse. This is recorded so it is not re-run: the failure is capability,
+not prompt shape, and no mechanical check catches a well-formed wrong answer.
+
+The backend stays wired and the setting stays available, because the
+infrastructure — the platform wrapper, the `LlmClient` adapter, the
+availability states — is what a conversation feature would need, and fluent
+Arabic is a much easier ask than a vowelled monolingual definition. It is off
+by default and REQ-88 keeps it harmless when on.
+
 `REQ-84` Arabic multiple-choice distractors need **no extra model call**. They
 are drawn from the corpus exactly as the English ones are (REQ-25), just from
 the other field — so the wrong answers are other real definitions the learner's
