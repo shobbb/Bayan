@@ -30,6 +30,14 @@ export const DOWNLOADABLE_MODELS: readonly LocalModelChoice[] = [
     note: 'Far more multilingual training than the system model, at about 0.8 GB of weights once loaded. Whether that is enough for vowelled Arabic definitions is the open question — the discard count after one article is the answer.',
   },
   {
+    id: 'gemma-4-e2b-trimmed',
+    label: 'Gemma 4 E2B (trimmed)',
+    url: 'https://huggingface.co/elcooooo/gemma-4-E2B-it-latn-arab-cyrl-1.75GB-litertlm/resolve/main/gemma-4-E2B-it-latn-arab-cyrl-1.75GB.litertlm?download=true',
+    filename: 'gemma-4-E2B-it-latn-arab-cyrl-1.75GB.litertlm',
+    approxDownload: '~1.7 GB',
+    note: 'The same Gemma above with its vocabulary cut to the Latin, Arabic and Cyrillic scripts — nearly a gigabyte less to hold, with the Arabic left in. Worth trying first if the full one runs out of memory. It is one person’s conversion rather than the LiteRT project’s, so it may simply fail to load; nothing is lost if it does.',
+  },
+  {
     id: 'qwen3-4b',
     label: 'Qwen3 4B',
     // Same URL shape as the Gemma entry above, which is known to work on a
