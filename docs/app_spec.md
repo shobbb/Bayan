@@ -752,6 +752,19 @@ availability states — is what a conversation feature would need, and fluent
 Arabic is a much easier ask than a vowelled monolingual definition. It is off
 by default and REQ-88 keeps it harmless when on.
 
+`REQ-90` **A downloaded model stays downloaded when it is not the one in use.**
+Which file is on the device and which model answers are stored as two facts
+(`localModelPath`, `localModelUseDownloaded`), not one. Collapsing them meant
+going back to the system model forgot where the file was, so returning to a
+model already sitting in the documents directory cost another two gigabytes
+over whatever network the learner happened to be on.
+
+Settings shows one entry per model — the system one and each downloadable one —
+each with its name, the single action its current state allows (`Use`,
+`Download ~2 GB`, or `In use` where no action is left), and its explanation
+underneath. The state is read where the model is named. A list of loose buttons
+cannot do this: it goes on offering to download a model that is already running.
+
 `REQ-84` Arabic multiple-choice distractors need **no extra model call**. They
 are drawn from the corpus exactly as the English ones are (REQ-25), just from
 the other field — so the wrong answers are other real definitions the learner's

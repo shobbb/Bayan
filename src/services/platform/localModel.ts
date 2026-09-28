@@ -88,8 +88,17 @@ function describe(error: unknown): string {
  * re-downloading is wasteful but never wrong.
  */
 const DOWNLOADED_MODEL_KEY = 'localModelPath';
+/**
+ * Which model answers, kept separately from which file is on disk.
+ *
+ * Two keys rather than one because "I have this model" and "I am using this
+ * model" are different facts. Collapsing them meant going back to the system
+ * model forgot where the downloaded file was, so returning to it cost another
+ * two gigabytes for a file already sitting in the documents directory.
+ */
+const USE_DOWNLOADED_KEY = 'localModelUseDownloaded';
 
-/** The downloaded model in use, or null for the operating system's own. */
+/** The downloaded model on disk, whether or not it is the one answering. */
 export function downloadedModelPath(): string | null {
   try {
     return localStorage.getItem(DOWNLOADED_MODEL_KEY);
@@ -98,20 +107,27 @@ export function downloadedModelPath(): string | null {
   }
 }
 
-function rememberDownloadedModel(path: string | null): void {
+/** Whether the downloaded model is the one answering. */
+export function usingDownloadedModel(): boolean {
   try {
-    if (path === null) localStorage.removeItem(DOWNLOADED_MODEL_KEY);
-    else localStorage.setItem(DOWNLOADED_MODEL_KEY, path);
+    return localStorage.getItem(USE_DOWNLOADED_KEY) === 'true' && downloadedModelPath() !== null;
   } catch {
-    // A model that cannot be remembered still works for this session.
+    return false;
   }
 }
 
-/** The model the next request will use, named for a human. */
-export function activeModelName(): string {
-  const downloaded = downloadedModelPath();
-  if (downloaded) return downloaded.split('/').pop() ?? downloaded;
-  return SYSTEM_MODEL[Capacitor.getPlatform()] ?? 'none';
+function remember(key: string, value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // A choice that cannot be remembered still holds for this session.
+  }
+}
+
+/** The name of the operating system's own model here, or null if there is none. */
+export function systemModelName(): string | null {
+  return SYSTEM_MODEL[Capacitor.getPlatform()] ?? null;
 }
 
 let selected: string | null = null;
@@ -129,12 +145,12 @@ let selected: string | null = null;
  * re-selecting a multi-gigabyte model on every word would be ruinous.
  */
 async function ensureModelSelected(): Promise<void> {
-  const downloaded = downloadedModelPath();
-  const path = downloaded ?? SYSTEM_MODEL[Capacitor.getPlatform()];
+  const useDownloaded = usingDownloadedModel();
+  const path = useDownloaded ? downloadedModelPath() : systemModelName();
   if (!path) throw new LocalModelUnavailableError('No on-device model on this platform.');
   if (selected === path) return;
 
-  await CapgoLLM.setModel(downloaded ? { path, modelType: 'litertlm' } : { path });
+  await CapgoLLM.setModel(useDownloaded ? { path, modelType: 'litertlm' } : { path });
   selected = path;
 }
 
@@ -176,7 +192,8 @@ export async function downloadModel({
     // one to persist, and leaving the pointer unset keeps the system model.
     await CapgoLLM.setModel({ path, modelType: 'litertlm' });
     selected = path;
-    rememberDownloadedModel(path);
+    remember(DOWNLOADED_MODEL_KEY, path);
+    remember(USE_DOWNLOADED_KEY, 'true');
     return path;
   } finally {
     await handle?.remove().catch(() => undefined);
@@ -185,7 +202,22 @@ export async function downloadModel({
 
 /** Goes back to the operating system's model. The file is left on disk. */
 export async function selectSystemModel(): Promise<void> {
-  rememberDownloadedModel(null);
+  remember(USE_DOWNLOADED_KEY, null);
+  selected = null;
+  await ensureModelSelected();
+}
+
+/**
+ * Switches back to an already-downloaded model without fetching it again.
+ *
+ * The file stays in the documents directory when the system model is chosen,
+ * so returning to it is a pointer change rather than another two gigabytes.
+ */
+export async function selectDownloadedModel(): Promise<void> {
+  if (downloadedModelPath() === null) {
+    throw new LocalModelUnavailableError('No model has been downloaded.');
+  }
+  remember(USE_DOWNLOADED_KEY, 'true');
   selected = null;
   await ensureModelSelected();
 }

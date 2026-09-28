@@ -115,6 +115,56 @@
   cursor: default;
 }
 
+/* --- On-device model rows ---------------------------------------------------
+   One entry per model: its name and the one action its state allows on the same
+   line, so the state is read where the model is named rather than in running
+   text elsewhere in the section, and the explanation full-width underneath.
+   Putting the explanation beside the button instead squeezed it into a column
+   half the width of the button, which made the note the hard thing to read and
+   the button the loud one — the wrong way round. */
+
+.settings-screen__models {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-screen__model {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.settings-screen__model-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+
+.settings-screen__model-name {
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--ink);
+}
+
+.settings-screen__model .settings-screen__note {
+  margin: 0;
+}
+
+/* The counterpart to a button, in the same place and at the same size, so
+   entries line up whether the model is in use or waiting to be chosen. */
+.settings-screen__model-active {
+  flex-shrink: 0;
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  color: var(--signal);
+}
+
+.settings-screen__model .settings-screen__button {
+  flex-shrink: 0;
+}
+
 /* --- Reminder, import, and the config editor (§13) --------------------------
    Everything below is chrome around values, so it stays quiet: no fills, no
    colour except --signal on the things that act (REQ-D2), rules where a

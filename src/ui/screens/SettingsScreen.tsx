@@ -21,10 +21,12 @@ import {
 } from '@/services/platform/notifications';
 import { getSetting, setSetting } from '@/data/settingsRepository';
 import {
-  activeModelName,
   downloadModel,
   downloadedModelPath,
+  selectDownloadedModel,
   selectSystemModel,
+  systemModelName,
+  usingDownloadedModel,
 } from '@/services/platform/localModel';
 import { DOWNLOADABLE_MODELS, type LocalModelChoice } from '@/config/localModels';
 import {
@@ -91,7 +93,15 @@ export function SettingsScreen() {
   const [hasCredentials, setHasCredentials] = useState(false);
   const [reminder, setReminder] = useState<DailyReminder>(DEFAULT_DAILY_REMINDER);
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
-  const [activeModel, setActiveModel] = useState(() => activeModelName());
+  // Which file is on disk and which model answers, held together because the
+  // rows below show one state per model and both facts feed it. They are
+  // separate in storage — a downloaded model stays downloaded while the system
+  // model is the one being used — so neither can be derived from the other.
+  const [modelChoice, setModelChoice] = useState(() => ({
+    downloadedPath: downloadedModelPath(),
+    usingDownloaded: usingDownloadedModel(),
+  }));
+  const { downloadedPath, usingDownloaded } = modelChoice;
   const [modelBusy, setModelBusy] = useState<string | null>(null);
   // Null until a real progress event arrives. The plugin only emits them when
   // the server sent a Content-Length, and the Hugging Face CDN often does not —
@@ -106,6 +116,13 @@ export function SettingsScreen() {
    * is not linked into this build, this is where that shows up, and the message
    * is the finding rather than an apology.
    */
+  function refreshModelChoice() {
+    setModelChoice({
+      downloadedPath: downloadedModelPath(),
+      usingDownloaded: usingDownloadedModel(),
+    });
+  }
+
   async function fetchModel(choice: LocalModelChoice) {
     setModelBusy(choice.id);
     setModelProgress(null);
@@ -116,28 +133,44 @@ export function SettingsScreen() {
         filename: choice.filename,
         onProgress: (percent) => setModelProgress(Math.round(percent)),
       });
-      setActiveModel(activeModelName());
       setModelStatus(`${choice.label} is in use. Try Define on an article and watch the discard count.`);
     } catch (error) {
       // The raw message, not a softened one: if the LiteRT-LM runtime is missing
       // from this build, its own wording is the finding.
       setModelStatus(error instanceof Error ? error.message : String(error));
     } finally {
+      refreshModelChoice();
+      setModelBusy(null);
+    }
+  }
+
+  /** Switches back to an already-downloaded file — a pointer, not another download. */
+  async function reuseDownloaded(choice: LocalModelChoice) {
+    setModelBusy(choice.id);
+    setModelStatus(null);
+    try {
+      await selectDownloadedModel();
+      setModelStatus(`${choice.label} is in use.`);
+    } catch (error) {
+      setModelStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      refreshModelChoice();
       setModelBusy(null);
     }
   }
 
   async function revertToSystemModel() {
     setModelBusy('system');
+    setModelStatus(null);
     try {
       await selectSystemModel();
-      setActiveModel(activeModelName());
       setModelStatus('Back on the system model. The downloaded file is still on the device.');
     } catch (error) {
       // The raw message, not a softened one: if the LiteRT-LM runtime is missing
       // from this build, its own wording is the finding.
       setModelStatus(error instanceof Error ? error.message : String(error));
     } finally {
+      refreshModelChoice();
       setModelBusy(null);
     }
   }
@@ -515,43 +548,87 @@ export function SettingsScreen() {
 
       <section className="settings-screen__section">
         <h2 className="settings-screen__section-title">On-device model</h2>
+        {/* Only what the rows cannot say for themselves. What each model is and
+            where it stands is on its own row now, so repeating it here would be
+            two places to read and one to keep in step. */}
         <p className="settings-screen__note">
-          Which model answers when “Use the on-device model” is on. The system model needs no
-          download; the others are fetched once and kept. Download on wifi — these are large, and
-          a percentage only appears when the server declares the file’s size, which some do not.
-          No percentage does not mean no progress; leave the app open until it finishes.
+          Which model answers when “Use the on-device model” is on. Download on wifi. A percentage
+          appears only when the server declares the file’s size, and some do not — “Downloading…”
+          without one is still progress, so leave the app open until it finishes.
         </p>
 
-        <p className="settings-screen__value">{activeModel}</p>
+        {/* One row per model, each saying what it is and offering the single
+            action its current state allows. The previous version listed loose
+            buttons, so it went on offering to download a model that was already
+            running and said "in use" three elements away from the name it
+            referred to. */}
+        <ul className="settings-screen__models">
+          <li className="settings-screen__model">
+            <div className="settings-screen__model-head">
+              <span className="settings-screen__model-name">
+                {systemModelName() ?? 'System model'}
+              </span>
+              {systemModelName() &&
+                (usingDownloaded ? (
+                  <button
+                    type="button"
+                    className="settings-screen__button"
+                    disabled={modelBusy !== null}
+                    onClick={() => void revertToSystemModel()}
+                  >
+                    Use
+                  </button>
+                ) : (
+                  <span className="settings-screen__model-active">In use</span>
+                ))}
+            </div>
+            <p className="settings-screen__note">
+              {systemModelName()
+                ? 'Built into the phone. Nothing to download, and nothing to keep.'
+                : 'No system model on this platform — a browser has none. Everything here is for the phone.'}
+            </p>
+          </li>
 
-        {DOWNLOADABLE_MODELS.map((choice) => (
-          <div key={choice.id}>
-            <button
-              type="button"
-              className="settings-screen__button"
-              disabled={modelBusy !== null}
-              onClick={() => void fetchModel(choice)}
-            >
-              {modelBusy === choice.id
-                ? modelProgress === null
-                  ? 'Downloading…'
-                  : `Downloading… ${modelProgress}%`
-                : `Download ${choice.label} (${choice.approxDownload})`}
-            </button>
-            <p className="settings-screen__note">{choice.note}</p>
-          </div>
-        ))}
-
-        {downloadedModelPath() && (
-          <button
-            type="button"
-            className="settings-screen__button"
-            disabled={modelBusy !== null}
-            onClick={() => void revertToSystemModel()}
-          >
-            Go back to the system model
-          </button>
-        )}
+          {DOWNLOADABLE_MODELS.map((choice) => {
+            const downloaded = (downloadedPath ?? '').endsWith(choice.filename);
+            const active = downloaded && usingDownloaded;
+            return (
+              <li key={choice.id} className="settings-screen__model">
+                <div className="settings-screen__model-head">
+                  <span className="settings-screen__model-name">{choice.label}</span>
+                  {active ? (
+                    <span className="settings-screen__model-active">In use</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="settings-screen__button"
+                      disabled={modelBusy !== null}
+                      onClick={() =>
+                        void (downloaded ? reuseDownloaded(choice) : fetchModel(choice))
+                      }
+                    >
+                      {modelBusy === choice.id
+                        ? modelProgress === null
+                          ? 'Downloading…'
+                          : `${modelProgress}%`
+                        : downloaded
+                          ? 'Use'
+                          : `Download ${choice.approxDownload}`}
+                    </button>
+                  )}
+                </div>
+                <p className="settings-screen__note">
+                  {/* Once it is on the device, what it might be good for stops
+                      being the question — whether to keep using it is, and that
+                      is answered by the discard count, not by this line. */}
+                  {downloaded
+                    ? `Already on this device. Switching back to it costs nothing; ${choice.approxDownload} was paid once.`
+                    : choice.note}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
 
         {modelStatus && (
           <p className="settings-screen__note" role="status">
