@@ -29,4 +29,14 @@ export const DOWNLOADABLE_MODELS: readonly LocalModelChoice[] = [
     approxDownload: '~2 GB',
     note: 'Far more multilingual training than the system model, at about 0.8 GB of weights once loaded. Whether that is enough for vowelled Arabic definitions is the open question — the discard count after one article is the answer.',
   },
+  {
+    id: 'qwen3-4b',
+    label: 'Qwen3 4B',
+    // Same URL shape as the Gemma entry above, which is known to work on a
+    // device — including the query, so the two differ only in the file named.
+    url: 'https://huggingface.co/litert-community/Qwen3-4B/resolve/main/qwen3_4b_mixed_int4.litertlm?download=true',
+    filename: 'qwen3_4b_mixed_int4.litertlm',
+    approxDownload: '~2.5 GB',
+    note: 'A different family from Gemma, at four billion parameters quantized to mixed INT4 — the largest that fits under what iOS lets one app hold. Worth trying because it should fail differently, not because it is known to be better: its strongest languages are English and Chinese. Judge it the same way, on the discard count.',
+  },
 ];

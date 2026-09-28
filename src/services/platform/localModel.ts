@@ -81,38 +81,37 @@ function describe(error: unknown): string {
 }
 
 /**
- * Where a downloaded model's path is remembered, so it survives a restart.
+ * Every downloaded model on disk, as filename → path.
  *
- * Only the path: the file itself lives in the app's documents directory, put
- * there by the plugin. Losing this key costs the pointer, not the gigabytes —
- * re-downloading is wasteful but never wrong.
+ * A map rather than a single path because more than one model can be on the
+ * device at a time, and each is gigabytes. Holding only one meant downloading a
+ * second model forgot the first: its file stayed in the documents directory,
+ * unreferenced and unreclaimable, and the app offered to fetch it again.
+ *
+ * Only the paths. The files themselves are put there by the plugin, so losing
+ * this key costs the pointers and not the gigabytes — re-downloading is wasteful
+ * but never wrong.
  */
-const DOWNLOADED_MODEL_KEY = 'localModelPath';
+const FILES_KEY = 'localModelFiles';
 /**
- * Which model answers, kept separately from which file is on disk.
+ * Which model answers: a path, or absent for the operating system's own.
  *
- * Two keys rather than one because "I have this model" and "I am using this
+ * Separate from the list above because "I have this model" and "I am using this
  * model" are different facts. Collapsing them meant going back to the system
  * model forgot where the downloaded file was, so returning to it cost another
- * two gigabytes for a file already sitting in the documents directory.
+ * two gigabytes for a file already sitting on the device.
  */
-const USE_DOWNLOADED_KEY = 'localModelUseDownloaded';
+const ACTIVE_KEY = 'localModelActive';
 
-/** The downloaded model on disk, whether or not it is the one answering. */
-export function downloadedModelPath(): string | null {
+/** The single-model keys these replaced. Read once, to migrate, then cleared. */
+const LEGACY_PATH_KEY = 'localModelPath';
+const LEGACY_USE_KEY = 'localModelUseDownloaded';
+
+function read(key: string): string | null {
   try {
-    return localStorage.getItem(DOWNLOADED_MODEL_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
-  }
-}
-
-/** Whether the downloaded model is the one answering. */
-export function usingDownloadedModel(): boolean {
-  try {
-    return localStorage.getItem(USE_DOWNLOADED_KEY) === 'true' && downloadedModelPath() !== null;
-  } catch {
-    return false;
   }
 }
 
@@ -123,6 +122,77 @@ function remember(key: string, value: string | null): void {
   } catch {
     // A choice that cannot be remembered still holds for this session.
   }
+}
+
+/**
+ * Carries a device that downloaded a model under the old single-path scheme
+ * over to the map, once.
+ *
+ * Skipping this would cost whoever already has a model a fresh download of it —
+ * the file is still on disk, but nothing would point at it any more.
+ */
+function migrateLegacy(): void {
+  const legacyPath = read(LEGACY_PATH_KEY);
+  if (legacyPath === null) return;
+
+  const filename = legacyPath.split('/').pop();
+  if (filename) {
+    const files = parseFiles();
+    if (files[filename] === undefined) {
+      files[filename] = legacyPath;
+      remember(FILES_KEY, JSON.stringify(files));
+    }
+    if (read(LEGACY_USE_KEY) === 'true' && read(ACTIVE_KEY) === null) {
+      remember(ACTIVE_KEY, legacyPath);
+    }
+  }
+
+  remember(LEGACY_PATH_KEY, null);
+  remember(LEGACY_USE_KEY, null);
+}
+
+function parseFiles(): Record<string, string> {
+  const raw = read(FILES_KEY);
+  if (raw === null) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    // Anything that is not the shape this wrote is treated as nothing stored.
+    // The cost is a re-download; trusting it would be a crash on every launch.
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        ([, value]) => typeof value === 'string',
+      ) as Array<[string, string]>,
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** Every model on disk, as filename → path. */
+export function downloadedModels(): Record<string, string> {
+  migrateLegacy();
+  return parseFiles();
+}
+
+/** Where this model is on disk, or null if it was never downloaded. */
+export function downloadedPathFor(filename: string): string | null {
+  return downloadedModels()[filename] ?? null;
+}
+
+/** The downloaded model that answers, or null when the system one does. */
+export function activeDownloadedPath(): string | null {
+  migrateLegacy();
+  const active = read(ACTIVE_KEY);
+  if (active === null) return null;
+  // A path that is no longer in the list is not selectable: the list is what
+  // download writes, so an active path missing from it is stale state.
+  return Object.values(parseFiles()).includes(active) ? active : null;
+}
+
+/** Whether a downloaded model is the one answering. */
+export function usingDownloadedModel(): boolean {
+  return activeDownloadedPath() !== null;
 }
 
 /** The name of the operating system's own model here, or null if there is none. */
@@ -145,12 +215,12 @@ let selected: string | null = null;
  * re-selecting a multi-gigabyte model on every word would be ruinous.
  */
 async function ensureModelSelected(): Promise<void> {
-  const useDownloaded = usingDownloadedModel();
-  const path = useDownloaded ? downloadedModelPath() : systemModelName();
+  const downloaded = activeDownloadedPath();
+  const path = downloaded ?? systemModelName();
   if (!path) throw new LocalModelUnavailableError('No on-device model on this platform.');
   if (selected === path) return;
 
-  await CapgoLLM.setModel(useDownloaded ? { path, modelType: 'litertlm' } : { path });
+  await CapgoLLM.setModel(downloaded ? { path, modelType: 'litertlm' } : { path });
   selected = path;
 }
 
@@ -192,32 +262,36 @@ export async function downloadModel({
     // one to persist, and leaving the pointer unset keeps the system model.
     await CapgoLLM.setModel({ path, modelType: 'litertlm' });
     selected = path;
-    remember(DOWNLOADED_MODEL_KEY, path);
-    remember(USE_DOWNLOADED_KEY, 'true');
+    const files = downloadedModels();
+    files[filename] = path;
+    remember(FILES_KEY, JSON.stringify(files));
+    remember(ACTIVE_KEY, path);
     return path;
   } finally {
     await handle?.remove().catch(() => undefined);
   }
 }
 
-/** Goes back to the operating system's model. The file is left on disk. */
+/** Goes back to the operating system's model. Downloaded files are left alone. */
 export async function selectSystemModel(): Promise<void> {
-  remember(USE_DOWNLOADED_KEY, null);
+  remember(ACTIVE_KEY, null);
   selected = null;
   await ensureModelSelected();
 }
 
 /**
- * Switches back to an already-downloaded model without fetching it again.
+ * Switches to an already-downloaded model without fetching it again.
  *
- * The file stays in the documents directory when the system model is chosen,
- * so returning to it is a pointer change rather than another two gigabytes.
+ * The files stay in the documents directory whatever is chosen, so moving
+ * between two downloaded models — or back from the system one — is a pointer
+ * change rather than another two gigabytes.
  */
-export async function selectDownloadedModel(): Promise<void> {
-  if (downloadedModelPath() === null) {
-    throw new LocalModelUnavailableError('No model has been downloaded.');
+export async function selectDownloadedModel(filename: string): Promise<void> {
+  const path = downloadedPathFor(filename);
+  if (path === null) {
+    throw new LocalModelUnavailableError(`${filename} has not been downloaded.`);
   }
-  remember(USE_DOWNLOADED_KEY, 'true');
+  remember(ACTIVE_KEY, path);
   selected = null;
   await ensureModelSelected();
 }

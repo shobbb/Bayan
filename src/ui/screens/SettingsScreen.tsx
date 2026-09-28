@@ -21,12 +21,12 @@ import {
 } from '@/services/platform/notifications';
 import { getSetting, setSetting } from '@/data/settingsRepository';
 import {
+  activeDownloadedPath,
   downloadModel,
-  downloadedModelPath,
+  downloadedModels,
   selectDownloadedModel,
   selectSystemModel,
   systemModelName,
-  usingDownloadedModel,
 } from '@/services/platform/localModel';
 import { DOWNLOADABLE_MODELS, type LocalModelChoice } from '@/config/localModels';
 import {
@@ -98,10 +98,10 @@ export function SettingsScreen() {
   // separate in storage — a downloaded model stays downloaded while the system
   // model is the one being used — so neither can be derived from the other.
   const [modelChoice, setModelChoice] = useState(() => ({
-    downloadedPath: downloadedModelPath(),
-    usingDownloaded: usingDownloadedModel(),
+    files: downloadedModels(),
+    activePath: activeDownloadedPath(),
   }));
-  const { downloadedPath, usingDownloaded } = modelChoice;
+  const { files, activePath } = modelChoice;
   const [modelBusy, setModelBusy] = useState<string | null>(null);
   // Null until a real progress event arrives. The plugin only emits them when
   // the server sent a Content-Length, and the Hugging Face CDN often does not —
@@ -117,10 +117,7 @@ export function SettingsScreen() {
    * is the finding rather than an apology.
    */
   function refreshModelChoice() {
-    setModelChoice({
-      downloadedPath: downloadedModelPath(),
-      usingDownloaded: usingDownloadedModel(),
-    });
+    setModelChoice({ files: downloadedModels(), activePath: activeDownloadedPath() });
   }
 
   async function fetchModel(choice: LocalModelChoice) {
@@ -149,7 +146,7 @@ export function SettingsScreen() {
     setModelBusy(choice.id);
     setModelStatus(null);
     try {
-      await selectDownloadedModel();
+      await selectDownloadedModel(choice.filename);
       setModelStatus(`${choice.label} is in use.`);
     } catch (error) {
       setModelStatus(error instanceof Error ? error.message : String(error));
@@ -569,7 +566,7 @@ export function SettingsScreen() {
                 {systemModelName() ?? 'System model'}
               </span>
               {systemModelName() &&
-                (usingDownloaded ? (
+                (activePath !== null ? (
                   <button
                     type="button"
                     className="settings-screen__button"
@@ -590,8 +587,9 @@ export function SettingsScreen() {
           </li>
 
           {DOWNLOADABLE_MODELS.map((choice) => {
-            const downloaded = (downloadedPath ?? '').endsWith(choice.filename);
-            const active = downloaded && usingDownloaded;
+            const path = files[choice.filename] ?? null;
+            const downloaded = path !== null;
+            const active = downloaded && path === activePath;
             return (
               <li key={choice.id} className="settings-screen__model">
                 <div className="settings-screen__model-head">
