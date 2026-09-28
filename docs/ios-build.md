@@ -43,6 +43,13 @@ certificate under Settings → General → VPN & Device Management on the phone.
 npm run cap:sync        # builds the web layer and copies it into ios/
 ```
 
+`cap:sync` ends by running `scripts/pin-spm-platform.mjs`. The Capacitor CLI
+regenerates `ios/App/CapApp-SPM/Package.swift` with `.iOS(.v26)` while that file
+declares swift-tools-version 5.9, which has no `.v26` case — so a plain
+`cap sync` leaves a package that does not parse and a build that fails before it
+starts. The script puts the floor back to `.v15`. A floor is not a ceiling: the
+iOS 26 APIs are reached through `#available` and compile fine under it.
+
 Then Run again in Xcode. `cap sync` is the step people forget — Xcode rebuilds
 the *native* shell from whatever `dist/` held at the last sync, so a change to
 `src/` that has not been synced simply will not appear.

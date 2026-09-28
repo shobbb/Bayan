@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "cap:add:android": "cap add android",
     "cap:add:ios": "cap add ios",
-    "cap:sync": "npm run build && cap sync",
+    "cap:sync": "npm run build && cap sync && node scripts/pin-spm-platform.mjs",
     "dev": "vite",
     "icons": "node scripts/make-icons.mjs",
     "lint": "eslint .",
