@@ -21,6 +21,7 @@ import {
 } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
+import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
 import { enrichArticle } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
@@ -86,6 +87,14 @@ function AppScreens() {
   // known to match what the server is serving. See warmPlatformPlugins.
   useEffect(() => {
     void warmPlatformPlugins();
+  }, []);
+
+  // Confirms to the native layer that this bundle came up. An over-the-air
+  // update that is never confirmed is rolled back at the next launch, so this
+  // running is what makes an update stick — see notifyBundleHealthy. It sits in
+  // a mount effect because reaching here means the tree actually rendered.
+  useEffect(() => {
+    void notifyBundleHealthy();
   }, []);
 
   useEffect(() => {
