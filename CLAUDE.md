@@ -3,6 +3,19 @@
 Adaptive Arabic reading app. React + TypeScript + Vite, Capacitor 8 for iOS.
 Spec: `docs/app_spec.md`, numbered `REQ-n`. Build notes: `docs/ios-build.md`.
 
+`CAPGO_TOKEN` is in the environment; never ask for a key in chat. The sandbox
+reaches HuggingFace and GitHub, and cannot run the app on a device.
+
+```bash
+npm run dev        # vite dev server
+npm run build      # tsc -b && vite build
+npm run cap:sync   # build + copy into ios/ (re-pins the SPM floor itself)
+npx tsc --noEmit -p tsconfig.app.json && npx eslint src/ && npx vitest run
+```
+
+Layers are `ui → domain → data`, with `services/` beside `domain/`; ESLint
+enforces it and Capacitor may only be imported under `services/platform/`.
+
 ## Propose design changes, don't make them
 
 **IMPORTANT: a change outside the literal request is a proposal, not part of the
@@ -42,14 +55,10 @@ Plugin fixes are edited in `node_modules`, then `npx patch-package
 @capgo/capacitor-llm` and commit `patches/` — otherwise the next install loses
 them.
 
-## Checks
-
-```bash
-npx tsc --noEmit -p tsconfig.app.json && npx eslint src/ && npx vitest run
-```
+## Verifying
 
 UI changes: `npx vite preview` with Playwright at `/opt/pw-browsers/chromium`,
-viewport 393px. CI proves Swift compiles and signs; nothing here runs it on a
-device, so say which of the two you have.
+viewport 393px — this is a phone app.
 
-`CAPGO_TOKEN` is in the environment. Never ask for a key in chat.
+CI proves Swift compiles and signs. Nothing available here runs it on a device,
+so say which of the two you have rather than reporting a build as working.
