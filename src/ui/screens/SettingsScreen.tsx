@@ -463,12 +463,16 @@ export function SettingsScreen() {
           that says whether an update actually landed.
         </p>
 
-        <p className="settings-screen__value">{bundle?.version ?? 'Built in'}</p>
-        {bundle?.downloadedAt != null && (
-          <p className="settings-screen__note">
-            Arrived {new Date(bundle.downloadedAt).toLocaleString()}
-          </p>
-        )}
+        <p className="settings-screen__value">{bundle?.version ?? '—'}</p>
+        <p className="settings-screen__note">
+          {bundle === null
+            ? 'A browser build always loads the current site, so there is no bundle to report.'
+            : bundle.builtIn
+              ? 'Built in — compiled into the app, never updated over the air.'
+              : bundle.downloadedAt !== null
+                ? `Arrived ${new Date(bundle.downloadedAt).toLocaleString()}`
+                : 'Delivered over the air.'}
+        </p>
 
         <button
           type="button"

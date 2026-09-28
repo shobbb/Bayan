@@ -56,12 +56,22 @@ export async function notifyBundleHealthy(): Promise<void> {
  * A version on the device answers that without a dashboard, a signal, or
  * anyone to ask. `builtin` is the bundle compiled into the binary.
  */
+/** The id the plugin gives the bundle compiled into the binary. */
+const BUILTIN_BUNDLE_ID = 'builtin';
+
 export interface RunningBundle {
   version: string;
   /**
-   * When this bundle was downloaded, or null for the one compiled into the
-   * binary — which has no download to date, and whose age is the install's.
+   * Whether this is the bundle compiled into the binary rather than one
+   * delivered over the air.
+   *
+   * Taken from the bundle id, which the plugin documents as exactly
+   * `"builtin"` until an update has been applied. Not from the version string:
+   * the built-in bundle reports the native `MARKETING_VERSION`, so it looks
+   * like any other version and there is no sentinel to test for.
    */
+  builtIn: boolean;
+  /** When it was downloaded; null for the built-in bundle, which never was. */
   downloadedAt: number | null;
 }
 
@@ -73,6 +83,7 @@ export async function currentBundle(): Promise<RunningBundle | null> {
     const at = Date.parse(bundle.downloaded);
     return {
       version: bundle.version,
+      builtIn: bundle.id === BUILTIN_BUNDLE_ID,
       downloadedAt: Number.isNaN(at) || at === 0 ? null : at,
     };
   } catch {

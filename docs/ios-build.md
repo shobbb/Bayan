@@ -47,6 +47,24 @@ Then Run again in Xcode. `cap sync` is the step people forget — Xcode rebuilds
 the *native* shell from whatever `dist/` held at the last sync, so a change to
 `src/` that has not been synced simply will not appear.
 
+## Bundle versions must exceed the native version
+
+The bundle compiled into the binary reports the native `MARKETING_VERSION` —
+Xcode's default `1.0` unless changed — and the updater will not apply a bundle
+numbered below what is already running. So **every over-the-air bundle must be
+greater than `MARKETING_VERSION`**, and `package.json`, which the Capgo CLI
+reads, has to sit on that same line. A `0.x` package version against a `1.0`
+binary is a silent downgrade: the upload succeeds, the device checks, and
+nothing ever arrives.
+
+Keeping `package.json` on the `1.0.x` line is the cheap way round it. Moving
+`MARKETING_VERSION` down to match a `0.x` package version works too, but it is
+a native change and costs a rebuild and reinstall.
+
+Settings tells the two apart by bundle id, not by version: the plugin documents
+the built-in bundle's id as exactly `builtin` until an update has been applied.
+Its version string is indistinguishable from any other.
+
 ## Provisioning expiry
 
 A **free** Apple account signs development builds for **7 days**. After that the
