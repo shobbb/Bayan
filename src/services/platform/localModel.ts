@@ -80,21 +80,114 @@ function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-let selectedPlatform: string | null = null;
+/**
+ * Where a downloaded model's path is remembered, so it survives a restart.
+ *
+ * Only the path: the file itself lives in the app's documents directory, put
+ * there by the plugin. Losing this key costs the pointer, not the gigabytes —
+ * re-downloading is wasteful but never wrong.
+ */
+const DOWNLOADED_MODEL_KEY = 'localModelPath';
+
+/** The downloaded model in use, or null for the operating system's own. */
+export function downloadedModelPath(): string | null {
+  try {
+    return localStorage.getItem(DOWNLOADED_MODEL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberDownloadedModel(path: string | null): void {
+  try {
+    if (path === null) localStorage.removeItem(DOWNLOADED_MODEL_KEY);
+    else localStorage.setItem(DOWNLOADED_MODEL_KEY, path);
+  } catch {
+    // A model that cannot be remembered still works for this session.
+  }
+}
+
+/** The model the next request will use, named for a human. */
+export function activeModelName(): string {
+  const downloaded = downloadedModelPath();
+  if (downloaded) return downloaded.split('/').pop() ?? downloaded;
+  return SYSTEM_MODEL[Capacitor.getPlatform()] ?? 'none';
+}
+
+let selected: string | null = null;
 
 /**
- * Points the plugin at the system model. Idempotent per platform, because
- * selecting a model is setup rather than per-request configuration.
+ * Points the plugin at whichever model should answer.
+ *
+ * A downloaded `.litertlm` bundle wins over the system model when one is
+ * present. `modelType` is passed explicitly rather than inferred from the
+ * extension, because the plugin only takes the LiteRT-LM path when told to, and
+ * a silent fall-through to the system model would look like the download having
+ * had no effect.
+ *
+ * Idempotent: selecting a model is setup, not per-request configuration, and
+ * re-selecting a multi-gigabyte model on every word would be ruinous.
  */
 async function ensureModelSelected(): Promise<void> {
-  const platform = Capacitor.getPlatform();
-  if (selectedPlatform === platform) return;
-
-  const path = SYSTEM_MODEL[platform];
+  const downloaded = downloadedModelPath();
+  const path = downloaded ?? SYSTEM_MODEL[Capacitor.getPlatform()];
   if (!path) throw new LocalModelUnavailableError('No on-device model on this platform.');
+  if (selected === path) return;
 
-  await CapgoLLM.setModel({ path });
-  selectedPlatform = platform;
+  await CapgoLLM.setModel(downloaded ? { path, modelType: 'litertlm' } : { path });
+  selected = path;
+}
+
+export interface ModelDownload {
+  /** Direct link to a `.litertlm` bundle. */
+  url: string;
+  filename: string;
+  onProgress?: (percent: number) => void;
+}
+
+/**
+ * Fetches a custom model and switches to it.
+ *
+ * The plugin links the LiteRT-LM runtime unconditionally, so this needs no
+ * native change — but that is a claim about the package manifest, not about any
+ * particular build, and the first call is what actually settles it. A runtime
+ * that is not there fails here rather than silently answering from the system
+ * model.
+ *
+ * Only ever called deliberately: this is gigabytes over the network, so it
+ * belongs behind an explicit action and never on a timer or a launch (REQ-15).
+ */
+export async function downloadModel({
+  url,
+  filename,
+  onProgress,
+}: ModelDownload): Promise<string> {
+  if (!localModelSupported()) {
+    throw new LocalModelUnavailableError('No on-device model on this platform.');
+  }
+
+  const handle = onProgress
+    ? await CapgoLLM.addListener('downloadProgress', (event) => onProgress(event.progress))
+    : null;
+
+  try {
+    const { path } = await CapgoLLM.downloadModel({ url, filename });
+    // Selected before it is remembered: a model that cannot be loaded is not
+    // one to persist, and leaving the pointer unset keeps the system model.
+    await CapgoLLM.setModel({ path, modelType: 'litertlm' });
+    selected = path;
+    rememberDownloadedModel(path);
+    return path;
+  } finally {
+    await handle?.remove().catch(() => undefined);
+  }
+}
+
+/** Goes back to the operating system's model. The file is left on disk. */
+export async function selectSystemModel(): Promise<void> {
+  rememberDownloadedModel(null);
+  selected = null;
+  await ensureModelSelected();
 }
 
 export class LocalModelUnavailableError extends Error {

@@ -21,6 +21,13 @@ import {
 } from '@/services/platform/notifications';
 import { getSetting, setSetting } from '@/data/settingsRepository';
 import {
+  activeModelName,
+  downloadModel,
+  downloadedModelPath,
+  selectSystemModel,
+} from '@/services/platform/localModel';
+import { DOWNLOADABLE_MODELS, type LocalModelChoice } from '@/config/localModels';
+import {
   checkForUpdate,
   currentBundle,
   type RunningBundle,
@@ -84,6 +91,54 @@ export function SettingsScreen() {
   const [hasCredentials, setHasCredentials] = useState(false);
   const [reminder, setReminder] = useState<DailyReminder>(DEFAULT_DAILY_REMINDER);
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [activeModel, setActiveModel] = useState(() => activeModelName());
+  const [modelBusy, setModelBusy] = useState<string | null>(null);
+  const [modelProgress, setModelProgress] = useState(0);
+  const [modelStatus, setModelStatus] = useState<string | null>(null);
+
+  /**
+   * Downloads a model and switches to it.
+   *
+   * The failure is as interesting as the success here: if the LiteRT-LM runtime
+   * is not linked into this build, this is where that shows up, and the message
+   * is the finding rather than an apology.
+   */
+  async function fetchModel(choice: LocalModelChoice) {
+    setModelBusy(choice.id);
+    setModelProgress(0);
+    setModelStatus(null);
+    try {
+      await downloadModel({
+        url: choice.url,
+        filename: choice.filename,
+        onProgress: (percent) => setModelProgress(Math.round(percent)),
+      });
+      setActiveModel(activeModelName());
+      setModelStatus(`${choice.label} is in use. Try Define on an article and watch the discard count.`);
+    } catch (error) {
+      // The raw message, not a softened one: if the LiteRT-LM runtime is missing
+      // from this build, its own wording is the finding.
+      setModelStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(null);
+    }
+  }
+
+  async function revertToSystemModel() {
+    setModelBusy('system');
+    try {
+      await selectSystemModel();
+      setActiveModel(activeModelName());
+      setModelStatus('Back on the system model. The downloaded file is still on the device.');
+    } catch (error) {
+      // The raw message, not a softened one: if the LiteRT-LM runtime is missing
+      // from this build, its own wording is the finding.
+      setModelStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      setModelBusy(null);
+    }
+  }
+
   const [bundle, setBundle] = useState<RunningBundle | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
@@ -452,6 +507,49 @@ export function SettingsScreen() {
               </button>
             </div>
           </>
+        )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">On-device model</h2>
+        <p className="settings-screen__note">
+          Which model answers when “Use the on-device model” is on. The system model needs no
+          download; the others are fetched once and kept. Download on wifi — these are large.
+        </p>
+
+        <p className="settings-screen__value">{activeModel}</p>
+
+        {DOWNLOADABLE_MODELS.map((choice) => (
+          <div key={choice.id}>
+            <button
+              type="button"
+              className="settings-screen__button"
+              disabled={modelBusy !== null}
+              onClick={() => void fetchModel(choice)}
+            >
+              {modelBusy === choice.id
+                ? `Downloading… ${modelProgress}%`
+                : `Download ${choice.label} (${choice.approxDownload})`}
+            </button>
+            <p className="settings-screen__note">{choice.note}</p>
+          </div>
+        ))}
+
+        {downloadedModelPath() && (
+          <button
+            type="button"
+            className="settings-screen__button"
+            disabled={modelBusy !== null}
+            onClick={() => void revertToSystemModel()}
+          >
+            Go back to the system model
+          </button>
+        )}
+
+        {modelStatus && (
+          <p className="settings-screen__note" role="status">
+            {modelStatus}
+          </p>
         )}
       </section>
 
