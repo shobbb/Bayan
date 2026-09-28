@@ -156,6 +156,34 @@ Respond with strict JSON only, no prose before or after and no markdown code fen
 
 Echo each word back exactly as supplied so the definitions can be matched to it.`;
 
+/**
+ * The Arabic instructions rewritten for a small on-device model (§13).
+ *
+ * Not a summary of the full version — a different brief. The hosted prompt
+ * stacks six simultaneous constraints and asks for a batch; a ~3B model given
+ * that produced looped output, markdown fences, Arabic commas where JSON
+ * structure belonged, and definitions unrelated to the word. Every one of those
+ * is what a small model does when it is holding too much at once.
+ *
+ * So this asks for one word, states the two constraints that cannot be checked
+ * any other way, shows the shape rather than describing it, and drops `forms`
+ * and `partOfSpeech` entirely — both are optional downstream, and every field
+ * asked for is another thing to get wrong.
+ */
+const ARABIC_GLOSS_INSTRUCTIONS_TERSE = `عَرِّف الكلمة العربية التالية بالعربية.
+
+Rules:
+- Answer in Arabic only. No English.
+- Put full tashkeel on every letter.
+- Do not use the word itself in your answer.
+- 2 to 5 words.
+
+Answer with JSON and nothing else, in exactly this shape:
+{"glosses":[{"word":"<the word>","gloss":"<your definition>"}]}
+
+Example:
+{"glosses":[{"word":"مَدْرَسَة","gloss":"مَكَانٌ يَتَعَلَّمُ فِيهِ الأَوْلَادُ"}]}`;
+
 export interface GlossPromptParams {
   /** Surface forms to gloss, exactly as they appear in the text. */
   words: string[];
@@ -163,14 +191,26 @@ export interface GlossPromptParams {
   languageGuidance: string;
   /** Which language the definitions themselves are written in (§13). */
   glossLanguage?: GlossLanguage;
+  /**
+   * Whether a small on-device model is answering, which changes the brief
+   * rather than trimming it. See ARABIC_GLOSS_INSTRUCTIONS_TERSE.
+   */
+  terse?: boolean;
 }
 
 export function buildGlossPrompt(params: GlossPromptParams): string {
-  const instructions =
-    params.glossLanguage === 'arabic' ? ARABIC_GLOSS_INSTRUCTIONS : BASE_GLOSS_INSTRUCTIONS;
+  const arabic = params.glossLanguage === 'arabic';
+
+  // The terse brief is self-contained: it carries its own example and says
+  // nothing the small model has to hold in reserve. Appending the track's
+  // register guidance and a bulleted list on top would put back exactly the
+  // load it exists to remove.
+  if (arabic && params.terse) {
+    return `${ARABIC_GLOSS_INSTRUCTIONS_TERSE}\n\nWord: ${params.words[0] ?? ''}`;
+  }
 
   return [
-    instructions,
+    arabic ? ARABIC_GLOSS_INSTRUCTIONS : BASE_GLOSS_INSTRUCTIONS,
     params.languageGuidance,
     `Words:\n${params.words.map((word) => `- ${word}`).join('\n')}`,
   ].join('\n\n');

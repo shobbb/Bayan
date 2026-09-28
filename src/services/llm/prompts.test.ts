@@ -77,3 +77,52 @@ describe('buildRoundGenerationPrompt', () => {
     expect(prompt).toContain('"titleEn" is unaffected');
   });
 });
+
+describe('the terse brief for a small on-device model (§13)', () => {
+  const terse = () =>
+    buildGlossPrompt({
+      words: ['كِتَاب'],
+      languageGuidance: GUIDANCE,
+      glossLanguage: 'arabic',
+      terse: true,
+    });
+
+  it('asks for one word, not a list', () => {
+    expect(terse()).toContain('Word: كِتَاب');
+    expect(terse()).not.toContain('- كِتَاب');
+  });
+
+  // It exists to reduce what the model holds at once, so appending the track's
+  // register guidance on top would put back exactly the load it removes.
+  it('leaves out the language guidance the full brief carries', () => {
+    expect(terse()).not.toContain(GUIDANCE);
+  });
+
+  it('shows the output shape rather than describing it', () => {
+    expect(terse()).toContain('{"glosses":[{"word":');
+    expect(terse()).toContain('مَدْرَسَة');
+  });
+
+  // Every field asked for is another thing a small model can get wrong, and
+  // both of these are optional downstream.
+  it('does not ask for forms or part of speech', () => {
+    expect(terse()).not.toContain('partOfSpeech');
+    expect(terse()).not.toContain('"forms"');
+  });
+
+  it('still states the two constraints nothing else can enforce', () => {
+    expect(terse()).toContain('tashkeel');
+    expect(terse()).toContain('No English');
+  });
+
+  it('is ignored for English, which has no terse variant', () => {
+    const english = buildGlossPrompt({
+      words: ['كِتَاب'],
+      languageGuidance: GUIDANCE,
+      terse: true,
+    });
+
+    expect(english).toContain('short English gloss');
+    expect(english).toContain(GUIDANCE);
+  });
+});

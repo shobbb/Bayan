@@ -25,10 +25,12 @@ import {
 import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/languageProfile';
 import type { LanguageProfile, WordId } from '@/domain/types';
 import { phraseId } from '@/domain/wordIdentity';
+import { judgeArabicDefinition } from '@/domain/glossQuality';
 import { listWords } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
 import type { GlossRecord } from '@/data/db';
 import { generateGlosses } from '@/services/llm/generate';
+import type { LlmClient } from '@/services/llm/client';
 import { anthropicClient } from '@/services/llm/client';
 import { localLlmClient } from '@/services/llm/localClient';
 import { localModelSupported } from '@/services/platform/localModel';
@@ -48,9 +50,20 @@ import { MissingApiKeyError } from '@/services/rounds/roundService';
  * it is smaller: the words that do not arrive stay untranslated and the next
  * tap asks for them again.
  */
-const BATCH_SIZE: Record<GlossLanguage, number> = {
+const BATCH_SIZE: Record<GlossLanguage | 'local', number> = {
   english: 100,
   arabic: 35,
+  /**
+   * The on-device model gets one word at a time.
+   *
+   * Its context window is a fraction of the hosted route's, and observed
+   * failures were all the shape a small model produces when overloaded — the
+   * answer restarted several times, markdown fences around it, structure
+   * punctuated in Arabic. Asking for forty-seven definitions at once, each
+   * bound by several simultaneous constraints, is the wrong brief for it.
+   * These calls are free and local, so the only cost of asking singly is time.
+   */
+  local: 1,
 };
 
 export interface EnrichmentResult {
@@ -58,6 +71,16 @@ export interface EnrichmentResult {
   requested: number;
   /** Words the model returned a usable gloss for. */
   filled: number;
+  /**
+   * Answers refused as unusable before being stored — unvowelled, circular,
+   * or carrying English (see domain/glossQuality).
+   *
+   * Reported rather than swallowed because it is the measure of whether the
+   * on-device model is worth using: a pass that fills every word while
+   * discarding half of its own answers is a different thing from one that does
+   * not, and the reader cannot tell them apart from the result alone.
+   */
+  rejected: number;
 }
 
 /** The distinct forms in these segments that still have no translation. */
@@ -100,14 +123,12 @@ export async function enrichArticle(
   config: AppConfig,
   now = Date.now(),
 ): Promise<{ result: EnrichmentResult; segments: ResolvedSegment[] }> {
-  // The on-device model is keyless by nature, so the key is only required when
-  // the hosted route is the one that will answer. Demanding it regardless would
-  // block the one path that exists precisely to need nothing.
+  // The on-device model is keyless by nature, so a key is only required when
+  // the hosted route has to answer. With the on-device model on, a missing key
+  // is not fatal — it just means nothing catches what that model gets wrong.
   const local = config.generation.useLocalModel && localModelSupported();
-  const client = local ? localLlmClient : anthropicClient;
-
-  const apiKey = local ? '' : ((await getApiKey()) ?? '');
-  if (!local && !apiKey) throw new MissingApiKeyError();
+  const hostedKey = (await getApiKey()) ?? '';
+  if (!local && !hostedKey) throw new MissingApiKeyError();
 
   const profile = modernStandardArabicProfile;
   const language = glossLanguageFor(config.generation.arabicOnlyDefinitions);
@@ -138,18 +159,31 @@ export async function enrichArticle(
   );
   const missing = wanted.filter((id) => !cached.has(id));
 
-  const batchSize = BATCH_SIZE[language];
   let filled = 0;
-  for (let start = 0; start < missing.length; start += batchSize) {
-    const chunk = missing.slice(start, start + batchSize);
-    const response = await generateGlosses(
+  let rejected = 0;
+
+  /**
+   * Asks one model for a set of words and writes what comes back, returning
+   * the ids it could not fill.
+   *
+   * A closure rather than a free function so the two passes cannot drift: the
+   * on-device attempt and the hosted one differ only in which client answers
+   * and how many words they are asked for at a time.
+   */
+  async function runPass(ids: readonly WordId[], client: LlmClient, key: string, batchSize: number) {
+    const unfilled: WordId[] = [];
+
+    for (let start = 0; start < ids.length; start += batchSize) {
+      const chunk = ids.slice(start, start + batchSize);
+      const response = await generateGlosses(
       {
         words: chunk.map((id) => surfaces.get(id) ?? id),
         languageGuidance: profile.promptGuidance,
         glossLanguage: language,
+        terse: client === localLlmClient,
       },
       config.models.wordGlossing,
-      apiKey,
+      key,
       config.generation.maxValidationRetries,
       client,
     );
@@ -163,15 +197,31 @@ export async function enrichArticle(
       byId.set(phraseId(entry.word.trim(), profile), entry);
     }
 
-    const records = chunk
-      .map((id) => ({ id, entry: byId.get(id) }))
-      .filter((row): row is { id: WordId; entry: NonNullable<typeof row.entry> } =>
-        Boolean(row.entry?.gloss?.trim()),
-      )
-      .map(({ id, entry }): GlossRecord => {
+      const records: GlossRecord[] = [];
+      for (const id of chunk) {
+        const entry = byId.get(id);
+        const written = entry?.gloss?.trim() ?? '';
+        if (entry === undefined || written === '') {
+          unfilled.push(id);
+          continue;
+        }
+
+        // An Arabic definition is judged before it is kept. The learner cannot
+        // check the Arabic (REQ-C2), so an unvowelled or circular answer would
+        // be read as fact; refusing it costs one more call, showing it teaches
+        // the word wrong. English glosses carry no such checkable constraints.
+        if (language === 'arabic') {
+          const verdict = judgeArabicDefinition(surfaces.get(id) ?? id, written);
+          if (!verdict.ok) {
+            console.warn(`Rejected definition for ${surfaces.get(id) ?? id}: ${verdict.reason}`);
+            rejected += 1;
+            unfilled.push(id);
+            continue;
+          }
+        }
+
         const previous = existing.get(id);
-        const written = entry.gloss.trim();
-        return {
+        records.push({
           id,
           // Both fields carried explicitly, so the language this pass did not
           // buy keeps whatever it already had. Overwriting the record wholesale
@@ -184,15 +234,30 @@ export async function enrichArticle(
           surface: surfaces.get(id) ?? id,
           source: 'generated',
           createdAt: now,
-        };
-      });
+        });
+      }
 
-    await putGlosses(records);
-    filled += records.length;
+      await putGlosses(records);
+      filled += records.length;
+    }
+
+    return unfilled;
+  }
+
+  // The on-device model answers first when it is enabled: it is free, private
+  // and offline, so anything it gets right costs nothing. What it gets wrong is
+  // caught above and asked of the hosted route instead, which makes it a pass
+  // that can only help — never a downgrade in what the reader ends up seeing.
+  const unfilled = local
+    ? await runPass(missing, localLlmClient, '', BATCH_SIZE.local)
+    : missing;
+
+  if (unfilled.length > 0 && (!local || hostedKey)) {
+    await runPass(unfilled, anthropicClient, hostedKey, BATCH_SIZE[language]);
   }
 
   return {
-    result: { requested: wanted.length, filled: filled + cached.size },
+    result: { requested: wanted.length, filled: filled + cached.size, rejected },
     segments: (await resegment(article, language)).segments,
   };
 }

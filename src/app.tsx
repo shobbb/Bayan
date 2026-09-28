@@ -281,7 +281,14 @@ function AppScreens() {
           resumeAt: null, // already on screen; do not jump them back
           titleOffset: screen.titleOffset,
         });
-        setEnrichNotice(`Translated ${result.filled} of ${result.requested} words.`);
+        // The rejected count is only mentioned when there is one, and it is
+        // said plainly: those answers came back and were thrown away for being
+        // unusable, which is the difference between a model worth leaving on
+        // and one worth turning off.
+        setEnrichNotice(
+          `Translated ${result.filled} of ${result.requested} words.` +
+            (result.rejected > 0 ? ` ${result.rejected} unusable answers discarded.` : ''),
+        );
       })
       .catch((error: unknown) => setEnrichFailure(describeFailure(error)))
       .finally(() => setEnriching(false));
