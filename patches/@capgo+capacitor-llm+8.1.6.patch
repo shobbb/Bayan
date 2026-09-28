@@ -1,8 +1,8 @@
 diff --git a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-index 2981ba1..4126e6e 100644
+index 2981ba1..d90d7f6 100644
 --- a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
 +++ b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-@@ -323,6 +323,141 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -323,6 +323,173 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
          }
      }
  
@@ -17,6 +17,7 @@ index 2981ba1..4126e6e 100644
 +     */
 +    private static let downloadSessionIdentifier = "co.capgo.capacitorllm.modeldownload"
 +    private static var downloadSession: URLSession?
++    private static let sessionLock = NSLock()
 +    private var downloadDelegate: DownloadDelegate?
 +
 +    private struct PendingDownload {
@@ -24,8 +25,23 @@ index 2981ba1..4126e6e 100644
 +        let companionUrlString: String?
 +    }
 +
-+    /** Calls waiting on a download, by task, so the delegate can find them. */
++    /**
++     * Calls waiting on a download, by task, so the delegate can find them.
++     *
++     * Behind a lock because the two ends run on different threads: downloadModel
++     * writes from Capacitor's queue, and the delegate reads from the session's
++     * own background queue (delegateQueue is nil, so URLSession makes one).
++     * A Swift Dictionary mutated from two threads does not merely race, it
++     * corrupts and crashes.
++     */
++    private let pendingLock = NSLock()
 +    private var pendingDownloads: [Int: PendingDownload] = [:]
++
++    private func setPending(_ pending: PendingDownload, for taskIdentifier: Int) {
++        pendingLock.lock()
++        defer { pendingLock.unlock() }
++        pendingDownloads[taskIdentifier] = pending
++    }
 +
 +    /**
 +     * Attaches the delegate to the background session at launch.
@@ -41,6 +57,11 @@ index 2981ba1..4126e6e 100644
 +    }
 +
 +    private func modelDownloadSession() -> URLSession {
++        LLMPlugin.sessionLock.lock()
++        defer { LLMPlugin.sessionLock.unlock() }
++
++        // Constructing a second background session with the same identifier is
++        // an error, so the check and the construction have to be atomic.
 +        if let existing = LLMPlugin.downloadSession { return existing }
 +
 +        let config = URLSessionConfiguration.background(withIdentifier: LLMPlugin.downloadSessionIdentifier)
@@ -92,16 +113,10 @@ index 2981ba1..4126e6e 100644
 +        }
 +
 +        guard let pending = takePending(for: task) else { return }
-+        guard let call = bridge?.savedCall(withID: pending.callId) else { return }
-+        bridge?.releaseCall(call)
-+
-+        if let moveError = moveError {
-+            call.reject("Failed to save file: \(moveError)")
-+            return
-+        }
 +
 +        var result = ["path": destinationURL.path]
-+        if let companionUrlString = pending.companionUrlString,
++        if moveError == nil,
++           let companionUrlString = pending.companionUrlString,
 +           let companionUrl = URL(string: companionUrlString) {
 +            let companionDestination = documentsPath.appendingPathComponent(companionUrl.lastPathComponent)
 +            do {
@@ -111,7 +126,19 @@ index 2981ba1..4126e6e 100644
 +                print("Failed to download companion file: \(error)")
 +            }
 +        }
-+        call.resolve(result)
++
++        // The bridge is touched on the main thread. Everything above had to run
++        // here, on the delegate's own queue, because the temporary file is gone
++        // the moment this method returns.
++        DispatchQueue.main.async { [weak self] in
++            guard let call = self?.bridge?.savedCall(withID: pending.callId) else { return }
++            self?.bridge?.releaseCall(call)
++            if let moveError = moveError {
++                call.reject("Failed to save file: \(moveError)")
++            } else {
++                call.resolve(result)
++            }
++        }
 +    }
 +
 +    /** Records what iOS hands back so the next attempt continues. */
@@ -126,25 +153,30 @@ index 2981ba1..4126e6e 100644
 +            }
 +        }
 +
-+        guard let pending = takePending(for: task),
-+              let call = bridge?.savedCall(withID: pending.callId) else { return }
-+        bridge?.releaseCall(call)
++        guard let pending = takePending(for: task) else { return }
++        let interrupted = resumeData != nil
 +
-+        if resumeData != nil {
-+            call.reject("Download interrupted: \(error.localizedDescription). Tap again to continue from where it stopped.")
-+        } else {
-+            call.reject("Download failed: \(error.localizedDescription)")
++        DispatchQueue.main.async { [weak self] in
++            guard let call = self?.bridge?.savedCall(withID: pending.callId) else { return }
++            self?.bridge?.releaseCall(call)
++            if interrupted {
++                call.reject("Download interrupted: \(error.localizedDescription). Tap again to continue from where it stopped.")
++            } else {
++                call.reject("Download failed: \(error.localizedDescription)")
++            }
 +        }
 +    }
 +
 +    private func takePending(for task: URLSessionTask) -> PendingDownload? {
-+        pendingDownloads.removeValue(forKey: task.taskIdentifier)
++        pendingLock.lock()
++        defer { pendingLock.unlock() }
++        return pendingDownloads.removeValue(forKey: task.taskIdentifier)
 +    }
 +
      @objc func downloadModel(_ call: CAPPluginCall) {
          guard let urlString = call.getString("url") else {
              call.reject("URL is required")
-@@ -336,55 +471,43 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -336,55 +503,43 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
  
          let filename = call.getString("filename") ?? url.lastPathComponent
  
@@ -223,15 +255,15 @@ index 2981ba1..4126e6e 100644
 +        // through the delegate, long after downloadModel has returned.
 +        call.keepAlive = true
 +        bridge?.saveCall(call)
-+        pendingDownloads[downloadTask.taskIdentifier] = PendingDownload(
-+            callId: call.callbackId,
-+            companionUrlString: call.getString("companionUrl")
++        setPending(
++            PendingDownload(callId: call.callbackId, companionUrlString: call.getString("companionUrl")),
++            for: downloadTask.taskIdentifier
 +        )
 +
          downloadTask.resume()
      }
  
-@@ -690,6 +813,27 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
+@@ -690,6 +845,27 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
  
      func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
                      didFinishDownloadingTo location: URL) {
