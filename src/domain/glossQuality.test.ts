@@ -43,11 +43,12 @@ describe('judgeArabicDefinition', () => {
     expect(judgeArabicDefinition(RIYADA, '   ').reason).toBe('empty');
   });
 
-  // The looping failure: the model restarts its answer instead of finishing.
-  it('rejects an answer that runs on', () => {
-    const looped = Array.from({ length: 15 }, () => 'كَلِمَةٌ').join(' ');
+  // Length is not a reason to refuse. A wordy definition is still a definition,
+  // and the reader would rather read it than see the word left blank.
+  it('keeps a long answer', () => {
+    const longWinded = Array.from({ length: 15 }, () => 'كَلِمَةٌ').join(' ');
 
-    expect(judgeArabicDefinition(RIYADA, looped).reason).toBe('tooLong');
+    expect(judgeArabicDefinition(RIYADA, longWinded).ok).toBe(true);
   });
 
   // Defining a word with its own root is the circularity the prompt forbids:

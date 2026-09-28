@@ -98,8 +98,7 @@ export type GlossRejection =
   | 'empty'
   | 'containsEnglish'
   | 'notVowelled'
-  | 'repeatsHeadword'
-  | 'tooLong';
+  | 'repeatsHeadword';
 
 export interface GlossVerdict {
   ok: boolean;
@@ -108,9 +107,6 @@ export interface GlossVerdict {
 }
 
 const OK: GlossVerdict = { ok: true };
-
-/** The prompt asks for 2-6 words; this is the point where it has clearly run on. */
-const MAX_WORDS = 12;
 
 /**
  * Checks an Arabic definition against the constraints the prompt sets.
@@ -124,11 +120,10 @@ export function judgeArabicDefinition(headword: string, definition: string): Glo
   if (text === '') return { ok: false, reason: 'empty' };
   if (LATIN.test(text)) return { ok: false, reason: 'containsEnglish' };
 
-  const words = text.split(/\s+/).filter(Boolean);
-  // Catches the looping failure, where the model restarts its answer rather
-  // than finishing it, as well as an answer that simply never stops.
-  if (words.length > MAX_WORDS) return { ok: false, reason: 'tooLong' };
-
+  // Length is deliberately not checked. A long definition is wordier than the
+  // prompt asked for, not wrong, and the reader would rather read it than see
+  // the word left blank. The looping failure it used to catch is caught by the
+  // other checks, and by salvage before it ever reaches here.
   if (tashkeelDensity(text) < MIN_TASHKEEL_DENSITY) {
     return { ok: false, reason: 'notVowelled' };
   }
