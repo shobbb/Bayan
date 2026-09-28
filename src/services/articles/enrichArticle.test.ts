@@ -14,7 +14,8 @@ import type { Article } from '@/domain/articles/types';
 import { articleToSegments } from '@/domain/articles/segment';
 import { generateGlosses, LlmValidationError } from '@/services/llm/generate';
 import { localLlmClient } from '@/services/llm/localClient';
-import { enrichArticle } from './enrichGlosses';
+import { putGlosses } from '@/data/glossRepository';
+import { enrichArticle, enrichWord } from './enrichGlosses';
 
 vi.mock('@/data/glossRepository', () => ({
   getGlosses: vi.fn(async () => []),
@@ -30,6 +31,7 @@ vi.mock('@/services/llm/generate', async (importOriginal) => ({
 }));
 
 const asMock = vi.mocked(generateGlosses);
+const wrote = vi.mocked(putGlosses);
 
 /** Three distinct words, so the on-device pass makes three separate calls. */
 const WORDS = ['سُوق', 'خُضَار', 'بَائِع'];
@@ -74,6 +76,7 @@ function unparseable() {
 // which called generateGlosses() with no arguments after every test.
 beforeEach(() => {
   asMock.mockReset();
+  wrote.mockClear();
 });
 
 describe('enrichArticle', () => {
@@ -148,5 +151,66 @@ describe('enrichArticle', () => {
     await expect(enrichArticle(article(), segments(), localConfig)).rejects.toThrow(
       LlmValidationError,
     );
+  });
+});
+
+describe('enrichWord', () => {
+  const arabicConfig = {
+    ...DEFAULT_APP_CONFIG,
+    generation: {
+      ...DEFAULT_APP_CONFIG.generation,
+      arabicOnlyDefinitions: true,
+      useLocalModel: true,
+    },
+  };
+
+  // The reported failure: عُمْرِي came back defined as "a separator between the
+  // days" — a fluent, well-formed definition of some other word. Salvage
+  // recovers every balanced object a drifting response leaves behind, so the
+  // response for one word can carry fragments about others; taking the first of
+  // those stapled the wrong definition onto the word that was tapped.
+  it('refuses an answer that names a different word', async () => {
+    asMock.mockImplementation(async () => ({
+      glosses: [
+        { word: 'يَوْم', gloss: 'فَاصِلٌ بَيْنَ الأَيَّامِ' },
+        { word: 'لَيْل', gloss: 'وَقْتُ الظَّلَامِ' },
+      ],
+    }));
+
+    const { filled } = await enrichWord(article(), 'عُمْرِي', arabicConfig);
+
+    expect(filled).toBe(false);
+    expect(wrote).not.toHaveBeenCalled();
+  });
+
+  // A single answer is still taken even when the echo is not identical — a model
+  // answering with the lemma for an inflected surface is a real answer, and
+  // phraseId is diacritic-blind, so only a genuinely different word gets here.
+  it('takes a lone answer even when the echoed word differs', async () => {
+    asMock.mockImplementation(async () => ({
+      glosses: [{ word: 'عُمْر', gloss: 'عَدَدُ السَّنَوَاتِ الَّتِي عَاشَهَا' }],
+    }));
+
+    const { filled } = await enrichWord(article(), 'عُمْرِي', arabicConfig);
+
+    expect(filled).toBe(true);
+  });
+
+  // REQ-88 applies to every path that stores a definition. This one skipped it,
+  // which made tapping Define the one way an unvowelled answer reached the
+  // reader and was cached.
+  it('judges the definition and falls through to the hosted route', async () => {
+    asMock.mockImplementation(async (params, _route, _key, _retries, client) => {
+      const word = params.words[0]!;
+      // Unvowelled: exactly what the quality gate exists to catch.
+      if (client === localLlmClient) return { glosses: [{ word, gloss: 'مكان لبيع الأشياء' }] };
+      return { glosses: [{ word, gloss: 'مَكَانٌ لِبَيْعِ الأَشْيَاءِ' }] };
+    });
+
+    const { filled } = await enrichWord(article(), 'سُوق', arabicConfig);
+
+    expect(filled).toBe(true);
+    expect(wrote).toHaveBeenCalledTimes(1);
+    expect(wrote.mock.calls[0]![0]![0]!.glossAr).toBe('مَكَانٌ لِبَيْعِ الأَشْيَاءِ');
   });
 });
