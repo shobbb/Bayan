@@ -200,17 +200,11 @@ export async function enrichArticle(
     client: LlmClient,
     key: string,
     batchSize: number,
-    /**
-     * Whether a pass that answered nothing at all is an error.
-     *
-     * True for the hosted route, where every chunk failing means the key, the
-     * model name or the token ceiling is wrong and saying "filled 0" would hide
-     * it. False for the on-device pass, which is an optimisation: if it answers
-     * nothing, the hosted route still has every word to answer, and that is a
-     * slower success rather than a failure.
-     */
-    required: boolean,
   ) {
+    // The on-device model is asked one word at a time, so a run of failures is
+    // a long one. Nothing follows it any more, but grinding through a hundred
+    // and fifty more calls to fail each one still helps nobody.
+    const onDevice = client === localLlmClient;
     const unfilled: WordId[] = [];
     let answered = 0;
     let consecutiveFailures = 0;
@@ -225,7 +219,7 @@ export async function enrichArticle(
       // rest of them to fail each one costs minutes and fills nothing — the
       // hosted route is going to answer these words either way. The required
       // pass never gives up early: there is nothing after it.
-      if (!required && consecutiveFailures >= GIVE_UP_AFTER) {
+      if (onDevice && consecutiveFailures >= GIVE_UP_AFTER) {
         unfilled.push(...ids.slice(start));
         break;
       }
@@ -313,27 +307,22 @@ export async function enrichArticle(
       filled += records.length;
     }
 
-    // Every chunk failed and this pass was the one that had to work. The
+    // Every chunk failed. There is no second pass to cover for it, so the
     // original error is rethrown rather than summarized: it carries the raw
     // response the operator needs (REQ-17), and a message written here would
-    // replace that with a paraphrase of it.
-    if (required && answered === 0 && lastFailure !== undefined) throw lastFailure;
+    // replace it with a paraphrase.
+    if (answered === 0 && lastFailure !== undefined) throw lastFailure;
 
     return unfilled;
   }
 
-  // The on-device model answers first when it is enabled: it is free, private
-  // and offline, so anything it gets right costs nothing. What it gets wrong is
-  // caught above and asked of the hosted route instead, which makes it a pass
-  // that can only help — never a downgrade in what the reader ends up seeing.
-  const unfilled = local
-    ? await runPass(missing, localLlmClient, '', BATCH_SIZE.local, false)
-    : missing;
-
-  const remaining =
-    unfilled.length > 0 && (!local || hostedKey)
-      ? await runPass(unfilled, anthropicClient, hostedKey, BATCH_SIZE[language], true)
-      : unfilled;
+  // One model answers, and it is the one the setting names. No falling through
+  // to the hosted route when the on-device model is chosen: a silent
+  // substitution makes the setting a lie and makes the on-device model
+  // impossible to judge, because you cannot tell whose answer you are reading.
+  const remaining = local
+    ? await runPass(missing, localLlmClient, '', BATCH_SIZE.local)
+    : await runPass(missing, anthropicClient, hostedKey, BATCH_SIZE[language]);
 
   return {
     result: {
@@ -478,25 +467,15 @@ export async function enrichWord(
 
   let filled = !replace && (previous?.[field] ?? '').trim() !== '';
   if (!filled) {
-    // Same order as the article pass, for the same reason: the on-device model
-    // is free, so anything it gets right costs nothing, and anything it gets
-    // wrong is refused above and asked of the hosted route instead.
-    const attempts: Array<[LlmClient, string]> = [];
-    if (local) attempts.push([localLlmClient, '']);
-    if (!local || hostedKey) attempts.push([anthropicClient, hostedKey]);
+    // One model, named by the setting. A refusal is reported as a refusal
+    // rather than quietly re-asked of the hosted route: substituting another
+    // model's answer makes the setting a lie and hides the thing being judged.
+    const answer = await ask(
+      local ? localLlmClient : anthropicClient,
+      local ? '' : hostedKey,
+    );
 
-    for (const [index, [client, key]] of attempts.entries()) {
-      let answer;
-      try {
-        answer = await ask(client, key);
-      } catch (error) {
-        // A failed attempt is only fatal when nothing follows it. The on-device
-        // model failing is exactly the case the hosted route is here for.
-        if (index === attempts.length - 1) throw error;
-        continue;
-      }
-      if (!answer) continue;
-
+    if (answer) {
       await putGlosses([
         {
           id,
@@ -523,7 +502,6 @@ export async function enrichWord(
       }
 
       filled = true;
-      break;
     }
   }
 

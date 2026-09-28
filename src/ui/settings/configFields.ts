@@ -167,7 +167,7 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
       bool(
         ['generation', 'useLocalModel'],
         'Use the on-device model',
-        'Answer with the model built into the phone instead of the hosted one. Free, offline and unmetered. Measured on real articles it was not good enough for Arabic definitions — it returned fluent, fully vowelled text that did not define the word — so answers are checked before being stored and anything unusable is re-asked of the hosted model. That makes it safe to leave on but slow and pointless while it keeps failing: every word is tried on the phone first. Leave it off unless you are testing it. No effect in a browser, or without Apple Intelligence or Gemini Nano.',
+        'Answer with the model built into the phone instead of the hosted one. Free, offline and unmetered, and which model answers is chosen under “On-device model” below. It is the only model asked: an answer it gives that fails the checks is reported as refused, not quietly re-asked of the hosted one, so what you read is what this model said. Measured on real articles it was not good enough for Arabic definitions — fluent, fully vowelled text that did not define the word — so expect refusals. No effect in a browser, or without Apple Intelligence or Gemini Nano.',
       ),
     ],
   },

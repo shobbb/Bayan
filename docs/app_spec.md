@@ -750,22 +750,27 @@ The backend stays wired and the setting stays available, because the
 infrastructure — the platform wrapper, the `LlmClient` adapter, the
 availability states — is what a conversation feature would need, and fluent
 Arabic is a much easier ask than a vowelled monolingual definition. It is off
-by default and REQ-88 keeps it harmless when on.
+by default.
+
+`REQ-92` **One model answers, and it is the one the setting names.** A refused
+on-device answer is reported as a refusal, never replaced by quietly asking the
+hosted route. Substituting makes the setting a lie, and makes the on-device
+model impossible to judge: the reader cannot tell whose answer they are looking
+at, so every measurement of it is worthless. The cost is that turning the
+setting on means fewer words get defined; that is the honest price of the
+setting doing what it says.
 
 `REQ-91` **A failed batch costs that batch, not the article.** The on-device
 model is asked one word at a time, so a long article is a hundred and fifty-nine
 separate generations and a small model will not hold the JSON shape for all of
 them. A chunk whose response cannot be parsed or salvaged leaves its words
 untranslated and the pass continues; it used to throw, which lost every word in
-the article *and* skipped the hosted fallback that exists to catch exactly this.
+the article.
 
-Two asymmetries make that safe. The on-device pass is optional — if it answers
-nothing, the hosted route still has every word, which is a slower success and
-not a failure — and it gives up after five consecutive failures rather than
-grinding through the remaining words to fail each one. The hosted pass is
-required: if *every* chunk of it fails, the original error is rethrown, because
-that is a wrong key, model name or token ceiling and reporting "filled 0" would
-hide it.
+The on-device pass gives up after five consecutive failures rather than
+grinding through a hundred and fifty more single-word generations that are all
+going to fail. Either pass rethrows when *every* chunk failed, because that is a
+wrong key, model name or token ceiling, and reporting "filled 0" would hide it.
 
 Words that no pass could answer are counted and reported (`unanswered`). Without
 that count they are indistinguishable from words never asked for, so the offer to

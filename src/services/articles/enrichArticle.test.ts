@@ -80,21 +80,24 @@ beforeEach(() => {
 });
 
 describe('enrichArticle', () => {
-  it('lets the hosted route answer the words the on-device model could not', async () => {
+  it('does not substitute the hosted model for a refused on-device answer', () => {
+    // The setting names one model and that model answers. Quietly re-asking
+    // the hosted route made the setting a lie and made the on-device model
+    // impossible to judge — you could not tell whose answer you were reading.
     asMock.mockImplementation(async (params, _route, _key, _retries, client) => {
-      // The on-device model manages one word and then loses the format — which
-      // used to throw out of the whole article, hosted fallback and all.
       if (client === localLlmClient) {
-        if (params.words[0] !== WORDS[0]) throw unparseable();
-        return { glosses: [{ word: WORDS[0]!, gloss: 'market' }] };
+        const word = params.words[0]!;
+        if (word !== WORDS[0]) throw unparseable();
+        return { glosses: [{ word, gloss: 'market' }] };
       }
-      return { glosses: params.words.map((word) => ({ word, gloss: `en:${word}` })) };
+      throw new Error('the hosted route must not be asked');
     });
 
-    const { result } = await enrichArticle(article(), segments(), localConfig);
-
-    expect(result.filled).toBe(WORDS.length);
-    expect(result.unanswered).toBe(0);
+    return enrichArticle(article(), segments(), localConfig).then(({ result }) => {
+      expect(result.filled).toBe(1);
+      expect(result.unanswered).toBe(WORDS.length - 1);
+      expect(asMock.mock.calls.every(([, , , , c]) => c === localLlmClient)).toBe(true);
+    });
   });
 
   it('reports the words nothing could answer rather than counting them done', async () => {
@@ -113,32 +116,26 @@ describe('enrichArticle', () => {
     expect(result.unanswered).toBe(WORDS.length - 1);
   });
 
-  it('stops asking the on-device model once it has failed five in a row', async () => {
+  it('stops asking the on-device model once it has failed five in a row', () => {
     // Distinct in their first radical, so normalization cannot collapse them
     // into one id — twenty words means twenty on-device calls to cut short.
     const words = [...'بتثجحخدذرزسشصضطظعغفق'].map((letter) => `${letter}َحَثَ`);
-    const wide = {
-      ...article(),
-      paragraphs: [words.join(' ')],
-      wordCount: words.length,
-    };
+    const wide = { ...article(), paragraphs: [words.join(' ')], wordCount: words.length };
 
-    asMock.mockImplementation(async (params, _route, _key, _retries, client) => {
-      if (client === localLlmClient) throw unparseable();
-      return { glosses: params.words.map((word) => ({ word, gloss: `en:${word}` })) };
+    asMock.mockImplementation(async () => {
+      throw unparseable();
     });
 
-    const { result } = await enrichArticle(
-      wide,
-      articleToSegments(wide, { profile, known: new Map() }),
-      localConfig,
-    );
-
-    // Five on-device attempts, then one hosted call for everything — not
-    // twenty-one distinct words' worth of on-device generation.
-    const localCalls = asMock.mock.calls.filter(([, , , , client]) => client === localLlmClient);
-    expect(localCalls).toHaveLength(5);
-    expect(result.unanswered).toBe(0);
+    return enrichArticle(wide, articleToSegments(wide, { profile, known: new Map() }), localConfig)
+      .then(() => {
+        throw new Error('expected the pass to fail');
+      })
+      .catch((error: unknown) => {
+        // Five attempts, then it stops — rather than twenty separate
+        // multi-second generations that are all going to fail.
+        expect(asMock).toHaveBeenCalledTimes(5);
+        expect(error).toBeInstanceOf(LlmValidationError);
+      });
   });
 
   it('still fails loudly when the hosted route answers nothing at all', async () => {
@@ -202,18 +199,15 @@ describe('enrichWord', () => {
   // REQ-88 applies to every path that stores a definition. This one skipped it,
   // which made tapping Define the one way an unvowelled answer reached the
   // reader and was cached.
-  it('judges the definition and falls through to the hosted route', async () => {
-    asMock.mockImplementation(async (params, _route, _key, _retries, client) => {
-      const word = params.words[0]!;
-      // Unvowelled: exactly what the quality gate exists to catch.
-      if (client === localLlmClient) return { glosses: [{ word, gloss: 'مكان لبيع الأشياء' }] };
-      return { glosses: [{ word, gloss: 'مَكَانٌ لِبَيْعِ الأَشْيَاءِ' }] };
-    });
+  it('refuses an unvowelled answer rather than replacing it', async () => {
+    // REQ-88 still applies — the gate refuses it. What no longer happens is
+    // another model being asked to cover for it.
+    asMock.mockImplementation(async (params) => ({
+      glosses: [{ word: params.words[0]!, gloss: 'مكان لبيع الأشياء' }],
+    }));
 
-    const { filled } = await enrichWord(article(), 'سُوق', arabicConfig);
-
-    expect(filled).toBe(true);
-    expect(wrote).toHaveBeenCalledTimes(1);
-    expect(wrote.mock.calls[0]![0]![0]!.glossAr).toBe('مَكَانٌ لِبَيْعِ الأَشْيَاءِ');
+    await expect(enrichWord(article(), 'سُوق', arabicConfig)).rejects.toThrow(GlossRefusedError);
+    expect(wrote).not.toHaveBeenCalled();
+    expect(asMock.mock.calls.every(([, , , , c]) => c === localLlmClient)).toBe(true);
   });
 });
