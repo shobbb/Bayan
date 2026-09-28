@@ -20,6 +20,7 @@ vi.mock('@/data/glossRepository', () => ({
   getGlosses: vi.fn(async () => []),
   putGlosses: vi.fn(async () => undefined),
 }));
+
 vi.mock('@/data/wordRepository', () => ({ listWords: vi.fn(async () => []) }));
 vi.mock('@/services/platform/storage', () => ({ getApiKey: vi.fn(async () => 'sk-test') }));
 vi.mock('@/services/platform/localModel', () => ({ localModelSupported: () => true }));

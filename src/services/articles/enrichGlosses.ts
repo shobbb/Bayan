@@ -356,9 +356,8 @@ export async function enrichWord(
   now = Date.now(),
 ): Promise<{ filled: boolean; segments: ResolvedSegment[] }> {
   const local = config.generation.useLocalModel && localModelSupported();
-  const client = local ? localLlmClient : anthropicClient;
-  const apiKey = local ? '' : ((await getApiKey()) ?? '');
-  if (!local && !apiKey) throw new MissingApiKeyError();
+  const hostedKey = (await getApiKey()) ?? '';
+  if (!local && !hostedKey) throw new MissingApiKeyError();
 
   const profile = modernStandardArabicProfile;
   const language = glossLanguageFor(config.generation.arabicOnlyDefinitions);
@@ -373,33 +372,86 @@ export async function enrichWord(
     : false;
   const previous = conflict ? undefined : cached;
 
-  let filled = (previous?.[field] ?? '').trim() !== '';
-  if (!filled) {
+  /**
+   * Asks one model for this word and returns its answer, or null.
+   *
+   * Every reason to refuse an answer lives here, so the per-tap path cannot
+   * drift from the article path the way it had: this one stored whatever came
+   * back, unjudged, while enrichArticle judged every Arabic definition (REQ-88).
+   * A word defined by tapping it was the one place an unvowelled or circular
+   * answer could reach the reader.
+   */
+  async function ask(client: LlmClient, key: string) {
     const response = await generateGlosses(
-      { words: [surface], languageGuidance: profile.promptGuidance, glossLanguage: language },
+      {
+        words: [surface],
+        languageGuidance: profile.promptGuidance,
+        glossLanguage: language,
+        terse: client === localLlmClient,
+      },
       config.models.wordGlossing,
-      apiKey,
+      key,
       config.generation.maxValidationRetries,
       client,
     );
-    // One word was asked for, so the first usable entry is it — no positional
-    // join to get wrong, and no answer lost to an echoed diacritic.
+
+    // The entry that names the word asked for. Falling back to the first entry
+    // in the response is only safe when there is exactly one: salvage recovers
+    // every balanced object it can find, and a model that restarted mid-answer
+    // leaves objects for other words behind it. Taking the first of those
+    // stapled a different word's definition onto this one.
     const entry =
-      response.glosses.find((g) => phraseId(g.word.trim(), profile) === id) ?? response.glosses[0];
+      response.glosses.find((g) => phraseId(g.word.trim(), profile) === id) ??
+      (response.glosses.length === 1 ? response.glosses[0] : undefined);
+
     const written = entry?.gloss?.trim();
-    if (written) {
+    if (!entry || !written) return null;
+
+    if (language === 'arabic') {
+      const verdict = judgeArabicDefinition(surface, written);
+      if (!verdict.ok) {
+        console.warn(`Rejected definition for ${surface}: ${verdict.reason}`);
+        return null;
+      }
+    }
+
+    return { entry, written };
+  }
+
+  let filled = (previous?.[field] ?? '').trim() !== '';
+  if (!filled) {
+    // Same order as the article pass, for the same reason: the on-device model
+    // is free, so anything it gets right costs nothing, and anything it gets
+    // wrong is refused above and asked of the hosted route instead.
+    const attempts: Array<[LlmClient, string]> = [];
+    if (local) attempts.push([localLlmClient, '']);
+    if (!local || hostedKey) attempts.push([anthropicClient, hostedKey]);
+
+    for (const [index, [client, key]] of attempts.entries()) {
+      let answer;
+      try {
+        answer = await ask(client, key);
+      } catch (error) {
+        // A failed attempt is only fatal when nothing follows it. The on-device
+        // model failing is exactly the case the hosted route is here for.
+        if (index === attempts.length - 1) throw error;
+        continue;
+      }
+      if (!answer) continue;
+
       await putGlosses([
         {
           id,
-          gloss: field === 'gloss' ? written : (previous?.gloss ?? ''),
-          glossAr: field === 'glossAr' ? written : (previous?.glossAr ?? null),
-          forms: entry?.forms?.trim() || previous?.forms || null,
+          gloss: field === 'gloss' ? answer.written : (previous?.gloss ?? ''),
+          glossAr: field === 'glossAr' ? answer.written : (previous?.glossAr ?? null),
+          forms: answer.entry.forms?.trim() || previous?.forms || null,
           surface,
           source: 'generated',
           createdAt: now,
         },
       ]);
       filled = true;
+      break;
     }
   }
 
