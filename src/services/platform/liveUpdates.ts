@@ -46,3 +46,61 @@ export async function notifyBundleHealthy(): Promise<void> {
     console.error('Live update: failed to mark this bundle healthy:', error);
   }
 }
+
+/**
+ * Which bundle is running, for Settings.
+ *
+ * Worth a line of UI because automatic updating is otherwise entirely opaque:
+ * it succeeds silently and fails silently, and from a long way away "the fix
+ * arrived and did not help" is indistinguishable from "the app never checked".
+ * A version on the device answers that without a dashboard, a signal, or
+ * anyone to ask. `builtin` is the bundle compiled into the binary.
+ */
+export async function currentBundle(): Promise<string | null> {
+  if (!liveUpdatesAvailable()) return null;
+
+  try {
+    const { bundle } = await CapacitorUpdater.current();
+    return bundle.version;
+  } catch {
+    return null;
+  }
+}
+
+export type UpdateCheck =
+  | { status: 'unavailable' }
+  | { status: 'upToDate' }
+  | { status: 'downloaded'; version: string }
+  | { status: 'failed'; reason: string };
+
+/**
+ * Checks now, rather than waiting for the next backgrounding.
+ *
+ * The automatic path covers the ordinary case; this exists for the moment
+ * somebody actually wants to know — a fix has been pushed and they would
+ * rather not guess whether it has landed. A downloaded bundle still applies at
+ * the next cold start, which the caller says plainly instead of implying the
+ * app has already changed.
+ */
+export async function checkForUpdate(): Promise<UpdateCheck> {
+  if (!liveUpdatesAvailable()) return { status: 'unavailable' };
+
+  try {
+    const latest = await CapacitorUpdater.getLatest();
+    if (!latest.url || !latest.version) return { status: 'upToDate' };
+
+    const current = await currentBundle();
+    if (current !== null && current === latest.version) return { status: 'upToDate' };
+
+    const bundle = await CapacitorUpdater.download({
+      url: latest.url,
+      version: latest.version,
+      ...(latest.checksum ? { checksum: latest.checksum } : {}),
+    });
+    await CapacitorUpdater.next({ id: bundle.id });
+
+    return { status: 'downloaded', version: latest.version };
+  } catch (error) {
+    return { status: 'failed', reason: error instanceof Error ? error.message : String(error) };
+  }
+}

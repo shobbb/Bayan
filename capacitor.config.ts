@@ -17,6 +17,31 @@ const config: CapacitorConfig = {
     // Allow http only for the dev livereload server; production loads local assets.
     allowMixedContent: false,
   },
+  plugins: {
+    /**
+     * Over-the-air updates to the web layer (§2.0.2).
+     *
+     * `atBackground` is the conservative mode on purpose: a newer bundle is
+     * fetched while the app is backgrounded and applied at the next cold start.
+     * The instant-apply modes need the splash-screen plugin held open and swap
+     * the bundle under a running session — more to go wrong, for a second
+     * saved, on a phone that will be a long way from anyone who could fix it.
+     *
+     * Nothing here points the WebView at a remote URL. The bundle still ships
+     * inside the binary; this only lets a newer one replace it. No connection
+     * means the bundle already on the device, not a blank screen.
+     */
+    CapacitorUpdater: {
+      autoUpdate: 'atBackground',
+      // The reader never sees a version number they did not ask for; Settings
+      // shows it, and REQ-15 rules out interrupting them with one.
+      directUpdate: false,
+      // Update checks are enough. Crash and usage telemetry to a third party is
+      // not something this app collects anywhere else, and a single-user
+      // reading app has nobody to aggregate.
+      statsUrl: '',
+    },
+  },
 };
 
 export default config;

@@ -20,6 +20,7 @@ import {
   type DailyReminder,
 } from '@/services/platform/notifications';
 import { getSetting, setSetting } from '@/data/settingsRepository';
+import { checkForUpdate, currentBundle } from '@/services/platform/liveUpdates';
 import { copyToClipboard, downloadFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
 import { importFromJson, ImportValidationError } from '@/services/interchange/importState';
@@ -79,6 +80,37 @@ export function SettingsScreen() {
   const [hasCredentials, setHasCredentials] = useState(false);
   const [reminder, setReminder] = useState<DailyReminder>(DEFAULT_DAILY_REMINDER);
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
+  const [bundleVersion, setBundleVersion] = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    void currentBundle().then(setBundleVersion);
+  }, []);
+
+  /**
+   * Says what happened, including "nothing" — an update check that reports only
+   * success is a check you cannot trust, and this one exists precisely for the
+   * moment somebody is unsure whether a fix has reached them.
+   */
+  async function runUpdateCheck() {
+    setCheckingUpdate(true);
+    setUpdateStatus(null);
+    try {
+      const result = await checkForUpdate();
+      if (result.status === 'unavailable') {
+        setUpdateStatus('Updates need the native app — a browser build loads the current site.');
+      } else if (result.status === 'upToDate') {
+        setUpdateStatus('Already on the newest version.');
+      } else if (result.status === 'downloaded') {
+        setUpdateStatus(`Version ${result.version} downloaded. It starts the next time you open the app.`);
+      } else {
+        setUpdateStatus(`Could not check: ${result.reason}`);
+      }
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
   const [importText, setImportText] = useState('');
   const [importDetail, setImportDetail] = useState<string | null>(null);
   const [confirmingReplace, setConfirmingReplace] = useState(false);
@@ -416,6 +448,32 @@ export function SettingsScreen() {
               </button>
             </div>
           </>
+        )}
+      </section>
+
+      <section className="settings-screen__section">
+        <h2 className="settings-screen__section-title">App version</h2>
+        <p className="settings-screen__note">
+          Fixes arrive on their own when there is a connection, and take effect the next time
+          the app is started from cold. This is which bundle is running now — the one number
+          that says whether an update actually landed.
+        </p>
+
+        <p className="settings-screen__value">{bundleVersion ?? 'Built in'}</p>
+
+        <button
+          type="button"
+          className="settings-screen__button"
+          disabled={checkingUpdate}
+          onClick={() => void runUpdateCheck()}
+        >
+          {checkingUpdate ? 'Checking…' : 'Check for updates'}
+        </button>
+
+        {updateStatus && (
+          <p className="settings-screen__note" role="status">
+            {updateStatus}
+          </p>
         )}
       </section>
 
