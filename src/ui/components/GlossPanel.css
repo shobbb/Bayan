@@ -40,7 +40,12 @@
   worse than the overflow.
 */
 .gloss-panel__text {
-  min-width: 0;
+  /* The definition is what the panel is for, so it keeps three quarters of the
+     width whatever the controls beside it would rather have. Without a floor
+     the flag button's natural width won it a third of a phone screen, and a
+     vowelled Arabic phrase was left wrapping in the remainder. */
+  flex: 1 1 auto;
+  min-width: 75%;
   max-height: 100%;
   overflow-y: auto;
   /* Momentum scrolling in the WebView, and no scroll chaining into the article
@@ -53,6 +58,8 @@
 .gloss-panel__flag {
   flex-shrink: 0;
   min-height: 44px;
+  /* Allowed to wrap: the definition's three quarters come out of this button's
+     width, and at a phone's width the label no longer fits on one line. */
   padding: var(--space-2) var(--space-3);
   background: transparent;
   border: 1px solid var(--rule);
@@ -60,7 +67,6 @@
   color: var(--ink-muted);
   font-family: var(--font-english);
   font-size: var(--text-ui-label-size);
-  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -155,8 +161,11 @@
 
 /* The two controls on the current word, stacked. Outside the scrolling column
    so neither can be pushed off by a definition that wraps. */
+/* Whatever is left, and no more. The flag wraps to two lines at this width,
+   which is why it no longer refuses to. */
 .gloss-panel__actions {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;

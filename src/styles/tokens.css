@@ -51,7 +51,7 @@
    * is what clipped the diacritics off vowelled Arabic on a phone with a home
    * indicator. Everything that has to clear the panel derives from this.
    */
-  --gloss-panel-height: 104px;
+  --gloss-panel-height: 136px;
 
   /* Motion (§5.7) */
   --motion-gloss-fade: 120ms;
