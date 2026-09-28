@@ -26,7 +26,7 @@ import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/language
 import type { LanguageProfile, WordId } from '@/domain/types';
 import { phraseId } from '@/domain/wordIdentity';
 import { judgeArabicDefinition } from '@/domain/glossQuality';
-import { listWords } from '@/data/wordRepository';
+import { getWord, listWords, upsertWord } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
 import type { GlossRecord } from '@/data/db';
 import { generateGlosses } from '@/services/llm/generate';
@@ -348,12 +348,19 @@ export async function enrichArticle(
  * fails validation whole. One word is a few tokens it can hold the shape for,
  * and it returns fast enough to sit behind a tap rather than a wait (REQ-A10:
  * still asked for, never spent unprompted).
+ *
+ * `replace` asks again for a word that already has a definition. A model can
+ * write a fluent, correctly vowelled definition of the wrong word, and no
+ * mechanical check catches that (REQ-89) — the reader is the only one who can
+ * see it, so the reader needs a way to say so. Without it a wrong definition is
+ * permanent, because Define is offered only where there is nothing.
  */
 export async function enrichWord(
   article: Article,
   surface: string,
   config: AppConfig,
   now = Date.now(),
+  replace = false,
 ): Promise<{ filled: boolean; segments: ResolvedSegment[] }> {
   const local = config.generation.useLocalModel && localModelSupported();
   const hostedKey = (await getApiKey()) ?? '';
@@ -418,7 +425,7 @@ export async function enrichWord(
     return { entry, written };
   }
 
-  let filled = (previous?.[field] ?? '').trim() !== '';
+  let filled = !replace && (previous?.[field] ?? '').trim() !== '';
   if (!filled) {
     // Same order as the article pass, for the same reason: the on-device model
     // is free, so anything it gets right costs nothing, and anything it gets
@@ -450,6 +457,20 @@ export async function enrichWord(
           createdAt: now,
         },
       ]);
+
+      // A word the learner has met holds its own gloss, and resegment lets the
+      // corpus win over the cache — so replacing only the cache would leave the
+      // wrong definition on screen and the button looking broken. Written
+      // through rather than reordering the lookup: the corpus should keep
+      // winning, and this is the one case where the learner has said the thing
+      // that is winning is wrong.
+      if (replace) {
+        const word = await getWord(id);
+        if (word && (word[field] ?? '').trim() !== '') {
+          await upsertWord({ ...word, [field]: answer.written });
+        }
+      }
+
       filled = true;
       break;
     }

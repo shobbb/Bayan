@@ -12,11 +12,17 @@ import { useConfig } from '@/ui/context/ConfigContext';
 import { glossLanguageFor } from '@/domain/glossLanguage';
 import type { Failure } from '@/ui/failure';
 import type { Segment } from '@/domain/types';
+import type { ResolvedSegment } from '@/domain/articles/segment';
 import { DEMO_SEGMENTS, DEMO_TITLE_AR } from './demoRound';
 import './ReadingScreen.css';
 
 export interface ReadingScreenProps {
-  segments?: Segment[];
+  /**
+   * A union rather than ResolvedSegment[] because both kinds arrive here: a
+   * published article's segments carry where their gloss came from, a generated
+   * round's carry their own glosses and have no provenance to carry.
+   */
+  segments?: Array<Segment | ResolvedSegment>;
   titleAr?: string;
   /** Receives the segment indices flagged “didn’t know”, which carry the unclear signal. */
   onFinish: (notKnownIndices: number[]) => void;
@@ -41,6 +47,12 @@ export interface ReadingScreenProps {
    * ⇒ no per-word button (generated rounds carry their own glosses).
    */
   onDefineWord?: (index: number) => void;
+  /**
+   * Ask again for a word that already has a definition. Separate from
+   * onDefineWord because it is a different act: one fills a blank, the other
+   * overwrites an answer the reader has judged wrong.
+   */
+  onRedefineWord?: (index: number) => void;
   /** The index a per-word define is currently running for, if any. */
   definingIndex?: number | null;
   /**
@@ -127,6 +139,7 @@ export function ReadingScreen({
   enrich = null,
   onToggleNotKnown,
   onDefineWord,
+  onRedefineWord,
   definingIndex = null,
   resumeAt = null,
   onProgress,
@@ -209,6 +222,16 @@ export function ReadingScreen({
   // wired the capability. An empty string is untranslated; null is punctuation,
   // which never reaches the panel (glossItem is null for it).
   const canDefine = onDefineWord != null && activeIndex !== null && activeSegment?.gloss === '';
+
+  // Offered for a definition a model wrote, which here means anything that is
+  // not the publisher's. A publisher gloss is editorial, and generation does not
+  // override it in the first place — offering to replace it would be a button
+  // that changes nothing.
+  const canRedefine =
+    onRedefineWord != null &&
+    activeIndex !== null &&
+    (activeSegment?.gloss ?? '') !== '' &&
+    !(activeSegment && 'glossSource' in activeSegment && activeSegment.glossSource === 'publisher');
 
   // Put the reader back where they were. Runs once per article: `resumeAt` is
   // read from storage on open and must not fight the scrolling that follows.
@@ -410,6 +433,9 @@ export function ReadingScreen({
         isNotKnown={activeIsNotKnown}
         onToggleNotKnown={handleToggleNotKnown}
         onDefine={canDefine && activeIndex !== null ? () => onDefineWord?.(activeIndex) : undefined}
+        onRedefine={
+          canRedefine && activeIndex !== null ? () => onRedefineWord?.(activeIndex) : undefined
+        }
         defining={definingIndex !== null && definingIndex === activeIndex}
       />
     </div>

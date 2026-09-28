@@ -152,3 +152,38 @@
   color: var(--ink-muted);
   cursor: default;
 }
+
+/* The two controls on the current word, stacked. Outside the scrolling column
+   so neither can be pushed off by a definition that wraps. */
+.gloss-panel__actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+/* Quieter than Define and than the flag, because it is a correction and not the
+   main path: no border, and it reads as a footnote under the button it sits
+   with. */
+.gloss-panel__redefine {
+  text-align: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  font-style: normal;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.gloss-panel__redefine:hover {
+  color: var(--signal);
+}
+
+.gloss-panel__redefine:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}

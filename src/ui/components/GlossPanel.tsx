@@ -21,6 +21,14 @@ export interface GlossPanelProps {
    * the whole-article pass is a deliberate wait. Absent ⇒ no button.
    */
   onDefine?: () => void;
+  /**
+   * Ask again for a word that already has one. A model can write a fluent,
+   * correctly vowelled definition of the wrong word and no check catches it
+   * (REQ-89) — the reader is the only one who can see that, so this is how they
+   * say so. Absent ⇒ no button, which is the case for a publisher gloss: those
+   * are editorial, and generation does not override them anyway.
+   */
+  onRedefine?: () => void;
   /** A define request for the current word is in flight. */
   defining?: boolean;
 }
@@ -42,6 +50,7 @@ export function GlossPanel({
   isNotKnown,
   onToggleNotKnown,
   onDefine,
+  onRedefine,
   defining = false,
 }: GlossPanelProps) {
   const arabic = language === 'arabic';
@@ -84,14 +93,31 @@ export function GlossPanel({
               </div>
             )}
           </div>
-          <button
-            type="button"
-            className={'gloss-panel__flag' + (isNotKnown ? ' gloss-panel__flag--on' : '')}
-            aria-pressed={isNotKnown}
-            onClick={onToggleNotKnown}
-          >
-            Didn’t know
-          </button>
+          {/* Both controls sit outside the scrolling column, for the reason the
+              flag always has: a control that scrolled out of reach behind a long
+              definition would be worse than the overflow it was avoiding. An
+              Arabic definition wraps to two lines on a phone, which is enough to
+              push an inline button past the bottom of the screen. */}
+          <div className="gloss-panel__actions">
+            <button
+              type="button"
+              className={'gloss-panel__flag' + (isNotKnown ? ' gloss-panel__flag--on' : '')}
+              aria-pressed={isNotKnown}
+              onClick={onToggleNotKnown}
+            >
+              Didn’t know
+            </button>
+            {onRedefine && (
+              <button
+                type="button"
+                className="gloss-panel__redefine"
+                onClick={onRedefine}
+                disabled={defining}
+              >
+                {defining ? 'Asking…' : 'Redefine'}
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="gloss-panel__placeholder">Tap a word to see its translation.</div>

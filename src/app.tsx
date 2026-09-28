@@ -301,14 +301,14 @@ function AppScreens() {
   // is looking at. Keeps the reader in place (resumeAt: null) and re-derives the
   // panel from the replaced segments — the gloss appears where the button was.
   const handleDefineWord = useCallback(
-    (index: number) => {
+    (index: number, replace = false) => {
       if (screen.name !== 'article') return;
       const { article, segments, flaggedIndices } = screen;
       const target = segments[index];
       if (!target) return;
       setEnrichFailure(null);
       setDefiningIndex(index);
-      enrichWord(article, target.text, config)
+      enrichWord(article, target.text, config, Date.now(), replace)
         .then(({ segments: filled }) => {
           setScreen({
             name: 'article',
@@ -432,6 +432,7 @@ function AppScreens() {
           onOpenSettings: handleOpenSettings,
         }}
         onDefineWord={handleDefineWord}
+        onRedefineWord={(index) => handleDefineWord(index, true)}
         definingIndex={definingIndex}
         media={
           <ArticleMedia
