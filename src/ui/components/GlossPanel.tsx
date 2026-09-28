@@ -15,6 +15,14 @@ export interface GlossPanelProps {
   isNotKnown: boolean;
   /** Toggle the "didn't know" flag on the word currently shown. */
   onToggleNotKnown: () => void;
+  /**
+   * Fetch a translation for the word currently shown. Offered only when it has
+   * none — a single-word model call, which is why it can sit behind a tap where
+   * the whole-article pass is a deliberate wait. Absent ⇒ no button.
+   */
+  onDefine?: () => void;
+  /** A define request for the current word is in flight. */
+  defining?: boolean;
 }
 
 /**
@@ -33,6 +41,8 @@ export function GlossPanel({
   language = 'english',
   isNotKnown,
   onToggleNotKnown,
+  onDefine,
+  defining = false,
 }: GlossPanelProps) {
   const arabic = language === 'arabic';
   return (
@@ -60,7 +70,17 @@ export function GlossPanel({
               </div>
             ) : (
               <div className="gloss-panel__definition gloss-panel__definition--empty">
-                {arabic ? 'No Arabic definition yet' : 'No translation yet'}
+                <span>{arabic ? 'No Arabic definition yet' : 'No translation yet'}</span>
+                {onDefine && (
+                  <button
+                    type="button"
+                    className="gloss-panel__define"
+                    onClick={onDefine}
+                    disabled={defining}
+                  >
+                    {defining ? 'Defining…' : 'Define'}
+                  </button>
+                )}
               </div>
             )}
           </div>

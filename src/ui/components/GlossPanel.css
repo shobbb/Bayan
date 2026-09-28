@@ -107,4 +107,30 @@
 .gloss-panel__definition--empty {
   color: var(--ink-muted);
   font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The one interactive affordance on an otherwise-empty gloss, so it carries the
+   signal colour (REQ-D2). A tap fetches this single word's translation. */
+.gloss-panel__define {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--signal);
+  border-radius: var(--radius);
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  font-style: normal;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.gloss-panel__define:disabled {
+  border-color: var(--rule);
+  color: var(--ink-muted);
+  cursor: default;
 }

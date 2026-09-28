@@ -198,6 +198,73 @@ export async function enrichArticle(
 }
 
 /**
+ * Translates a single word on demand — the per-tap counterpart to enrichArticle.
+ *
+ * A one-word request is the reliable path for the on-device model. The bulk call
+ * asks a small model for a JSON array of a hundred objects and it drifts out of
+ * the schema — wrapping each word in its own object, repeating a gloss — which
+ * fails validation whole. One word is a few tokens it can hold the shape for,
+ * and it returns fast enough to sit behind a tap rather than a wait (REQ-A10:
+ * still asked for, never spent unprompted).
+ */
+export async function enrichWord(
+  article: Article,
+  surface: string,
+  config: AppConfig,
+  now = Date.now(),
+): Promise<{ filled: boolean; segments: ResolvedSegment[] }> {
+  const local = config.generation.useLocalModel && localModelSupported();
+  const client = local ? localLlmClient : anthropicClient;
+  const apiKey = local ? '' : ((await getApiKey()) ?? '');
+  if (!local && !apiKey) throw new MissingApiKeyError();
+
+  const profile = modernStandardArabicProfile;
+  const language = glossLanguageFor(config.generation.arabicOnlyDefinitions);
+  const field = glossFieldFor(language);
+  const id = phraseId(surface, profile);
+
+  // A cached record for a homograph — same id, conflicting vowels — must not be
+  // built on, for the same reason enrichArticle refuses to count it as done.
+  const cached = (await getGlosses([id]))[0];
+  const conflict = cached
+    ? (profile.vowelsConflict?.(surface, cached.surface ?? '') ?? false)
+    : false;
+  const previous = conflict ? undefined : cached;
+
+  let filled = (previous?.[field] ?? '').trim() !== '';
+  if (!filled) {
+    const response = await generateGlosses(
+      { words: [surface], languageGuidance: profile.promptGuidance, glossLanguage: language },
+      config.models.wordGlossing,
+      apiKey,
+      config.generation.maxValidationRetries,
+      client,
+    );
+    // One word was asked for, so the first usable entry is it — no positional
+    // join to get wrong, and no answer lost to an echoed diacritic.
+    const entry =
+      response.glosses.find((g) => phraseId(g.word.trim(), profile) === id) ?? response.glosses[0];
+    const written = entry?.gloss?.trim();
+    if (written) {
+      await putGlosses([
+        {
+          id,
+          gloss: field === 'gloss' ? written : (previous?.gloss ?? ''),
+          glossAr: field === 'glossAr' ? written : (previous?.glossAr ?? null),
+          forms: entry?.forms?.trim() || previous?.forms || null,
+          surface,
+          source: 'generated',
+          createdAt: now,
+        },
+      ]);
+      filled = true;
+    }
+  }
+
+  return { filled, segments: (await resegment(article, language)).segments };
+}
+
+/**
  * Every cache key this article could need: each word in it, plus each of the
  * publisher's phrases under its own normalized key.
  *

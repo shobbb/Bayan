@@ -22,7 +22,7 @@ import {
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
 import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
-import { enrichArticle } from '@/services/articles/enrichGlosses';
+import { enrichArticle, enrichWord } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
@@ -71,6 +71,7 @@ function AppScreens() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
+  const [definingIndex, setDefiningIndex] = useState<number | null>(null);
   // The study choice: which sources are on offer, and whether it is open.
   const [studyOpen, setStudyOpen] = useState(false);
   const [studyChoices, setStudyChoices] = useState<
@@ -286,6 +287,35 @@ function AppScreens() {
       .finally(() => setEnriching(false));
   }, [screen, config]);
 
+  // The per-tap counterpart to handleEnrich: translate the one word the reader
+  // is looking at. Keeps the reader in place (resumeAt: null) and re-derives the
+  // panel from the replaced segments — the gloss appears where the button was.
+  const handleDefineWord = useCallback(
+    (index: number) => {
+      if (screen.name !== 'article') return;
+      const { article, segments, flaggedIndices } = screen;
+      const target = segments[index];
+      if (!target) return;
+      setEnrichFailure(null);
+      setDefiningIndex(index);
+      enrichWord(article, target.text, config)
+        .then(({ segments: filled }) => {
+          setScreen({
+            name: 'article',
+            article,
+            segments: filled,
+            flaggedIndices,
+            untranslated: screen.untranslated,
+            resumeAt: null,
+            titleOffset: screen.titleOffset,
+          });
+        })
+        .catch((error: unknown) => setEnrichFailure(describeFailure(error)))
+        .finally(() => setDefiningIndex(null));
+    },
+    [screen, config],
+  );
+
   const handleFinishArticle = useCallback(
     (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
       void finishArticle(
@@ -391,6 +421,8 @@ function AppScreens() {
           notice: enrichNotice,
           onOpenSettings: handleOpenSettings,
         }}
+        onDefineWord={handleDefineWord}
+        definingIndex={definingIndex}
         media={
           <ArticleMedia
             imageUrl={article.imageUrl}

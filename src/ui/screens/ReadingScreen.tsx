@@ -35,6 +35,15 @@ export interface ReadingScreenProps {
    */
   onToggleNotKnown?: (index: number, flagged: boolean) => void;
   /**
+   * Translate the one word currently open in the panel. Offered per-tap for
+   * words the text leaves untranslated, alongside the whole-article `enrich`:
+   * one word is a fast, reliable model call where the batch is a slow one. Absent
+   * ⇒ no per-word button (generated rounds carry their own glosses).
+   */
+  onDefineWord?: (index: number) => void;
+  /** The index a per-word define is currently running for, if any. */
+  definingIndex?: number | null;
+  /**
    * Where the reader left off last time, scrolled to on arrival. Null starts at
    * the title, which is also what a first reading does.
    */
@@ -117,6 +126,8 @@ export function ReadingScreen({
   onExit,
   enrich = null,
   onToggleNotKnown,
+  onDefineWord,
+  definingIndex = null,
   resumeAt = null,
   onProgress,
   titleOffset = 0,
@@ -193,6 +204,11 @@ export function ReadingScreen({
   }, [activeIndex, notKnownIndices, onToggleNotKnown]);
 
   const activeIsNotKnown = activeIndex !== null && notKnownIndices.has(activeIndex);
+
+  // Offered only for a word the text left untranslated, and only when a caller
+  // wired the capability. An empty string is untranslated; null is punctuation,
+  // which never reaches the panel (glossItem is null for it).
+  const canDefine = onDefineWord != null && activeIndex !== null && activeSegment?.gloss === '';
 
   // Put the reader back where they were. Runs once per article: `resumeAt` is
   // read from storage on open and must not fight the scrolling that follows.
@@ -393,6 +409,8 @@ export function ReadingScreen({
         language={glossLanguageFor(arabicOnly)}
         isNotKnown={activeIsNotKnown}
         onToggleNotKnown={handleToggleNotKnown}
+        onDefine={canDefine && activeIndex !== null ? () => onDefineWord?.(activeIndex) : undefined}
+        defining={definingIndex !== null && definingIndex === activeIndex}
       />
     </div>
   );
