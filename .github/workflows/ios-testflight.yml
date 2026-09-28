@@ -1,0 +1,128 @@
+# Builds the native iOS app on a macOS runner and uploads it to TestFlight,
+# so a native change can ship without anyone's personal Mac (§ the Japan
+# workflow). Web-only changes do NOT need this — those go out over the air via
+# Capgo. This is only for changes to compiled code (Swift, plugins, native
+# config), which no OTA path can carry.
+#
+# Trigger is manual (workflow_dispatch): a native release is deliberate, and
+# you can start it from the GitHub mobile app or website — no laptop. It is not
+# wired to push, so ordinary web commits don't spend a 20-minute native build.
+#
+# Requires three repository secrets (Settings -> Secrets and variables ->
+# Actions), all from the one App Store Connect API key:
+#   ASC_KEY_ID      the key's ID (e.g. 35WY3VRFM5)
+#   ASC_ISSUER_ID   the issuer UUID shown on the API Keys page
+#   ASC_KEY_P8      the full contents of the AuthKey_XXXX.p8 file
+# The same key authenticates both signing and the upload, so there is no
+# certificate or provisioning profile to manage by hand.
+
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  # One native build at a time; a newer request supersedes an unfinished one.
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      DEVELOPMENT_TEAM: YZWW63Z34P
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest Xcode on the runner
+        run: |
+          latest="$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest"; fi
+          xcodebuild -version
+
+      # Diagnostic: the app needs an iOS 26+ SDK (FoundationModels). If the line
+      # below shows only older SDKs, this runner cannot build it and we need a
+      # cloud-Mac runner with Xcode 26+.
+      - name: Show available iOS SDKs
+        run: xcodebuild -showsdks | grep -i iOS || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (postinstall applies patch-package)
+        run: npm ci
+
+      - name: Confirm the capgo-llm resume patch applied
+        run: |
+          n=$(grep -c NSURLSessionDownloadTaskResumeData \
+            node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift)
+          test "$n" -ge 1 || { echo "patch-package did not apply the llm patch"; exit 1; }
+
+      - name: Build web
+        run: npm run build
+
+      # copy, not sync: sync regenerates Package.swift with .iOS(.v26) under
+      # swift-tools-version 5.9, which cannot express .v26 and fails resolution.
+      - name: Copy web assets into the iOS project
+        run: npx cap copy ios
+
+      # Defensive: keep the SPM floor at .v15 in case anything regenerated it.
+      # The app's real floor is the Xcode project's 26.0; the plugins guard
+      # Foundation Models with #available(iOS 26), so a .v15 SPM floor compiles.
+      - name: Pin the SPM platform floor
+        run: sed -i '' 's/\.iOS(\.v26)/.iOS(.v15)/' ios/App/CapApp-SPM/Package.swift || true
+
+      - name: Write the App Store Connect API key
+        env:
+          # Via env, not inline ${{ }}, so a multiline secret cannot break the
+          # command line and is handled as a plain string by the shell.
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Build number
+        # Unique and increasing per run, offset past the build already on
+        # TestFlight so the first CI upload does not collide.
+        run: echo "BUILD_NUMBER=$(( ${{ github.run_number }} + 100 ))" >> "$GITHUB_ENV"
+
+      - name: Archive
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Bayan.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            archive
+
+      - name: Export .ipa
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Bayan.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Upload to TestFlight
+        run: |
+          xcrun altool --upload-app -f "$RUNNER_TEMP/export/App.ipa" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Remove the API key from the runner
+        if: always()
+        run: rm -f ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
