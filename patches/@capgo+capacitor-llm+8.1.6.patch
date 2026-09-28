@@ -1,0 +1,57 @@
+diff --git a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
+index 2981ba1..e204b4c 100644
+--- a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
++++ b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
+@@ -342,13 +342,33 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+         }
+ 
+         let destinationURL = documentsPath.appendingPathComponent(filename)
++        // Where iOS's resume data is kept between attempts. On disk rather than
++        // in memory because the failure this exists for — the system suspending
++        // the app mid-download — can take the process with it, and a multi-
++        // gigabyte model that restarts from zero on every interruption is one
++        // that never finishes on a real network.
++        let resumeURL = documentsPath.appendingPathComponent("\(filename).resume")
+         let session = URLSession(configuration: .default, delegate: DownloadDelegate(plugin: self), delegateQueue: nil)
+-        let downloadTask = session.downloadTask(with: url) { tempURL, _, error in
++
++        let completion: (URL?, URLResponse?, Error?) -> Void = { tempURL, _, error in
+             if let error = error {
+-                call.reject("Download failed: \(error.localizedDescription)")
++                // Most interruptions hand back enough state to continue from.
++                // Keeping it costs a few kilobytes; discarding it costs the
++                // whole download, which is what used to happen.
++                if let data = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
++                    try? data.write(to: resumeURL)
++                    call.reject("Download interrupted: \(error.localizedDescription). Tap again to continue from where it stopped.")
++                } else {
++                    try? FileManager.default.removeItem(at: resumeURL)
++                    call.reject("Download failed: \(error.localizedDescription)")
++                }
+                 return
+             }
+ 
++            // Arrived whole, so the partial state is not just useless but
++            // actively wrong for the next download of this filename.
++            try? FileManager.default.removeItem(at: resumeURL)
++
+             guard let tempURL = tempURL else {
+                 call.reject("Download failed: No temporary file")
+                 return
+@@ -385,6 +405,16 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+             }
+         }
+ 
++        // Continue a previous attempt when there is one to continue. Resume data
++        // carries its own URL, so this is only valid for the same file — which
++        // is why it is keyed by filename.
++        let downloadTask: URLSessionDownloadTask
++        if let resumeData = try? Data(contentsOf: resumeURL), !resumeData.isEmpty {
++            downloadTask = session.downloadTask(withResumeData: resumeData, completionHandler: completion)
++        } else {
++            downloadTask = session.downloadTask(with: url, completionHandler: completion)
++        }
++
+         downloadTask.resume()
+     }
+ 

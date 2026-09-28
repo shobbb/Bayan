@@ -180,6 +180,40 @@ export function downloadedPathFor(filename: string): string | null {
   return downloadedModels()[filename] ?? null;
 }
 
+/**
+ * Models whose download was interrupted and left partial state behind.
+ *
+ * Tracked so the button can say "Resume" rather than offering the whole
+ * download again — the native side keeps iOS's resume data beside the file, so
+ * a second attempt continues rather than restarting. Self-correcting either
+ * way: a success clears the mark, and resume data the system will not accept
+ * simply starts the download over.
+ */
+const INTERRUPTED_KEY = 'localModelInterrupted';
+
+function interruptedSet(): Set<string> {
+  const raw = read(INTERRUPTED_KEY);
+  if (raw === null) return new Set();
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Whether a previous attempt at this model stopped partway. */
+export function wasInterrupted(filename: string): boolean {
+  return interruptedSet().has(filename);
+}
+
+function setInterrupted(filename: string, interrupted: boolean): void {
+  const set = interruptedSet();
+  if (interrupted) set.add(filename);
+  else set.delete(filename);
+  remember(INTERRUPTED_KEY, set.size === 0 ? null : JSON.stringify([...set]));
+}
+
 /** The downloaded model that answers, or null when the system one does. */
 export function activeDownloadedPath(): string | null {
   migrateLegacy();
@@ -266,7 +300,14 @@ export async function downloadModel({
     files[filename] = path;
     remember(FILES_KEY, JSON.stringify(files));
     remember(ACTIVE_KEY, path);
+    setInterrupted(filename, false);
     return path;
+  } catch (error) {
+    // Marked before rethrowing, so the next offer reads "Resume". Whether there
+    // is really anything to resume from is the native side's business; the
+    // worst case is a label that promises a saving the system declines to make.
+    setInterrupted(filename, true);
+    throw error;
   } finally {
     await handle?.remove().catch(() => undefined);
   }

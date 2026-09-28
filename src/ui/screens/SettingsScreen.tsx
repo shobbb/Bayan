@@ -27,6 +27,7 @@ import {
   selectDownloadedModel,
   selectSystemModel,
   systemModelName,
+  wasInterrupted,
 } from '@/services/platform/localModel';
 import { DOWNLOADABLE_MODELS, type LocalModelChoice } from '@/config/localModels';
 import {
@@ -611,7 +612,9 @@ export function SettingsScreen() {
                           : `${modelProgress}%`
                         : downloaded
                           ? 'Use'
-                          : `Download ${choice.approxDownload}`}
+                          : wasInterrupted(choice.filename)
+                            ? 'Resume'
+                            : `Download ${choice.approxDownload}`}
                     </button>
                   )}
                 </div>
@@ -621,7 +624,9 @@ export function SettingsScreen() {
                       is answered by the discard count, not by this line. */}
                   {downloaded
                     ? `Already on this device. Switching back to it costs nothing; ${choice.approxDownload} was paid once.`
-                    : choice.note}
+                    : wasInterrupted(choice.filename)
+                      ? `An earlier attempt stopped partway. This continues from where it reached rather than starting the ${choice.approxDownload} again.`
+                      : choice.note}
                 </p>
               </li>
             );

@@ -22,6 +22,7 @@ const {
   downloadedModels,
   downloadedPathFor,
   usingDownloadedModel,
+  wasInterrupted,
 } = await import('./localModel');
 
 const GEMMA = '/var/app/Documents/gemma-4-E2B-it.litertlm';
@@ -110,5 +111,31 @@ describe('migration from the single-path keys', () => {
     // QWEN is not in the file list, so it resolves to null rather than to GEMMA:
     // the legacy key does not get to win.
     expect(activeDownloadedPath()).toBeNull();
+  });
+});
+
+describe('interrupted downloads', () => {
+  it('is false for a model never attempted', () => {
+    expect(wasInterrupted('qwen3_4b_mixed_int4.litertlm')).toBe(false);
+  });
+
+  it('reads the marks the download path writes', () => {
+    localStorage.setItem(
+      'localModelInterrupted',
+      JSON.stringify(['qwen3_4b_mixed_int4.litertlm']),
+    );
+
+    expect(wasInterrupted('qwen3_4b_mixed_int4.litertlm')).toBe(true);
+    expect(wasInterrupted('gemma-4-E2B-it.litertlm')).toBe(false);
+  });
+
+  it('treats a malformed mark as nothing interrupted', () => {
+    // The cost of not trusting it is a button that says "Download" instead of
+    // "Resume". The cost of trusting it is a crash in Settings.
+    localStorage.setItem('localModelInterrupted', '{"not":"an array"}');
+    expect(wasInterrupted('anything.litertlm')).toBe(false);
+
+    localStorage.setItem('localModelInterrupted', 'not json');
+    expect(wasInterrupted('anything.litertlm')).toBe(false);
   });
 });

@@ -102,3 +102,34 @@ to Apple Intelligence instead of the hosted API. It needs:
 Where any of those is false the app reports unavailability and answers through
 the hosted route instead, so the toggle is safe to leave on. It has no effect in
 a browser.
+
+### Downloadable models need a native rebuild once
+
+`patches/@capgo+capacitor-llm+8.1.6.patch` fixes the plugin's model download,
+which discarded the partial file on any interruption — so a two-gigabyte model
+restarted from zero every time the network hiccuped or iOS suspended the app.
+The patch keeps the resume data iOS hands back, beside the model in the
+documents directory, and continues from it on the next attempt.
+
+It is Swift, so unlike everything else in this repository it cannot reach a
+device over the air. `patch-package` applies it on `npm install` (via the
+`postinstall` script), but the change only takes effect once the native shell is
+rebuilt:
+
+```bash
+npm install             # applies patches/ to node_modules
+npm run cap:sync
+```
+
+Then Run in Xcode, and push a build to TestFlight if the phone should have it.
+Until that rebuild, downloads behave as they did before and the "Resume" label
+in Settings will restart the download rather than continuing it — the label is
+driven by the web layer, which updates over the air, and the behaviour by the
+native one, which does not.
+
+If the patch ever fails to apply after a plugin upgrade, `npm install` says so
+loudly. Re-apply it by hand against the new version and regenerate:
+
+```bash
+npx patch-package @capgo/capacitor-llm
+```
