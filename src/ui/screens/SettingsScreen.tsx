@@ -20,7 +20,11 @@ import {
   type DailyReminder,
 } from '@/services/platform/notifications';
 import { getSetting, setSetting } from '@/data/settingsRepository';
-import { checkForUpdate, currentBundle } from '@/services/platform/liveUpdates';
+import {
+  checkForUpdate,
+  currentBundle,
+  type RunningBundle,
+} from '@/services/platform/liveUpdates';
 import { copyToClipboard, downloadFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
 import { importFromJson, ImportValidationError } from '@/services/interchange/importState';
@@ -80,12 +84,12 @@ export function SettingsScreen() {
   const [hasCredentials, setHasCredentials] = useState(false);
   const [reminder, setReminder] = useState<DailyReminder>(DEFAULT_DAILY_REMINDER);
   const [reminderStatus, setReminderStatus] = useState<string | null>(null);
-  const [bundleVersion, setBundleVersion] = useState<string | null>(null);
+  const [bundle, setBundle] = useState<RunningBundle | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    void currentBundle().then(setBundleVersion);
+    void currentBundle().then(setBundle);
   }, []);
 
   /**
@@ -459,7 +463,12 @@ export function SettingsScreen() {
           that says whether an update actually landed.
         </p>
 
-        <p className="settings-screen__value">{bundleVersion ?? 'Built in'}</p>
+        <p className="settings-screen__value">{bundle?.version ?? 'Built in'}</p>
+        {bundle?.downloadedAt != null && (
+          <p className="settings-screen__note">
+            Arrived {new Date(bundle.downloadedAt).toLocaleString()}
+          </p>
+        )}
 
         <button
           type="button"

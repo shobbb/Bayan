@@ -56,12 +56,25 @@ export async function notifyBundleHealthy(): Promise<void> {
  * A version on the device answers that without a dashboard, a signal, or
  * anyone to ask. `builtin` is the bundle compiled into the binary.
  */
-export async function currentBundle(): Promise<string | null> {
+export interface RunningBundle {
+  version: string;
+  /**
+   * When this bundle was downloaded, or null for the one compiled into the
+   * binary — which has no download to date, and whose age is the install's.
+   */
+  downloadedAt: number | null;
+}
+
+export async function currentBundle(): Promise<RunningBundle | null> {
   if (!liveUpdatesAvailable()) return null;
 
   try {
     const { bundle } = await CapacitorUpdater.current();
-    return bundle.version;
+    const at = Date.parse(bundle.downloaded);
+    return {
+      version: bundle.version,
+      downloadedAt: Number.isNaN(at) || at === 0 ? null : at,
+    };
   } catch {
     return null;
   }
@@ -90,7 +103,7 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
     if (!latest.url || !latest.version) return { status: 'upToDate' };
 
     const current = await currentBundle();
-    if (current !== null && current === latest.version) return { status: 'upToDate' };
+    if (current !== null && current.version === latest.version) return { status: 'upToDate' };
 
     const bundle = await CapacitorUpdater.download({
       url: latest.url,
