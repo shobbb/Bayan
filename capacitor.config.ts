@@ -32,6 +32,11 @@ const config: CapacitorConfig = {
      * means the bundle already on the device, not a blank screen.
      */
     CapacitorUpdater: {
+      // Which Capgo dashboard app the updater contacts for update checks,
+      // channel resolution and stats. A lookup override only — deliberately not
+      // the native `appId` above; it does not rename the app or change the
+      // bundle identifier. https://capgo.app/docs/plugins/updater/settings/#appid
+      appId: 'com.bayan.bayan',
       autoUpdate: 'atBackground',
       // The reader never sees a version number they did not ask for; Settings
       // shows it, and REQ-15 rules out interrupting them with one.
