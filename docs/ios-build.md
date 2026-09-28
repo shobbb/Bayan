@@ -9,8 +9,11 @@ cannot run CocoaPods or Xcode.
 | Need | Why |
 |---|---|
 | macOS 26 + Xcode 26 | `@capgo/capacitor-llm` binds Apple's Foundation Models framework, which is iOS 26+ |
-| CocoaPods | `cap add ios` and `cap sync` install native plugin pods through it |
 | Node 20+ | same toolchain as the web build |
+
+Capacitor 8 resolves native plugins through **Swift Package Manager**, not
+CocoaPods — there is no Podfile. The generated package lives at
+`ios/App/CapApp-SPM/` and Xcode resolves it on open.
 
 ## First run
 
@@ -23,11 +26,12 @@ npm run assets          # native icons and splash screens from assets/
 
 Then two things Xcode needs before it will build:
 
-1. **Deployment target → 26.0.** In `ios/App/Podfile` set `platform :ios, '26.0'`,
-   and in Xcode set App target → General → Minimum Deployments → iOS 26.0. The
-   Capacitor template defaults well below this, and the LLM plugin will not
-   compile against the default. Re-run `npx cap sync ios` after editing the
-   Podfile.
+1. **Deployment target → 26.0.** Xcode → App target → General → Minimum
+   Deployments → iOS 26.0, which writes `IPHONEOS_DEPLOYMENT_TARGET = 26.0`
+   into the project. The Capacitor template defaults well below this and the
+   LLM plugin will not build against the default. (`CapApp-SPM/Package.swift`
+   keeps Capacitor's own lower floor; the plugins gate their newer APIs
+   internally, so the two differing is expected rather than a mismatch to fix.)
 2. **Signing.** Xcode → App target → Signing & Capabilities → your team.
 
 Then Run to a connected device. On first install, trust the developer
