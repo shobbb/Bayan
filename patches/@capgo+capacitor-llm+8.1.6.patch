@@ -1,57 +1,262 @@
 diff --git a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-index 2981ba1..e204b4c 100644
+index 2981ba1..4126e6e 100644
 --- a/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
 +++ b/node_modules/@capgo/capacitor-llm/ios/Sources/LLMPlugin/LLMPlugin.swift
-@@ -342,13 +342,33 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -323,6 +323,141 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+         }
+     }
+ 
++    /**
++     * The one background session for model downloads.
++     *
++     * A background session is identified by a string and constructing a second
++     * one with the same identifier is an error, so it is made once and reused.
++     * Background — not `.default` — because the download it serves is gigabytes
++     * long and a default session dies the moment iOS suspends the app, which on
++     * a phone means the moment the screen locks.
++     */
++    private static let downloadSessionIdentifier = "co.capgo.capacitorllm.modeldownload"
++    private static var downloadSession: URLSession?
++    private var downloadDelegate: DownloadDelegate?
++
++    private struct PendingDownload {
++        let callId: String
++        let companionUrlString: String?
++    }
++
++    /** Calls waiting on a download, by task, so the delegate can find them. */
++    private var pendingDownloads: [Int: PendingDownload] = [:]
++
++    /**
++     * Attaches the delegate to the background session at launch.
++     *
++     * iOS relaunches the app to deliver events for a background download that
++     * finished while it was dead, and delivers them to the session's delegate.
++     * Creating the session lazily on the next downloadModel call would be far
++     * too late: there would be no delegate to deliver to, and a finished
++     * download would be dropped on the floor with its bytes already paid for.
++     */
++    public override func load() {
++        _ = modelDownloadSession()
++    }
++
++    private func modelDownloadSession() -> URLSession {
++        if let existing = LLMPlugin.downloadSession { return existing }
++
++        let config = URLSessionConfiguration.background(withIdentifier: LLMPlugin.downloadSessionIdentifier)
++        // The download is something somebody is waiting on, not housekeeping:
++        // discretionary transfers are deferred by the system until it judges
++        // the moment opportune, which for a user who just tapped Download reads
++        // as nothing happening at all.
++        config.isDiscretionary = false
++        config.sessionSendsLaunchEvents = true
++
++        let delegate = DownloadDelegate(plugin: self)
++        downloadDelegate = delegate
++        let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
++        LLMPlugin.downloadSession = session
++        return session
++    }
++
++    private func documentsDirectory() -> URL? {
++        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
++    }
++
++    /**
++     * Completes a download the delegate reports as finished.
++     *
++     * The temporary file is deleted the moment this returns, so the move is
++     * synchronous and happens here rather than being dispatched.
++     *
++     * The filename is read back off the task rather than from memory, because a
++     * background download outlives the process that started it: after a relaunch
++     * this fires with nothing in `pendingDownloads` and no call to resolve. The
++     * file is still moved into place — the bytes are paid for either way — and
++     * the web layer reconciles what is on disk at its next launch.
++     */
++    fileprivate func completeDownload(task: URLSessionDownloadTask, tempURL: URL) {
++        guard let filename = task.taskDescription, let documentsPath = documentsDirectory() else { return }
++
++        let destinationURL = documentsPath.appendingPathComponent(filename)
++        let resumeURL = documentsPath.appendingPathComponent("\(filename).resume")
++        try? FileManager.default.removeItem(at: resumeURL)
++
++        var moveError: String?
++        do {
++            if FileManager.default.fileExists(atPath: destinationURL.path) {
++                try FileManager.default.removeItem(at: destinationURL)
++            }
++            try FileManager.default.moveItem(at: tempURL, to: destinationURL)
++        } catch {
++            moveError = error.localizedDescription
++        }
++
++        guard let pending = takePending(for: task) else { return }
++        guard let call = bridge?.savedCall(withID: pending.callId) else { return }
++        bridge?.releaseCall(call)
++
++        if let moveError = moveError {
++            call.reject("Failed to save file: \(moveError)")
++            return
++        }
++
++        var result = ["path": destinationURL.path]
++        if let companionUrlString = pending.companionUrlString,
++           let companionUrl = URL(string: companionUrlString) {
++            let companionDestination = documentsPath.appendingPathComponent(companionUrl.lastPathComponent)
++            do {
++                try Data(contentsOf: companionUrl).write(to: companionDestination)
++                result["companionPath"] = companionDestination.path
++            } catch {
++                print("Failed to download companion file: \(error)")
++            }
++        }
++        call.resolve(result)
++    }
++
++    /** Records what iOS hands back so the next attempt continues. */
++    fileprivate func failDownload(task: URLSessionTask, error: Error) {
++        let resumeData = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data
++        if let filename = task.taskDescription, let documentsPath = documentsDirectory() {
++            let resumeURL = documentsPath.appendingPathComponent("\(filename).resume")
++            if let resumeData = resumeData {
++                try? resumeData.write(to: resumeURL)
++            } else {
++                try? FileManager.default.removeItem(at: resumeURL)
++            }
++        }
++
++        guard let pending = takePending(for: task),
++              let call = bridge?.savedCall(withID: pending.callId) else { return }
++        bridge?.releaseCall(call)
++
++        if resumeData != nil {
++            call.reject("Download interrupted: \(error.localizedDescription). Tap again to continue from where it stopped.")
++        } else {
++            call.reject("Download failed: \(error.localizedDescription)")
++        }
++    }
++
++    private func takePending(for task: URLSessionTask) -> PendingDownload? {
++        pendingDownloads.removeValue(forKey: task.taskIdentifier)
++    }
++
+     @objc func downloadModel(_ call: CAPPluginCall) {
+         guard let urlString = call.getString("url") else {
+             call.reject("URL is required")
+@@ -336,55 +471,43 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
+ 
+         let filename = call.getString("filename") ?? url.lastPathComponent
+ 
+-        guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
++        guard let documentsPath = documentsDirectory() else {
+             call.reject("Could not access documents directory")
+             return
          }
  
-         let destinationURL = documentsPath.appendingPathComponent(filename)
+-        let destinationURL = documentsPath.appendingPathComponent(filename)
+-        let session = URLSession(configuration: .default, delegate: DownloadDelegate(plugin: self), delegateQueue: nil)
+-        let downloadTask = session.downloadTask(with: url) { tempURL, _, error in
+-            if let error = error {
+-                call.reject("Download failed: \(error.localizedDescription)")
+-                return
+-            }
+-
+-            guard let tempURL = tempURL else {
+-                call.reject("Download failed: No temporary file")
+-                return
+-            }
+-
+-            do {
+-                if FileManager.default.fileExists(atPath: destinationURL.path) {
+-                    try FileManager.default.removeItem(at: destinationURL)
+-                }
+-
+-                try FileManager.default.moveItem(at: tempURL, to: destinationURL)
+-
+-                var result = [
+-                    "path": destinationURL.path
+-                ]
+-
+-                if let companionUrlString = call.getString("companionUrl"),
+-                   let companionUrl = URL(string: companionUrlString) {
+-                    let companionFilename = companionUrl.lastPathComponent
+-                    let companionDestination = documentsPath.appendingPathComponent(companionFilename)
+-
+-                    do {
+-                        let companionData = try Data(contentsOf: companionUrl)
+-                        try companionData.write(to: companionDestination)
+-                        result["companionPath"] = companionDestination.path
+-                    } catch {
+-                        print("Failed to download companion file: \(error)")
+-                    }
+-                }
+-
+-                call.resolve(result)
+-            } catch {
+-                call.reject("Failed to save file: \(error.localizedDescription)")
+-            }
 +        // Where iOS's resume data is kept between attempts. On disk rather than
 +        // in memory because the failure this exists for — the system suspending
 +        // the app mid-download — can take the process with it, and a multi-
 +        // gigabyte model that restarts from zero on every interruption is one
 +        // that never finishes on a real network.
 +        let resumeURL = documentsPath.appendingPathComponent("\(filename).resume")
-         let session = URLSession(configuration: .default, delegate: DownloadDelegate(plugin: self), delegateQueue: nil)
--        let downloadTask = session.downloadTask(with: url) { tempURL, _, error in
++        let session = modelDownloadSession()
 +
-+        let completion: (URL?, URLResponse?, Error?) -> Void = { tempURL, _, error in
-             if let error = error {
--                call.reject("Download failed: \(error.localizedDescription)")
-+                // Most interruptions hand back enough state to continue from.
-+                // Keeping it costs a few kilobytes; discarding it costs the
-+                // whole download, which is what used to happen.
-+                if let data = (error as NSError).userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
-+                    try? data.write(to: resumeURL)
-+                    call.reject("Download interrupted: \(error.localizedDescription). Tap again to continue from where it stopped.")
-+                } else {
-+                    try? FileManager.default.removeItem(at: resumeURL)
-+                    call.reject("Download failed: \(error.localizedDescription)")
-+                }
-                 return
-             }
- 
-+            // Arrived whole, so the partial state is not just useless but
-+            // actively wrong for the next download of this filename.
-+            try? FileManager.default.removeItem(at: resumeURL)
-+
-             guard let tempURL = tempURL else {
-                 call.reject("Download failed: No temporary file")
-                 return
-@@ -385,6 +405,16 @@ public class LLMPlugin: CAPPlugin, CAPBridgedPlugin {
-             }
-         }
- 
 +        // Continue a previous attempt when there is one to continue. Resume data
 +        // carries its own URL, so this is only valid for the same file — which
 +        // is why it is keyed by filename.
 +        let downloadTask: URLSessionDownloadTask
 +        if let resumeData = try? Data(contentsOf: resumeURL), !resumeData.isEmpty {
-+            downloadTask = session.downloadTask(withResumeData: resumeData, completionHandler: completion)
++            downloadTask = session.downloadTask(withResumeData: resumeData)
 +        } else {
-+            downloadTask = session.downloadTask(with: url, completionHandler: completion)
-+        }
++            downloadTask = session.downloadTask(with: url)
+         }
+ 
++        // Carried on the task rather than in memory. Background tasks survive
++        // the app being killed, so after a relaunch this is the only record of
++        // which file the bytes belong to.
++        downloadTask.taskDescription = filename
++
++        // The call has to outlive this method now: a background session reports
++        // through the delegate, long after downloadModel has returned.
++        call.keepAlive = true
++        bridge?.saveCall(call)
++        pendingDownloads[downloadTask.taskIdentifier] = PendingDownload(
++            callId: call.callbackId,
++            companionUrlString: call.getString("companionUrl")
++        )
 +
          downloadTask.resume()
      }
  
+@@ -690,6 +813,27 @@ class DownloadDelegate: NSObject, URLSessionDownloadDelegate {
+ 
+     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
+                     didFinishDownloadingTo location: URL) {
+-        // Handled in the completion handler.
++        // Synchronously: the temporary file is deleted the moment this returns.
++        (plugin as? LLMPlugin)?.completeDownload(task: downloadTask, tempURL: location)
++    }
++
++    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
++        // Fires for success too, where the work is already done above.
++        guard let error = error else { return }
++        (plugin as? LLMPlugin)?.failDownload(task: task, error: error)
++    }
++
++    /**
++     * Tells the app it may finish handling background events.
++     *
++     * Posted rather than called: the completion handler belongs to the
++     * application delegate, which this package cannot see. The host app
++     * observes this and calls it.
++     */
++    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
++        NotificationCenter.default.post(name: LLMPluginBackgroundEventsFinished, object: nil)
+     }
+ }
++
++/** Posted when a background URL session has delivered all its events. */
++public let LLMPluginBackgroundEventsFinished = Notification.Name("LLMPluginBackgroundEventsFinished")

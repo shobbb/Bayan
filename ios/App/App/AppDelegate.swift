@@ -6,9 +6,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    /// Held while a background URL session finishes delivering its events.
+    private var backgroundSessionCompletionHandler: (() -> Void)?
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // The model download runs on a background URLSession so it survives the
+        // screen locking. When that session has delivered everything it owes us
+        // — including to an app the system relaunched purely to hear it — iOS
+        // expects the handler below to be called so it can suspend us again.
+        // The plugin cannot see this class, so it posts instead.
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("LLMPluginBackgroundEventsFinished"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.backgroundSessionCompletionHandler?()
+            self?.backgroundSessionCompletionHandler = nil
+        }
         return true
+    }
+
+    func application(_ application: UIApplication,
+                     handleEventsForBackgroundURLSession identifier: String,
+                     completionHandler: @escaping () -> Void) {
+        backgroundSessionCompletionHandler = completionHandler
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

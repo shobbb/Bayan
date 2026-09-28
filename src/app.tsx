@@ -21,6 +21,8 @@ import {
 } from '@/services/articles/articleService';
 import { backUpNow, getLastBackupAt } from '@/services/sync/backupService';
 import { warmPlatformPlugins } from '@/services/platform/storage';
+import { reconcileDownloadedModels } from '@/services/platform/localModel';
+import { DOWNLOADABLE_MODELS } from '@/config/localModels';
 import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
 import { enrichArticle, enrichWord } from '@/services/articles/enrichGlosses';
 import type { Article } from '@/domain/articles/types';
@@ -96,6 +98,14 @@ function AppScreens() {
   // a mount effect because reaching here means the tree actually rendered.
   useEffect(() => {
     void notifyBundleHealthy();
+  }, []);
+
+  // Checks what is actually in the documents directory against what the app
+  // thinks it downloaded. A model download can outlive the process that started
+  // it, so the file can arrive with nothing left to record it — and without this
+  // Settings would offer to fetch gigabytes that are already there.
+  useEffect(() => {
+    void reconcileDownloadedModels(DOWNLOADABLE_MODELS.map((model) => model.filename));
   }, []);
 
   useEffect(() => {

@@ -18,6 +18,7 @@
  * reports unavailability rather than throwing, exactly as notifications do.
  */
 import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import { CapgoLLM } from '@capgo/capacitor-llm';
 
 /**
@@ -178,6 +179,66 @@ export function downloadedModels(): Record<string, string> {
 /** Where this model is on disk, or null if it was never downloaded. */
 export function downloadedPathFor(filename: string): string | null {
   return downloadedModels()[filename] ?? null;
+}
+
+/**
+ * Reconciles what is remembered against what is actually in the documents
+ * directory.
+ *
+ * The bookkeeping is written when a download resolves, which assumes the app is
+ * alive to see it resolve. It is not always: a download that survives the app
+ * being suspended can finish after the process is gone, and the promise that
+ * started it dies with it. The file lands, nothing records it, and Settings
+ * offers to fetch two and a half gigabytes that are already on the device.
+ *
+ * It corrects the other direction too. A path remembered for a file that is no
+ * longer there would otherwise be selectable, and selecting it fails somewhere
+ * far less legible than here.
+ *
+ * Cheap enough to run on every launch: one stat per model in the registry.
+ */
+export async function reconcileDownloadedModels(filenames: readonly string[]): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const files = downloadedModels();
+  let changed = false;
+
+  for (const filename of [...new Set([...filenames, ...Object.keys(files)])]) {
+    let path: string | null = null;
+    try {
+      const stat = await Filesystem.stat({ path: filename, directory: Directory.Documents });
+      // A zero-byte file is a download that began and never arrived; treating
+      // it as present would select a model the runtime cannot load.
+      if (stat.type === 'file' && stat.size > 0) {
+        // stat gives a file:// URI; the plugin wants a plain path, and the
+        // percent-encoding in a container path has to come back out.
+        path = decodeURI(stat.uri.replace(/^file:\/\//, ''));
+      }
+    } catch {
+      // Absent, or a filesystem that will not answer. Either way: not here.
+      path = null;
+    }
+
+    if (path === null && files[filename] !== undefined) {
+      delete files[filename];
+      changed = true;
+    } else if (path !== null && files[filename] !== path) {
+      files[filename] = path;
+      changed = true;
+    }
+  }
+
+  if (!changed) return;
+  remember(FILES_KEY, JSON.stringify(files));
+
+  // A model that is no longer on disk cannot stay selected. Dropping the
+  // pointer falls back to the system model rather than to an error on the
+  // next definition asked for.
+  const active = read(ACTIVE_KEY);
+  if (active !== null && !Object.values(files).includes(active)) {
+    remember(ACTIVE_KEY, null);
+    selected = null;
+  }
 }
 
 /**

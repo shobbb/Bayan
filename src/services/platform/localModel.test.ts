@@ -17,10 +17,17 @@ vi.mock('@capacitor/core', () => ({
 }));
 vi.mock('@capgo/capacitor-llm', () => ({ CapgoLLM: {} }));
 
+const stat = vi.fn();
+vi.mock('@capacitor/filesystem', () => ({
+  Filesystem: { stat: (...args: unknown[]) => stat(...args) },
+  Directory: { Documents: 'DOCUMENTS' },
+}));
+
 const {
   activeDownloadedPath,
   downloadedModels,
   downloadedPathFor,
+  reconcileDownloadedModels,
   usingDownloadedModel,
   wasInterrupted,
 } = await import('./localModel');
@@ -30,7 +37,13 @@ const QWEN = '/var/app/Documents/qwen3_4b_mixed_int4.litertlm';
 
 beforeEach(() => {
   localStorage.clear();
+  stat.mockReset();
 });
+
+/** What Filesystem.stat returns for a file that is there. */
+function present(uri: string, size = 2_400_000_000) {
+  return { type: 'file', size, uri: `file://${uri}` };
+}
 
 describe('downloadedModels', () => {
   it('is empty before anything is downloaded', () => {
@@ -137,5 +150,61 @@ describe('interrupted downloads', () => {
 
     localStorage.setItem('localModelInterrupted', 'not json');
     expect(wasInterrupted('anything.litertlm')).toBe(false);
+  });
+});
+
+describe('reconcileDownloadedModels', () => {
+  const NAMES = ['gemma-4-E2B-it.litertlm', 'qwen3_4b_mixed_int4.litertlm'];
+
+  it('records a model that arrived without the app seeing it finish', async () => {
+    // A background download outliving the process is the case this exists for:
+    // the file lands, the promise that would have recorded it is gone.
+    stat.mockImplementation(({ path }: { path: string }) =>
+      path === 'qwen3_4b_mixed_int4.litertlm'
+        ? Promise.resolve(present(QWEN))
+        : Promise.reject(new Error('does not exist')),
+    );
+
+    await reconcileDownloadedModels(NAMES);
+
+    expect(downloadedPathFor('qwen3_4b_mixed_int4.litertlm')).toBe(QWEN);
+    expect(downloadedPathFor('gemma-4-E2B-it.litertlm')).toBeNull();
+  });
+
+  it('forgets a model whose file is gone, and stops using it', async () => {
+    localStorage.setItem('localModelFiles', JSON.stringify({ 'gemma-4-E2B-it.litertlm': GEMMA }));
+    localStorage.setItem('localModelActive', GEMMA);
+    stat.mockRejectedValue(new Error('does not exist'));
+
+    await reconcileDownloadedModels(NAMES);
+
+    expect(downloadedModels()).toEqual({});
+    // Falls back to the system model rather than failing at the next definition.
+    expect(activeDownloadedPath()).toBeNull();
+  });
+
+  it('does not count a zero-byte file as a downloaded model', async () => {
+    // A download that began and never arrived. Selecting it would hand the
+    // runtime a file it cannot load.
+    stat.mockResolvedValue(present(QWEN, 0));
+
+    await reconcileDownloadedModels(NAMES);
+
+    expect(downloadedModels()).toEqual({});
+  });
+
+  it('leaves a correct record alone', async () => {
+    localStorage.setItem('localModelFiles', JSON.stringify({ 'gemma-4-E2B-it.litertlm': GEMMA }));
+    localStorage.setItem('localModelActive', GEMMA);
+    stat.mockImplementation(({ path }: { path: string }) =>
+      path === 'gemma-4-E2B-it.litertlm'
+        ? Promise.resolve(present(GEMMA))
+        : Promise.reject(new Error('does not exist')),
+    );
+
+    await reconcileDownloadedModels(NAMES);
+
+    expect(downloadedPathFor('gemma-4-E2B-it.litertlm')).toBe(GEMMA);
+    expect(activeDownloadedPath()).toBe(GEMMA);
   });
 });
