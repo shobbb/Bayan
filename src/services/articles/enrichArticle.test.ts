@@ -15,7 +15,7 @@ import { articleToSegments } from '@/domain/articles/segment';
 import { generateGlosses, LlmValidationError } from '@/services/llm/generate';
 import { localLlmClient } from '@/services/llm/localClient';
 import { putGlosses } from '@/data/glossRepository';
-import { enrichArticle, enrichWord } from './enrichGlosses';
+import { enrichArticle, enrichWord, GlossRefusedError } from './enrichGlosses';
 
 vi.mock('@/data/glossRepository', () => ({
   getGlosses: vi.fn(async () => []),
@@ -177,9 +177,12 @@ describe('enrichWord', () => {
       ],
     }));
 
-    const { filled } = await enrichWord(article(), 'عُمْرِي', arabicConfig);
-
-    expect(filled).toBe(false);
+    // Refused, and said so. Returning quietly was the bug: the spinner stopped,
+    // Define came back, and nothing distinguished a rejected answer from a
+    // broken app.
+    await expect(enrichWord(article(), 'عُمْرِي', arabicConfig)).rejects.toThrow(
+      GlossRefusedError,
+    );
     expect(wrote).not.toHaveBeenCalled();
   });
 

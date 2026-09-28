@@ -5,6 +5,7 @@
  * Lives in ui/ rather than in app.tsx so the screens can take the type without
  * importing back through the root component.
  */
+import { GlossRefusedError } from '@/services/articles/enrichGlosses';
 import { MissingApiKeyError } from '@/services/rounds/roundService';
 import { LlmValidationError } from '@/services/llm/generate';
 import {
@@ -57,6 +58,17 @@ export function describeFailure(error: unknown): Failure {
       detail: error instanceof Error ? error.message : String(error),
       settingsWillHelp: false,
       reloadWillHelp: true,
+    };
+  }
+
+  // A refusal, not a fault: the models answered and the checks between them and
+  // the reader threw it away. Says which check, and shows what was refused so
+  // the judgement can be disagreed with (REQ-17).
+  if (error instanceof GlossRefusedError) {
+    return {
+      message: `No usable definition for ${error.surface} — ${error.reason}. Try Define again, or read it in the sentence.`,
+      detail: error.refused ? `What was refused:\n${error.refused}` : null,
+      settingsWillHelp: false,
     };
   }
 

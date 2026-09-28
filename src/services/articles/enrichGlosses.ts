@@ -362,6 +362,27 @@ export async function enrichArticle(
  * see it, so the reader needs a way to say so. Without it a wrong definition is
  * permanent, because Define is offered only where there is nothing.
  */
+/**
+ * Every model refused to give this word a usable definition.
+ *
+ * Distinct from a failed call: the models answered, and what they said was
+ * thrown away by the checks that stand between a model and the reader. That
+ * used to be silent — the spinner stopped, the Define button came back, and
+ * nothing said why — which reads as the app being broken rather than as a
+ * judgement having been made.
+ */
+export class GlossRefusedError extends Error {
+  constructor(
+    readonly surface: string,
+    readonly reason: string,
+    /** What was refused, so the operator can disagree with the judgement. */
+    readonly refused: string | null,
+  ) {
+    super(`No usable definition for ${surface}: ${reason}.`);
+    this.name = 'GlossRefusedError';
+  }
+}
+
 export interface EnrichWordOptions {
   now?: number;
   /** Ask again for a word that already has a definition. */
@@ -427,18 +448,33 @@ export async function enrichWord(
       (response.glosses.length === 1 ? response.glosses[0] : undefined);
 
     const written = entry?.gloss?.trim();
-    if (!entry || !written) return null;
+    if (!entry || !written) {
+      refusal.last = {
+        reason:
+          response.glosses.length === 0
+            ? 'the model returned no entries'
+            : 'no entry named the word that was asked for',
+        text: response.glosses[0]?.gloss?.trim() ?? null,
+      };
+      return null;
+    }
 
     if (language === 'arabic') {
       const verdict = judgeArabicDefinition(surface, written);
       if (!verdict.ok) {
-        console.warn(`Rejected definition for ${surface}: ${verdict.reason}`);
+        refusal.last = { reason: `the definition was ${verdict.reason}`, text: written };
         return null;
       }
     }
 
     return { entry, written };
   }
+
+  // Why the last attempt declined, for the error that would otherwise be
+  // silence. Held in an object because it is written from inside ask(), and a
+  // bare `let` is narrowed to never at the throw below — the checker cannot see
+  // across the closure and concludes it is still null.
+  const refusal: { last: { reason: string; text: string | null } | null } = { last: null };
 
   let filled = !replace && (previous?.[field] ?? '').trim() !== '';
   if (!filled) {
@@ -489,6 +525,13 @@ export async function enrichWord(
       filled = true;
       break;
     }
+  }
+
+  // Refused is not the same as failed, and neither is the same as nothing
+  // happening. Silence here was the bug: the spinner stopped, Define came back,
+  // and the reader had no way to tell a rejected answer from a broken app.
+  if (!filled && refusal.last !== null) {
+    throw new GlossRefusedError(surface, refusal.last.reason, refusal.last.text);
   }
 
   return { filled, segments: (await resegment(article, language)).segments };
