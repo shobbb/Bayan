@@ -752,6 +752,25 @@ availability states — is what a conversation feature would need, and fluent
 Arabic is a much easier ask than a vowelled monolingual definition. It is off
 by default and REQ-88 keeps it harmless when on.
 
+`REQ-91` **A failed batch costs that batch, not the article.** The on-device
+model is asked one word at a time, so a long article is a hundred and fifty-nine
+separate generations and a small model will not hold the JSON shape for all of
+them. A chunk whose response cannot be parsed or salvaged leaves its words
+untranslated and the pass continues; it used to throw, which lost every word in
+the article *and* skipped the hosted fallback that exists to catch exactly this.
+
+Two asymmetries make that safe. The on-device pass is optional — if it answers
+nothing, the hosted route still has every word, which is a slower success and
+not a failure — and it gives up after five consecutive failures rather than
+grinding through the remaining words to fail each one. The hosted pass is
+required: if *every* chunk of it fails, the original error is rethrown, because
+that is a wrong key, model name or token ceiling and reporting "filled 0" would
+hide it.
+
+Words that no pass could answer are counted and reported (`unanswered`). Without
+that count they are indistinguishable from words never asked for, so the offer to
+translate would reappear with no sign it had already been tried.
+
 `REQ-90` **A downloaded model stays downloaded when it is not the one in use.**
 Which file is on the device and which model answers are stored as two facts
 (`localModelPath`, `localModelUseDownloaded`), not one. Collapsing them meant

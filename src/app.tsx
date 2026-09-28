@@ -281,13 +281,16 @@ function AppScreens() {
           resumeAt: null, // already on screen; do not jump them back
           titleOffset: screen.titleOffset,
         });
-        // The rejected count is only mentioned when there is one, and it is
-        // said plainly: those answers came back and were thrown away for being
+        // Both counts are mentioned only when there is one, and both are said
+        // plainly. Discarded answers came back and were thrown away for being
         // unusable, which is the difference between a model worth leaving on
-        // and one worth turning off.
+        // and one worth turning off; unanswered words are ones no model
+        // returned anything for, and saying nothing about them would leave the
+        // offer to translate silently reappearing for the same words.
         setEnrichNotice(
           `Translated ${result.filled} of ${result.requested} words.` +
-            (result.rejected > 0 ? ` ${result.rejected} unusable answers discarded.` : ''),
+            (result.rejected > 0 ? ` ${result.rejected} unusable answers discarded.` : '') +
+            (result.unanswered > 0 ? ` ${result.unanswered} came back unanswered.` : ''),
         );
       })
       .catch((error: unknown) => setEnrichFailure(describeFailure(error)))

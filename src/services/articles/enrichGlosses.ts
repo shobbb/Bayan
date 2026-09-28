@@ -66,6 +66,16 @@ const BATCH_SIZE: Record<GlossLanguage | 'local', number> = {
   local: 1,
 };
 
+/**
+ * Failures in a row after which an optional pass stops asking.
+ *
+ * Five rather than one because a small model fails intermittently — a run of
+ * bad answers among good ones is its normal behaviour, not a signal. Five in a
+ * row with nothing in between is: the words are not the problem, the model is,
+ * and it has the same 154 left to get wrong.
+ */
+const GIVE_UP_AFTER = 5;
+
 export interface EnrichmentResult {
   /** Words that had no translation before this ran. */
   requested: number;
@@ -81,6 +91,15 @@ export interface EnrichmentResult {
    * not, and the reader cannot tell them apart from the result alone.
    */
   rejected: number;
+  /**
+   * Words still untranslated when both passes were done — a chunk whose
+   * response could not be parsed, or one the model answered for nobody.
+   *
+   * Reported because the alternative is silence. These words come back looking
+   * exactly like words that were never asked for, so without a count the offer
+   * to translate simply reappears with no indication that it was already tried.
+   */
+  unanswered: number;
 }
 
 /** The distinct forms in these segments that still have no translation. */
@@ -170,32 +189,78 @@ export async function enrichArticle(
    * on-device attempt and the hosted one differ only in which client answers
    * and how many words they are asked for at a time.
    */
-  async function runPass(ids: readonly WordId[], client: LlmClient, key: string, batchSize: number) {
+  async function runPass(
+    ids: readonly WordId[],
+    client: LlmClient,
+    key: string,
+    batchSize: number,
+    /**
+     * Whether a pass that answered nothing at all is an error.
+     *
+     * True for the hosted route, where every chunk failing means the key, the
+     * model name or the token ceiling is wrong and saying "filled 0" would hide
+     * it. False for the on-device pass, which is an optimisation: if it answers
+     * nothing, the hosted route still has every word to answer, and that is a
+     * slower success rather than a failure.
+     */
+    required: boolean,
+  ) {
     const unfilled: WordId[] = [];
+    let answered = 0;
+    let consecutiveFailures = 0;
+    let lastFailure: unknown;
 
     for (let start = 0; start < ids.length; start += batchSize) {
       const chunk = ids.slice(start, start + batchSize);
-      const response = await generateGlosses(
-      {
-        words: chunk.map((id) => surfaces.get(id) ?? id),
-        languageGuidance: profile.promptGuidance,
-        glossLanguage: language,
-        terse: client === localLlmClient,
-      },
-      config.models.wordGlossing,
-      key,
-      config.generation.maxValidationRetries,
-      client,
-    );
 
-    // Match on the echoed word, normalized — the model is asked to echo it
-    // back exactly, but a stray diacritic should not lose the whole entry.
-    // phraseId, not normalize, so a multi-word expression echoed back lands on
-    // the same key the request was made under.
-    const byId = new Map<WordId, (typeof response.glosses)[number]>();
-    for (const entry of response.glosses) {
-      byId.set(phraseId(entry.word.trim(), profile), entry);
-    }
+      // An optional pass that has failed its last several answers in a row has
+      // stopped being an optimisation. At one word per call a long article is
+      // a hundred and fifty-nine on-device generations, so grinding through the
+      // rest of them to fail each one costs minutes and fills nothing — the
+      // hosted route is going to answer these words either way. The required
+      // pass never gives up early: there is nothing after it.
+      if (!required && consecutiveFailures >= GIVE_UP_AFTER) {
+        unfilled.push(...ids.slice(start));
+        break;
+      }
+
+      // One chunk's failure costs that chunk. It used to cost the article: the
+      // on-device model is asked one word at a time, so a single unsalvageable
+      // answer out of a hundred and fifty-nine threw out of the whole pass, and
+      // the hosted fallback that exists to catch exactly that never ran. The
+      // words in a failed chunk are simply still untranslated, which is the
+      // state the next pass — and the next tap — already handle.
+      let response;
+      try {
+        response = await generateGlosses(
+          {
+            words: chunk.map((id) => surfaces.get(id) ?? id),
+            languageGuidance: profile.promptGuidance,
+            glossLanguage: language,
+            terse: client === localLlmClient,
+          },
+          config.models.wordGlossing,
+          key,
+          config.generation.maxValidationRetries,
+          client,
+        );
+      } catch (error) {
+        lastFailure = error;
+        consecutiveFailures += 1;
+        unfilled.push(...chunk);
+        continue;
+      }
+      answered += 1;
+      consecutiveFailures = 0;
+
+      // Match on the echoed word, normalized — the model is asked to echo it
+      // back exactly, but a stray diacritic should not lose the whole entry.
+      // phraseId, not normalize, so a multi-word expression echoed back lands on
+      // the same key the request was made under.
+      const byId = new Map<WordId, (typeof response.glosses)[number]>();
+      for (const entry of response.glosses) {
+        byId.set(phraseId(entry.word.trim(), profile), entry);
+      }
 
       const records: GlossRecord[] = [];
       for (const id of chunk) {
@@ -241,6 +306,12 @@ export async function enrichArticle(
       filled += records.length;
     }
 
+    // Every chunk failed and this pass was the one that had to work. The
+    // original error is rethrown rather than summarized: it carries the raw
+    // response the operator needs (REQ-17), and a message written here would
+    // replace that with a paraphrase of it.
+    if (required && answered === 0 && lastFailure !== undefined) throw lastFailure;
+
     return unfilled;
   }
 
@@ -249,15 +320,21 @@ export async function enrichArticle(
   // caught above and asked of the hosted route instead, which makes it a pass
   // that can only help — never a downgrade in what the reader ends up seeing.
   const unfilled = local
-    ? await runPass(missing, localLlmClient, '', BATCH_SIZE.local)
+    ? await runPass(missing, localLlmClient, '', BATCH_SIZE.local, false)
     : missing;
 
-  if (unfilled.length > 0 && (!local || hostedKey)) {
-    await runPass(unfilled, anthropicClient, hostedKey, BATCH_SIZE[language]);
-  }
+  const remaining =
+    unfilled.length > 0 && (!local || hostedKey)
+      ? await runPass(unfilled, anthropicClient, hostedKey, BATCH_SIZE[language], true)
+      : unfilled;
 
   return {
-    result: { requested: wanted.length, filled: filled + cached.size, rejected },
+    result: {
+      requested: wanted.length,
+      filled: filled + cached.size,
+      rejected,
+      unanswered: remaining.length,
+    },
     segments: (await resegment(article, language)).segments,
   };
 }
