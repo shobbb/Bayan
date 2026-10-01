@@ -3,6 +3,7 @@ import type { Article, ArticleSource } from '@/domain/articles/types';
 import { DifficultyLabel } from '@/ui/components/DifficultyLabel';
 import { describeFailure, type Failure } from '@/ui/failure';
 import { listLibrary, type LibraryEntry } from '@/services/articles/articleService';
+import { articlesMissingDefinitions } from '@/services/articles/definitionCoverage';
 import './LibraryScreen.css';
 
 export interface LibraryScreenProps {
@@ -31,11 +32,14 @@ function ArticleCard({
   article,
   readAt,
   busy,
+  needsDefinitions,
   onOpen,
 }: {
   article: Article;
   readAt: number | null;
   busy: boolean;
+  /** No pre-written definitions yet, so this one is still to be written. */
+  needsDefinitions: boolean;
   onOpen: () => void;
 }) {
   const [failed, setFailed] = useState(false);
@@ -65,6 +69,28 @@ function ArticleCard({
               <path d="M3 1.6 10 6l-7 4.4z" fill="currentColor" />
             </svg>
             <span className="library__badge-text">Has video</span>
+          </span>
+        )}
+        {/* Top corner, clear of the two bottom badges: this is a fact about the
+            definitions file rather than about the article, and it is the one
+            mark on the grid meant to be scanned for rather than read. */}
+        {needsDefinitions && (
+          <span
+            className="library__badge library__badge--undefined"
+            title="No written definitions yet"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <path
+                d="M8 4.6v4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+              <circle cx="8" cy="11.2" r="0.95" fill="currentColor" />
+            </svg>
+            <span className="library__badge-text">No written definitions yet</span>
           </span>
         )}
         {readAt !== null && (
@@ -115,6 +141,8 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
   // screen opens. Described rather than shown raw, so "Importing a module
   // script failed" arrives as something the reader can act on.
   const [failure, setFailure] = useState<Failure | null>(null);
+  /** Null until worked out; the marks simply appear when it lands. */
+  const [undefinedIds, setUndefinedIds] = useState<ReadonlySet<string> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +155,22 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
       .catch((error: unknown) => {
         if (!cancelled) setFailure(describeFailure(error));
       });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Separate from the library load, and allowed to land late: segmenting the
+  // whole bundle to find these takes a third of a second on a laptop, and the
+  // grid is readable without the marks. Failing to work them out is not worth
+  // an error either — the cards are still correct, just unmarked.
+  useEffect(() => {
+    let cancelled = false;
+    articlesMissingDefinitions()
+      .then((ids) => {
+        if (!cancelled) setUndefinedIds(ids);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -245,6 +289,7 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
               article={article}
               readAt={readAt}
               busy={opening === article.id}
+              needsDefinitions={undefinedIds?.has(article.id) ?? false}
               onOpen={() => onOpenArticle(article.id)}
             />
           </li>
