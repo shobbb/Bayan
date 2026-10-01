@@ -26,6 +26,7 @@ import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/language
 import type { LanguageProfile, WordId } from '@/domain/types';
 import { phraseId } from '@/domain/wordIdentity';
 import { contextsByKey } from '@/domain/articles/context';
+import { bundledArabicDefinitions } from './bundledDefinitions';
 import { judgeArabicDefinition } from '@/domain/glossQuality';
 import { getWord, listWords, upsertWord } from '@/data/wordRepository';
 import { getGlosses, putGlosses } from '@/data/glossRepository';
@@ -566,7 +567,17 @@ export async function resegment(
   ]);
 
   const known = new Map<WordId, { gloss: string; forms: string | null; surface?: string }>();
-  // The cache is laid down first so a corpus gloss, which the learner has
+
+  // Pre-written definitions go down first, so anything this device produced or
+  // the learner has actually met still wins over them. They are Arabic, so they
+  // have no business in English mode.
+  if (language === 'arabic') {
+    for (const [id, entry] of await bundledArabicDefinitions()) {
+      known.set(id, { gloss: entry.gloss, forms: null, surface: entry.surface });
+    }
+  }
+
+  // The cache is laid down next so a corpus gloss, which the learner has
   // actually met, wins over a generated one for the same form.
   //
   // Both sources are read in the active language only, and a record that has no
