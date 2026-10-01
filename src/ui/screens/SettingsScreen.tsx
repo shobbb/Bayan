@@ -86,6 +86,15 @@ export function SettingsScreen() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fromBuild, setFromBuild] = useState(false);
+  /**
+   * A key is held and can be replaced only by removing it first.
+   *
+   * The same condition that offers Remove, derived once so the two cannot
+   * drift: a locked field with no way to unlock it would be a dead end, and an
+   * unlocked field beside a stored key is what made this view read as though
+   * the key itself were sitting in the box.
+   */
+  const keyIsLocked = stored !== null && !fromBuild;
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [remote, setRemote] = useState<RemoteStatus | null>(null);
@@ -395,6 +404,11 @@ export function SettingsScreen() {
               </p>
             )}
 
+            {/* Inert while a key is held, so the field cannot be read as an
+                editable copy of it. Entering a new one means removing the old
+                one first, which is what the button beside it is for. A key the
+                deployment supplied is overridden rather than removed, so that
+                case stays editable. */}
             <input
               type="password"
               className="settings-screen__input"
@@ -402,6 +416,7 @@ export function SettingsScreen() {
               value={draft}
               autoComplete="off"
               spellCheck={false}
+              disabled={keyIsLocked}
               onChange={(event) => setDraft(event.target.value)}
             />
 
@@ -409,6 +424,7 @@ export function SettingsScreen() {
               <button
                 type="button"
                 className="settings-screen__button"
+                disabled={keyIsLocked}
                 onClick={() => void handleSave()}
               >
                 Save key
