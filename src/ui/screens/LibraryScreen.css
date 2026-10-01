@@ -163,6 +163,18 @@
   inset-inline-end: var(--space-2);
 }
 
+/* The top corner, so it never collides with the video and read badges along
+   the bottom, and so a column of them lines up down the grid when scrolling
+   for the articles still to be written. The chip backing is kept because this
+   sits over photographs, where yellow alone is not reliably legible. */
+.library__badge--undefined {
+  bottom: auto;
+  top: var(--space-2);
+  inset-inline-start: auto;
+  inset-inline-end: var(--space-2);
+  color: var(--warn);
+}
+
 /* The glyph is the whole control visually; the word is what a screen reader
    gets, since "play triangle" is not a fact about the article. */
 .library__badge-text {

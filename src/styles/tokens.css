@@ -16,6 +16,15 @@
   --signal: #2e5e8c;
 
   /**
+   * Attention, on a dark chip only.
+   *
+   * Defined once rather than per theme because the only thing wearing it sits
+   * on the badge's own translucent black, which does not change between light
+   * and dark — a second value would be the same colour twice.
+   */
+  --warn: #f2c14b;
+
+  /**
    * The five difficulty steps. A separate ramp from --signal, which REQ-D2
    * reserves for what is interactive — these say something about the text and
    * are not touchable.
