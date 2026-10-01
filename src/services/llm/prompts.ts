@@ -137,7 +137,7 @@ const ARABIC_GLOSS_INSTRUCTIONS = `You are defining Arabic words in Arabic, for 
 
 Some entries are multi-word expressions rather than single words. Define the expression as a whole — what it means in use, not what its words mean separately.
 
-For each supplied entry, write a short definition IN SIMPLE ARABIC. Every definition must:
+For each supplied entry, write a short definition IN SIMPLE ARABIC — في كلامٍ بسيطٍ وقصيرٍ. Every definition must:
 - be a short phrase, typically 2-6 words — a definition, not a one-word synonym,
 - use only common, high-frequency Arabic that a learner would meet early; never explain a word with one that is rarer than it,
 - never use the headword itself, or another form of its root, inside the definition,
@@ -172,7 +172,7 @@ Echo each word back exactly as supplied so the definitions can be matched to it.
  * and `partOfSpeech` entirely — both are optional downstream, and every field
  * asked for is another thing to get wrong.
  */
-const ARABIC_GLOSS_INSTRUCTIONS_TERSE = `عَرِّف الكلمة العربية التالية بالعربية، كما وردت في الجملة.
+const ARABIC_GLOSS_INSTRUCTIONS_TERSE = `عَرِّف الكلمة العربية التالية بالعربية، كما وردت في الجملة، في كلامٍ بسيطٍ وقصيرٍ.
 
 Rules:
 - Answer in Arabic only. No English.
