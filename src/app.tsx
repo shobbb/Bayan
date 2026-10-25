@@ -124,6 +124,8 @@ function AppScreens() {
   // The newest progress the questions screen has saved, carried back to the
   // article so its button says where the reader got to.
   const latestProgress = useRef<ComprehensionProgress | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerateFailure, setRegenerateFailure] = useState<Failure | null>(null);
   // The study choice: which sources are on offer, and whether it is open.
   const [studyOpen, setStudyOpen] = useState(false);
   const [studyChoices, setStudyChoices] = useState<
@@ -425,12 +427,41 @@ function AppScreens() {
       .finally(() => setGeneratingQuestions(false));
   }, [screen, config]);
 
+  // A fresh set replaces the old one and its progress. The screen is swapped
+  // over to the new set rather than sent back to the article: asking for new
+  // questions is asking to answer them.
+  const handleRegenerateQuestions = useCallback(() => {
+    if (screen.name !== 'questions') return;
+    const { returnTo } = screen;
+    setRegenerateFailure(null);
+    setRegenerating(true);
+    createComprehension(returnTo.article, config)
+      .then(async (comprehension) => {
+        const progress = emptyProgress(comprehension, Date.now());
+        await saveComprehensionProgress(progress);
+        latestProgress.current = progress;
+        setScreen((current) =>
+          current.name === 'questions' && current.returnTo.article.id === returnTo.article.id
+            ? {
+                name: 'questions',
+                comprehension,
+                progress,
+                returnTo: { ...current.returnTo, comprehension, comprehensionProgress: progress },
+              }
+            : current,
+        );
+      })
+      .catch((error: unknown) => setRegenerateFailure(describeFailure(error)))
+      .finally(() => setRegenerating(false));
+  }, [screen, config]);
+
   const handleOpenQuestions = useCallback(() => {
     if (screen.name !== 'article' || !screen.comprehension) return;
     const returnTo = screen;
     const comprehension = screen.comprehension;
     const progress = screen.comprehensionProgress ?? emptyProgress(comprehension, Date.now());
     latestProgress.current = progress;
+    setRegenerateFailure(null);
     navigate(() => setScreen({ name: 'questions', comprehension, progress, returnTo }));
   }, [screen]);
 
@@ -582,6 +613,8 @@ function AppScreens() {
     const { comprehension, progress, returnTo } = screen;
     return screenFrame(
       <QuestionsScreen
+        // Remounted for a new set, so nothing from the old one carries over.
+        key={comprehension.createdAt}
         titleAr={returnTo.article.titleAr}
         set={comprehension}
         initialProgress={progress}
@@ -593,6 +626,11 @@ function AppScreens() {
         }}
         onGrade={(question, answer) => gradeAnswer(returnTo.article, question, answer, config)}
         onOpenSettings={handleOpenSettings}
+        regenerate={{
+          run: handleRegenerateQuestions,
+          busy: regenerating,
+          failure: regenerateFailure,
+        }}
         // Back to the end of the text, where the button that led here sits.
         onExit={() =>
           navigate(() =>

@@ -29,6 +29,16 @@ export interface QuestionsScreenProps {
   onOpenSettings: () => void;
   /** Back to the article, from any question or from the end. */
   onExit: () => void;
+  /**
+   * Replaces this set with a freshly written one. The caller swaps the screen
+   * over to the new set when it arrives; this screen only asks and shows the
+   * outcome.
+   */
+  regenerate: {
+    run: () => void;
+    busy: boolean;
+    failure: Failure | null;
+  };
 }
 
 /** How long typing must pause before the draft is written. */
@@ -55,6 +65,7 @@ export function QuestionsScreen({
   onGrade,
   onOpenSettings,
   onExit,
+  regenerate,
 }: QuestionsScreenProps) {
   const [progress, setProgress] = useState(initialProgress);
   // The latest progress, for the grading call to build on when it returns.
@@ -62,6 +73,9 @@ export function QuestionsScreen({
   progressRef.current = progress;
   const [grading, setGrading] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
+  // Replacing the set discards the reader's answers and costs a call, so the
+  // first tap only asks.
+  const [confirmingRegenerate, setConfirmingRegenerate] = useState(false);
 
   // A draft waiting to be written. Flushed when the screen goes away, so a
   // reader who types and backs out straight away keeps what they typed.
@@ -216,7 +230,7 @@ export function QuestionsScreen({
                   {' '}
                   <button
                     type="button"
-                    className="questions-screen__link"
+                    className="questions-screen__link questions-screen__link--inline"
                     onClick={onOpenSettings}
                   >
                     Open Settings
@@ -255,6 +269,59 @@ export function QuestionsScreen({
           </div>
         </div>
       )}
+
+      <div className="questions-screen__regenerate">
+        <button
+          type="button"
+          className="questions-screen__link"
+          disabled={regenerate.busy || grading}
+          aria-busy={regenerate.busy}
+          onClick={() => {
+            if (!confirmingRegenerate) {
+              setConfirmingRegenerate(true);
+              return;
+            }
+            setConfirmingRegenerate(false);
+            flushDraft();
+            regenerate.run();
+          }}
+        >
+          {regenerate.busy
+            ? 'Writing new questions…'
+            : confirmingRegenerate
+              ? 'Replace these questions? Tap again'
+              : 'New questions'}
+        </button>
+        {confirmingRegenerate && !regenerate.busy && (
+          <p className="questions-screen__note">
+            Your answers to these questions will be cleared.{' '}
+            <button
+              type="button"
+              className="questions-screen__link questions-screen__link--inline"
+              onClick={() => setConfirmingRegenerate(false)}
+            >
+              Keep them
+            </button>
+          </p>
+        )}
+        {regenerate.failure && !regenerate.busy && (
+          <p className="questions-screen__failure" role="status">
+            {regenerate.failure.message}
+            {regenerate.failure.settingsWillHelp && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="questions-screen__link questions-screen__link--inline"
+                  onClick={onOpenSettings}
+                >
+                  Open Settings
+                </button>
+              </>
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

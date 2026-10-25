@@ -157,11 +157,32 @@
   text-align: center;
 }
 
-.questions-screen__failure .questions-screen__link {
+.questions-screen__link--inline {
   display: inline;
   min-height: 0;
   margin: 0;
   text-decoration: underline;
+}
+
+.questions-screen__link:disabled {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+/* Kept apart from the answer controls, below everything, so replacing the set
+   is never one stray tap from submitting an answer. */
+.questions-screen__regenerate {
+  margin-top: var(--space-7);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+
+.questions-screen__note {
+  margin: 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
 }
 
 .questions-screen__question .drill__advance {
