@@ -63,7 +63,11 @@ function segments() {
 /** English definitions, so these measure batching and not the Arabic gate. */
 const localConfig = {
   ...DEFAULT_APP_CONFIG,
-  generation: { ...DEFAULT_APP_CONFIG.generation, useLocalModel: true },
+  generation: {
+    ...DEFAULT_APP_CONFIG.generation,
+    arabicOnlyDefinitions: false,
+    useLocalModel: true,
+  },
 };
 
 /** The shape a small model's looping output fails as: no declared truncation. */
@@ -109,7 +113,11 @@ describe('enrichArticle', () => {
 
     const { result } = await enrichArticle(article(), segments(), {
       ...DEFAULT_APP_CONFIG,
-      generation: { ...DEFAULT_APP_CONFIG.generation, useLocalModel: false },
+      generation: {
+        ...DEFAULT_APP_CONFIG.generation,
+        arabicOnlyDefinitions: false,
+        useLocalModel: false,
+      },
     });
 
     expect(result.filled).toBe(1);

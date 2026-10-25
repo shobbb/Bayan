@@ -6,6 +6,7 @@ import { StatsScreen } from '@/ui/screens/StatsScreen';
 import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
 import { LibraryScreen } from '@/ui/screens/LibraryScreen';
+import { QuestionsScreen } from '@/ui/screens/QuestionsScreen';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
@@ -26,6 +27,11 @@ import { DOWNLOADABLE_MODELS } from '@/config/localModels';
 import { sentenceAround } from '@/domain/articles/context';
 import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
 import { enrichArticle, enrichWord } from '@/services/articles/enrichGlosses';
+import {
+  createComprehension,
+  storedComprehension,
+} from '@/services/articles/comprehensionService';
+import type { ComprehensionSet } from '@/domain/articles/comprehension';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
@@ -40,20 +46,27 @@ import type { Round, RoundType, Word } from '@/domain/types';
  * needs @capacitor/app, which isn't part of the native plugin set built so
  * far (§2.0.1).
  */
+interface ArticleScreen {
+  name: 'article';
+  article: Article;
+  segments: ResolvedSegment[];
+  flaggedIndices: number[];
+  untranslated: number;
+  resumeAt: number | null;
+  titleOffset: number;
+  /** The comprehension set already written for this article, if any. */
+  comprehension: ComprehensionSet | null;
+}
+
 type Screen =
   // The destinations, which are exactly the bottom-nav tabs. Anything with a
   // payload below is an activity: reached from a destination, and not a tab.
   | { name: NavTab }
   | { name: 'reading'; round: Round }
-  | {
-      name: 'article';
-      article: Article;
-      segments: ResolvedSegment[];
-      flaggedIndices: number[];
-      untranslated: number;
-      resumeAt: number | null;
-      titleOffset: number;
-    }
+  | ArticleScreen
+  // Holds the article screen it came from, so going back restores the reading
+  // as it was — enriched segments, flags and all — rather than reopening it.
+  | { name: 'questions'; comprehension: ComprehensionSet; returnTo: ArticleScreen }
   | {
       name: 'drill';
       queue: QueueEntry[];
@@ -75,6 +88,8 @@ function AppScreens() {
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
   const [definingIndex, setDefiningIndex] = useState<number | null>(null);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [questionsFailure, setQuestionsFailure] = useState<Failure | null>(null);
   // The study choice: which sources are on offer, and whether it is open.
   const [studyOpen, setStudyOpen] = useState(false);
   const [studyChoices, setStudyChoices] = useState<
@@ -252,9 +267,13 @@ function AppScreens() {
     setFailure(null);
     setEnrichFailure(null);
     setEnrichNotice(null);
+    setQuestionsFailure(null);
     setOpeningArticle(id);
-    openArticle(id, glossLanguageFor(config.generation.arabicOnlyDefinitions))
-      .then(({ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }) =>
+    Promise.all([
+      openArticle(id, glossLanguageFor(config.generation.arabicOnlyDefinitions)),
+      storedComprehension(id),
+    ])
+      .then(([{ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }, comprehension]) =>
         navigate(() =>
           setScreen({
             name: 'article',
@@ -264,6 +283,7 @@ function AppScreens() {
             untranslated,
             resumeAt,
             titleOffset,
+            comprehension,
           }),
         ),
       )
@@ -284,13 +304,11 @@ function AppScreens() {
     enrichArticle(article, segments, config)
       .then(({ result, segments: filled }) => {
         setScreen({
-          name: 'article',
-          article,
+          ...screen,
           segments: filled,
           flaggedIndices,
           untranslated: result.requested - result.filled,
           resumeAt: null, // already on screen; do not jump them back
-          titleOffset: screen.titleOffset,
         });
         // Both counts are mentioned only when there is one, and both are said
         // plainly. Discarded answers came back and were thrown away for being
@@ -327,13 +345,10 @@ function AppScreens() {
       })
         .then(({ segments: filled }) => {
           setScreen({
-            name: 'article',
-            article,
+            ...screen,
             segments: filled,
             flaggedIndices,
-            untranslated: screen.untranslated,
             resumeAt: null,
-            titleOffset: screen.titleOffset,
           });
         })
         .catch((error: unknown) => setEnrichFailure(describeFailure(error)))
@@ -341,6 +356,35 @@ function AppScreens() {
     },
     [screen, config],
   );
+
+  // Asked for, never automatic: a model call on the reader's key (REQ-15).
+  // The set is stored, so the button reads "Questions" from then on, and
+  // opening it straight away is what the tap was for.
+  const handleGenerateQuestions = useCallback(() => {
+    if (screen.name !== 'article') return;
+    const from = screen;
+    setQuestionsFailure(null);
+    setGeneratingQuestions(true);
+    createComprehension(from.article, config)
+      .then((comprehension) => {
+        // Only if the reader is still on this article: leaving while it ran
+        // must not pull them back into it.
+        setScreen((current) =>
+          current.name === 'article' && current.article.id === from.article.id
+            ? { ...current, comprehension, resumeAt: null }
+            : current,
+        );
+      })
+      .catch((error: unknown) => setQuestionsFailure(describeFailure(error)))
+      .finally(() => setGeneratingQuestions(false));
+  }, [screen, config]);
+
+  const handleOpenQuestions = useCallback(() => {
+    if (screen.name !== 'article' || !screen.comprehension) return;
+    const returnTo = screen;
+    const comprehension = screen.comprehension;
+    navigate(() => setScreen({ name: 'questions', comprehension, returnTo }));
+  }, [screen]);
 
   const handleFinishArticle = useCallback(
     (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
@@ -435,6 +479,18 @@ function AppScreens() {
         onToggleNotKnown={(index, flagged) => {
           // Written as it is tapped, not at Finish: backing out of a long
           // article should not cost the reader everything they noticed in it.
+          // Kept in step here too, so returning from the questions restores
+          // the flags made since the article was opened.
+          setScreen((current) =>
+            current.name === 'article'
+              ? {
+                  ...current,
+                  flaggedIndices: flagged
+                    ? [...new Set([...current.flaggedIndices, index])]
+                    : current.flaggedIndices.filter((i) => i !== index),
+                }
+              : current,
+          );
           void setArticleFlag(article, segments, index, flagged)
             .then(() => setRefreshToken((n) => n + 1))
             .catch((error: unknown) => setEnrichFailure(describeFailure(error)));
@@ -445,6 +501,14 @@ function AppScreens() {
           run: handleEnrich,
           failure: enrichFailure,
           notice: enrichNotice,
+          onOpenSettings: handleOpenSettings,
+        }}
+        questions={{
+          ready: screen.comprehension !== null,
+          busy: generatingQuestions,
+          generate: handleGenerateQuestions,
+          open: handleOpenQuestions,
+          failure: questionsFailure,
           onOpenSettings: handleOpenSettings,
         }}
         onDefineWord={handleDefineWord}
@@ -459,6 +523,22 @@ function AppScreens() {
         }
         attribution={{ label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }}
         onFinish={(notKnownIndices) => handleFinishArticle(article, segments, notKnownIndices)}
+      />,
+    );
+  }
+
+  if (screen.name === 'questions') {
+    const { comprehension, returnTo } = screen;
+    return screenFrame(
+      <QuestionsScreen
+        titleAr={returnTo.article.titleAr}
+        questions={comprehension.questions}
+        // Back to the end of the text, where the button that led here sits.
+        onExit={() =>
+          navigate(() =>
+            setScreen({ ...returnTo, resumeAt: Math.max(returnTo.segments.length - 1, 0) }),
+          )
+        }
       />,
     );
   }

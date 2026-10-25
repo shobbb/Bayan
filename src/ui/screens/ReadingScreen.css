@@ -112,6 +112,8 @@
 .reading-screen__finish-row {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin-top: var(--space-7);
 }
 
@@ -127,9 +129,22 @@
   cursor: pointer;
 }
 
-.reading-screen__finish:hover {
+.reading-screen__finish:hover:not(:disabled) {
   border-color: var(--signal);
   color: var(--signal);
+}
+
+.reading-screen__finish:disabled {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+.reading-screen__questions-failure {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+  text-align: center;
 }
 
 /* Attribution for text the app did not write. Quiet, but always present and

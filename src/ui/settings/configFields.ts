@@ -15,6 +15,7 @@
  */
 import type { ConfigPath } from '@/config/overrides';
 import type { QueryKind } from '@/config/models';
+import { ARABIC_ONLY_LOCKED } from '@/config/generation';
 import type { RoundType } from '@/domain/types';
 
 export interface NumberFieldSpec {
@@ -32,6 +33,8 @@ export interface TextFieldSpec {
 
 export interface BooleanFieldSpec {
   kind: 'boolean';
+  /** Why the value cannot be changed right now. Present ⇒ the toggle is disabled. */
+  locked?: string;
 }
 
 export type ConfigFieldSpec = NumberFieldSpec | TextFieldSpec | BooleanFieldSpec;
@@ -66,8 +69,14 @@ function text(path: ConfigPath, label: string, help: string, placeholder: string
   return { id: path.join('.'), path, label, help, spec: { kind: 'text', placeholder } };
 }
 
-function bool(path: ConfigPath, label: string, help: string): ConfigField {
-  return { id: path.join('.'), path, label, help, spec: { kind: 'boolean' } };
+function bool(path: ConfigPath, label: string, help: string, locked?: string): ConfigField {
+  return {
+    id: path.join('.'),
+    path,
+    label,
+    help,
+    spec: locked ? { kind: 'boolean', locked } : { kind: 'boolean' },
+  };
 }
 
 /** Model identifiers change often, so routes take free text rather than a fixed list. */
@@ -86,6 +95,11 @@ const QUERY_KINDS: ReadonlyArray<{ kind: QueryKind; label: string; help: string 
     kind: 'wordGlossing',
     label: 'Word glossing',
     help: 'Translates words met in published articles that the publisher did not gloss. Batched, and only for the article being read.',
+  },
+  {
+    kind: 'comprehension',
+    label: 'Comprehension questions',
+    help: 'Writes multiple-choice questions on an article, in Arabic, when you ask for them. One call per article; the set is kept and reused.',
   },
   {
     kind: 'distractorGeneration',
@@ -163,6 +177,7 @@ export const CONFIG_FIELD_GROUPS: readonly ConfigFieldGroup[] = [
         ['generation', 'arabicOnlyDefinitions'],
         'Arabic only',
         'Define words in simple Arabic instead of English, while reading and on cards. Writing an answer is dropped in this mode — typing Arabic on an English keyboard measures the keyboard, not the recall — so sessions run flashcards and multiple choice. Words already defined in English keep those definitions; their Arabic ones are written the first time they are asked for.',
+        ARABIC_ONLY_LOCKED ? 'Always on for now while the app is developed in Arabic only.' : undefined,
       ),
       bool(
         ['generation', 'useLocalModel'],

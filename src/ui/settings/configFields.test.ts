@@ -108,7 +108,10 @@ describe('override round-trip', () => {
             : `${current}-edited`;
 
       const overrides = withOverride(null, field.path, edited);
-      expect(readConfigValue(mergeConfig(overrides), field.path), field.id).toBe(edited);
+      // A locked field is shown disabled, and the merge holds it whatever was
+      // stored — an override saved before the lock must not leak through.
+      const expected = field.spec.kind === 'boolean' && field.spec.locked ? current : edited;
+      expect(readConfigValue(mergeConfig(overrides), field.path), field.id).toBe(expected);
     }
   });
 

@@ -7,19 +7,23 @@ import { z } from 'zod';
 import type { ModelRoute } from '@/config/models';
 import { anthropicClient, type LlmClient } from './client';
 import {
+  llmComprehensionResponseSchema,
   llmGlossSchema,
   llmGlossesResponseSchema,
   llmRoundResponseSchema,
   llmSentencesResponseSchema,
+  type LlmComprehensionResponse,
   type LlmGlossesResponse,
   type LlmRoundResponse,
   type LlmSentencesResponse,
 } from './schemas';
 import { salvageEntries, normalizeStructuralPunctuation } from './salvage';
 import {
+  buildComprehensionPrompt,
   buildGlossPrompt,
   buildRoundGenerationPrompt,
   buildSentenceGenerationPrompt,
+  type ComprehensionPromptParams,
   type GlossPromptParams,
   type RoundPromptParams,
   type SentencePromptParams,
@@ -200,4 +204,23 @@ export async function generateGlosses(
 
     return { glosses };
   }
+}
+
+/** Multiple-choice comprehension questions on one article, in one call. */
+export async function generateComprehension(
+  params: ComprehensionPromptParams,
+  route: ModelRoute,
+  apiKey: string,
+  maxRetries: number,
+  client: LlmClient = anthropicClient,
+): Promise<LlmComprehensionResponse> {
+  const prompt = buildComprehensionPrompt(params);
+  return generateAndValidate(
+    client,
+    route,
+    apiKey,
+    prompt,
+    llmComprehensionResponseSchema,
+    maxRetries,
+  );
 }

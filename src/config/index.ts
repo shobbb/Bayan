@@ -9,7 +9,7 @@
 import { DEFAULT_MODEL_ROUTES } from './models';
 import { DEFAULT_ALGORITHM_CONFIG } from './algorithm';
 import { DEFAULT_CATEGORIES } from './categories';
-import { DEFAULT_GENERATION_CONFIG } from './generation';
+import { ARABIC_ONLY_LOCKED, DEFAULT_GENERATION_CONFIG } from './generation';
 import type { AppConfig, AppConfigOverrides } from './types';
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
@@ -49,8 +49,9 @@ function deepMerge<T>(base: T, patch: unknown): T {
 }
 
 export function mergeConfig(overrides: AppConfigOverrides | null | undefined): AppConfig {
-  if (!overrides) return DEFAULT_APP_CONFIG;
-  return deepMerge(DEFAULT_APP_CONFIG, overrides);
+  const merged = overrides ? deepMerge(DEFAULT_APP_CONFIG, overrides) : DEFAULT_APP_CONFIG;
+  if (!ARABIC_ONLY_LOCKED || merged.generation.arabicOnlyDefinitions) return merged;
+  return { ...merged, generation: { ...merged.generation, arabicOnlyDefinitions: true } };
 }
 
 export type { AppConfig, AppConfigOverrides } from './types';

@@ -5,6 +5,7 @@
  */
 import Dexie, { type Table } from 'dexie';
 import type { Word, Round, Batch, WordId } from '@/domain/types';
+import type { ComprehensionSet } from '@/domain/articles/comprehension';
 
 export interface SettingsRecord {
   key: string;
@@ -110,6 +111,7 @@ export class BayanDB extends Dexie {
   settings!: Table<SettingsRecord, string>;
   articleReads!: Table<ArticleReadRecord, string>;
   glosses!: Table<GlossRecord, WordId>;
+  comprehension!: Table<ComprehensionSet, string>;
 
   constructor() {
     super('bayan');
@@ -126,6 +128,11 @@ export class BayanDB extends Dexie {
     });
     this.version(3).stores({
       glosses: 'id, createdAt',
+    });
+    // v4 adds comprehension questions, one set per article. Generated on
+    // request and kept, so taking the questions again costs nothing.
+    this.version(4).stores({
+      comprehension: 'articleId, createdAt',
     });
   }
 }

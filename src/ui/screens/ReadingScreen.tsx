@@ -108,6 +108,21 @@ export interface ReadingScreenProps {
     notice: string | null;
     onOpenSettings: () => void;
   } | null;
+  /**
+   * Comprehension questions on this text. Reads "Generate questions" until a
+   * set exists, then "Questions". Generating is a model call on the reader's
+   * key, so it is a tap rather than something done on arrival (REQ-15), and
+   * its failure is shown here, beside the button that caused it (REQ-13).
+   * Absent ⇒ no button (generated rounds).
+   */
+  questions?: {
+    ready: boolean;
+    busy: boolean;
+    generate: () => void;
+    open: () => void;
+    failure: Failure | null;
+    onOpenSettings: () => void;
+  } | null;
 }
 
 // Used only when the panel cannot be measured (no layout, as under jsdom).
@@ -137,6 +152,7 @@ export function ReadingScreen({
   media = null,
   onExit,
   enrich = null,
+  questions = null,
   onToggleNotKnown,
   onDefineWord,
   onRedefineWord,
@@ -418,6 +434,21 @@ export function ReadingScreen({
       />
 
       <div className="reading-screen__finish-row">
+        {questions && (
+          <button
+            type="button"
+            className="reading-screen__finish"
+            aria-busy={questions.busy}
+            disabled={questions.busy}
+            onClick={questions.ready ? questions.open : questions.generate}
+          >
+            {questions.ready
+              ? 'Questions'
+              : questions.busy
+                ? 'Generating questions…'
+                : 'Generate questions'}
+          </button>
+        )}
         <button
           type="button"
           className="reading-screen__finish"
@@ -426,6 +457,24 @@ export function ReadingScreen({
           Finish
         </button>
       </div>
+
+      {questions?.failure && !questions.busy && (
+        <p className="reading-screen__questions-failure" role="status">
+          {questions.failure.message}
+          {questions.failure.settingsWillHelp && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="reading-screen__enrich-settings"
+                onClick={questions.onOpenSettings}
+              >
+                Open Settings
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       <GlossPanel
         item={glossItem}

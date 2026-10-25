@@ -244,3 +244,35 @@ export function buildGlossPrompt(params: GlossPromptParams): string {
     `Words:\n${listed}`,
   ].join('\n\n');
 }
+
+const BASE_COMPREHENSION_INSTRUCTIONS = `You are writing reading-comprehension questions on a short Arabic article for a learner of Arabic.
+
+Rules:
+- Write every question and every option in simple Modern Standard Arabic, fully vowelled. No English anywhere.
+- Each question must be answerable from the article alone, not from general knowledge.
+- Ask about what the article says — its facts, events, reasons and main idea — not about the meaning of single words.
+- Give exactly four options. Exactly one is supported by the article; the other three are plausible to someone who skimmed it but are contradicted by, or absent from, the text.
+- Keep the options similar in length and form, so the right one does not stand out.
+- Order the questions as the article runs.
+
+Respond with strict JSON only, matching this shape exactly, with no prose before or after and no markdown code fence:
+{
+  "questions": Array<{ "question": string, "options": [string, string, string, string], "correctIndex": number }>
+}
+
+"correctIndex" is the 0-based position of the right option in "options".`;
+
+export interface ComprehensionPromptParams {
+  titleAr: string;
+  paragraphs: readonly string[];
+  count: number;
+}
+
+export function buildComprehensionPrompt(params: ComprehensionPromptParams): string {
+  return [
+    BASE_COMPREHENSION_INSTRUCTIONS,
+    `Write ${params.count} questions.`,
+    `Article title: ${params.titleAr}`,
+    `Article:\n${params.paragraphs.join('\n\n')}`,
+  ].join('\n\n');
+}

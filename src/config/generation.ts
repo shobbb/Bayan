@@ -33,7 +33,7 @@ export const DEFAULT_GENERATION_CONFIG: GenerationConfig = {
   targetWordCount: { min: 90, max: 140 },
   maxValidationRetries: 1,
   requireFullDiacritics: true,
-  arabicOnlyDefinitions: false,
+  arabicOnlyDefinitions: true,
   useLocalModel: false,
   newWordDensity: {
     explore: 0.2,
@@ -42,3 +42,11 @@ export const DEFAULT_GENERATION_CONFIG: GenerationConfig = {
     backlog: 0.0,
   },
 };
+
+/**
+ * Arabic-only is held on while the app is developed against one definition
+ * language. mergeConfig enforces it over any stored override, so a device that
+ * saved "off" earlier reads Arabic too, and Settings shows the toggle disabled.
+ * Setting this to false restores the toggle; nothing else depends on it.
+ */
+export const ARABIC_ONLY_LOCKED = true;

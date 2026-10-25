@@ -36,6 +36,7 @@ export function ConfigFieldRow({
   onReset,
 }: ConfigFieldRowProps) {
   const [draft, setDraft] = useState(String(value));
+  const locked = field.spec.kind === 'boolean' ? field.spec.locked : undefined;
 
   // Follow the stored value when it changes from outside — a reset, or
   // "restore defaults" — without fighting the user mid-edit.
@@ -72,7 +73,7 @@ export function ConfigFieldRow({
         <label className="config-field__label" htmlFor={field.id}>
           {field.label}
         </label>
-        {overridden && (
+        {overridden && !locked && (
           <button type="button" className="config-field__reset" onClick={onReset}>
             Reset
           </button>
@@ -80,11 +81,14 @@ export function ConfigFieldRow({
       </div>
 
       {field.spec.kind === 'boolean' ? (
-        <label className="config-field__toggle">
+        <label
+          className={'config-field__toggle' + (locked ? ' config-field__toggle--locked' : '')}
+        >
           <input
             id={field.id}
             type="checkbox"
             checked={value === true}
+            disabled={locked !== undefined}
             onChange={(event) => onChange(event.target.checked)}
           />
           <span>{value === true ? 'On' : 'Off'}</span>
@@ -110,6 +114,7 @@ export function ConfigFieldRow({
         />
       )}
 
+      {locked && <p className="config-field__locked">{locked}</p>}
       <p className="config-field__help">{field.help}</p>
       <p className="config-field__default">
         Default {format(defaultValue)}

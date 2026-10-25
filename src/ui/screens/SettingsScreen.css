@@ -203,6 +203,26 @@
   accent-color: var(--signal);
 }
 
+/* Held on by the build rather than by the reader: shown, so the setting in
+   force is visible, but grayed so it does not read as something to change. */
+.config-field__toggle--locked {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.config-field__toggle--locked input {
+  accent-color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.config-field__locked {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}
+
 .settings-screen__field {
   display: flex;
   align-items: center;

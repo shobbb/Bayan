@@ -57,3 +57,26 @@ export type LlmGlossesResponse = z.infer<typeof llmGlossesResponseSchema>;
 
 export type LlmSentence = z.infer<typeof llmSentenceSchema>;
 export type LlmSentencesResponse = z.infer<typeof llmSentencesResponseSchema>;
+
+/**
+ * Multiple-choice comprehension questions on one article. Each question is
+ * checked on its own terms — four distinct options and an answer that points
+ * at one of them — because a question whose answer index is out of range, or
+ * whose "wrong" option repeats the right one, cannot be marked fairly.
+ */
+export const llmComprehensionQuestionSchema = z
+  .object({
+    question: z.string().min(1),
+    options: z.array(z.string().min(1)).length(4),
+    correctIndex: z.number().int().min(0).max(3),
+  })
+  .refine((q) => new Set(q.options.map((o) => o.trim())).size === q.options.length, {
+    message: 'options must be distinct',
+    path: ['options'],
+  });
+
+export const llmComprehensionResponseSchema = z.object({
+  questions: z.array(llmComprehensionQuestionSchema).min(1),
+});
+
+export type LlmComprehensionResponse = z.infer<typeof llmComprehensionResponseSchema>;
