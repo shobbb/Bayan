@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConfigProvider, useConfig } from '@/ui/context/ConfigContext';
 import { HomeScreen } from '@/ui/screens/HomeScreen';
 import { ReadingScreen } from '@/ui/screens/ReadingScreen';
@@ -29,9 +29,18 @@ import { notifyBundleHealthy } from '@/services/platform/liveUpdates';
 import { enrichArticle, enrichWord } from '@/services/articles/enrichGlosses';
 import {
   createComprehension,
+  gradeAnswer,
+  loadComprehensionProgress,
+  saveComprehensionProgress,
   storedComprehension,
 } from '@/services/articles/comprehensionService';
-import type { ComprehensionSet } from '@/domain/articles/comprehension';
+import {
+  emptyProgress,
+  isSettled,
+  score,
+  type ComprehensionProgress,
+  type ComprehensionSet,
+} from '@/domain/articles/comprehension';
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
@@ -56,6 +65,23 @@ interface ArticleScreen {
   titleOffset: number;
   /** The comprehension set already written for this article, if any. */
   comprehension: ComprehensionSet | null;
+  /** The reader's way through that set, saved as they answer. */
+  comprehensionProgress: ComprehensionProgress | null;
+}
+
+/**
+ * What the article's questions button says once a set exists: where the
+ * reader is in it, so a half-done set reads as something to come back to.
+ */
+function questionsLabel(set: ComprehensionSet, progress: ComprehensionProgress | null): string {
+  if (!progress) return 'Questions';
+  if (progress.completedAt !== null && progress.position >= set.questions.length) {
+    const { correct, total } = score(set, progress);
+    return `Questions · ${correct} of ${total}`;
+  }
+  const settled = set.questions.filter((_, i) => isSettled(progress.answers[i])).length;
+  const touched = settled > 0 || Object.keys(progress.answers).length > 0 || progress.position > 0;
+  return touched ? `Continue questions · ${settled} of ${set.questions.length}` : 'Questions';
 }
 
 type Screen =
@@ -66,7 +92,12 @@ type Screen =
   | ArticleScreen
   // Holds the article screen it came from, so going back restores the reading
   // as it was — enriched segments, flags and all — rather than reopening it.
-  | { name: 'questions'; comprehension: ComprehensionSet; returnTo: ArticleScreen }
+  | {
+      name: 'questions';
+      comprehension: ComprehensionSet;
+      progress: ComprehensionProgress;
+      returnTo: ArticleScreen;
+    }
   | {
       name: 'drill';
       queue: QueueEntry[];
@@ -90,6 +121,9 @@ function AppScreens() {
   const [definingIndex, setDefiningIndex] = useState<number | null>(null);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [questionsFailure, setQuestionsFailure] = useState<Failure | null>(null);
+  // The newest progress the questions screen has saved, carried back to the
+  // article so its button says where the reader got to.
+  const latestProgress = useRef<ComprehensionProgress | null>(null);
   // The study choice: which sources are on offer, and whether it is open.
   const [studyOpen, setStudyOpen] = useState(false);
   const [studyChoices, setStudyChoices] = useState<
@@ -271,9 +305,15 @@ function AppScreens() {
     setOpeningArticle(id);
     Promise.all([
       openArticle(id, glossLanguageFor(config.generation.arabicOnlyDefinitions)),
-      storedComprehension(id),
+      storedComprehension(id).then(async (comprehension) => ({
+        comprehension,
+        comprehensionProgress: comprehension ? await loadComprehensionProgress(comprehension) : null,
+      })),
     ])
-      .then(([{ article, segments, flaggedIndices, untranslated, resumeAt, titleOffset }, comprehension]) =>
+      .then(([
+        { article, segments, flaggedIndices, untranslated, resumeAt, titleOffset },
+        { comprehension, comprehensionProgress },
+      ]) =>
         navigate(() =>
           setScreen({
             name: 'article',
@@ -284,6 +324,7 @@ function AppScreens() {
             resumeAt,
             titleOffset,
             comprehension,
+            comprehensionProgress,
           }),
         ),
       )
@@ -371,7 +412,12 @@ function AppScreens() {
         // must not pull them back into it.
         setScreen((current) =>
           current.name === 'article' && current.article.id === from.article.id
-            ? { ...current, comprehension, resumeAt: null }
+            ? {
+                ...current,
+                comprehension,
+                comprehensionProgress: emptyProgress(comprehension, Date.now()),
+                resumeAt: null,
+              }
             : current,
         );
       })
@@ -383,7 +429,9 @@ function AppScreens() {
     if (screen.name !== 'article' || !screen.comprehension) return;
     const returnTo = screen;
     const comprehension = screen.comprehension;
-    navigate(() => setScreen({ name: 'questions', comprehension, returnTo }));
+    const progress = screen.comprehensionProgress ?? emptyProgress(comprehension, Date.now());
+    latestProgress.current = progress;
+    navigate(() => setScreen({ name: 'questions', comprehension, progress, returnTo }));
   }, [screen]);
 
   const handleFinishArticle = useCallback(
@@ -505,6 +553,9 @@ function AppScreens() {
         }}
         questions={{
           ready: screen.comprehension !== null,
+          openLabel: screen.comprehension
+            ? questionsLabel(screen.comprehension, screen.comprehensionProgress)
+            : 'Questions',
           busy: generatingQuestions,
           generate: handleGenerateQuestions,
           open: handleOpenQuestions,
@@ -528,15 +579,28 @@ function AppScreens() {
   }
 
   if (screen.name === 'questions') {
-    const { comprehension, returnTo } = screen;
+    const { comprehension, progress, returnTo } = screen;
     return screenFrame(
       <QuestionsScreen
         titleAr={returnTo.article.titleAr}
-        questions={comprehension.questions}
+        set={comprehension}
+        initialProgress={progress}
+        onSave={(next) => {
+          latestProgress.current = next;
+          // A failed write is not worth interrupting an answer for; the next
+          // change writes the whole record again.
+          void saveComprehensionProgress(next).catch(() => undefined);
+        }}
+        onGrade={(question, answer) => gradeAnswer(returnTo.article, question, answer, config)}
+        onOpenSettings={handleOpenSettings}
         // Back to the end of the text, where the button that led here sits.
         onExit={() =>
           navigate(() =>
-            setScreen({ ...returnTo, resumeAt: Math.max(returnTo.segments.length - 1, 0) }),
+            setScreen({
+              ...returnTo,
+              comprehensionProgress: latestProgress.current ?? progress,
+              resumeAt: Math.max(returnTo.segments.length - 1, 0),
+            }),
           )
         }
       />,

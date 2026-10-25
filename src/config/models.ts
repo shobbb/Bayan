@@ -12,7 +12,7 @@ export type QueryKind =
   | 'sentenceGeneration' // batched example sentences for cards
   | 'distractorGeneration' // multiple-choice wrong answers
   | 'wordGlossing' // translations for words met in published text
-  | 'comprehension' // multiple-choice questions on an article
+  | 'comprehension' // questions on an article, and marking free answers to them
   | 'diacritization'; // optional: re-vowel existing text
 
 /**
@@ -84,8 +84,9 @@ export const DEFAULT_MODEL_ROUTES: ModelRoutes = {
   // character of JSON. The ceiling is not a reservation, so the larger number
   // costs nothing on the English batches that never approach it.
   wordGlossing: { model: DEFAULT_MODEL, maxTokens: 16000, effort: 'medium' },
-  // A handful of vowelled questions with four options each, written from one
-  // article. A wrong answer key marks a correct reader wrong, so medium.
+  // Writes a handful of vowelled questions on one article, and marks the
+  // reader's free answers to them. A wrong answer key or a wrong verdict tells
+  // a reader who understood that they did not, so medium.
   comprehension: { model: DEFAULT_MODEL, maxTokens: 8000, effort: 'medium' },
   diacritization: { model: DEFAULT_MODEL, maxTokens: 8000, effort: 'high' },
 };

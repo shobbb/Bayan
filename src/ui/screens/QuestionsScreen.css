@@ -66,3 +66,105 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+.questions-screen__free {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.questions-screen__answer {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-arabic);
+  font-size: 1.35rem;
+  line-height: 2;
+  resize: vertical;
+}
+
+.questions-screen__answer:focus {
+  outline: none;
+  border-color: var(--signal);
+}
+
+.questions-screen__verdict {
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+/* Same two colours the options use, for the same reason: here colour carries
+   the verdict rather than decorating it. */
+.questions-screen__verdict--pass {
+  border-color: #2f7d4f;
+}
+
+.questions-screen__verdict--retry {
+  border-color: #a33a3a;
+}
+
+.questions-screen__verdict-label {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+}
+
+.questions-screen__verdict--pass .questions-screen__verdict-label {
+  color: #2f7d4f;
+}
+
+.questions-screen__verdict--retry .questions-screen__verdict-label {
+  color: #a33a3a;
+}
+
+.questions-screen__feedback {
+  margin: 0;
+  font-family: var(--font-arabic);
+  font-size: 1.25rem;
+  line-height: 2;
+  color: var(--ink);
+}
+
+.questions-screen__submit:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+.questions-screen__link {
+  display: block;
+  min-height: 44px;
+  margin: var(--space-2) auto 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--signal);
+  font-family: var(--font-english);
+  font-size: var(--text-ui-label-size);
+  cursor: pointer;
+}
+
+.questions-screen__failure {
+  margin: var(--space-3) 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.questions-screen__failure .questions-screen__link {
+  display: inline;
+  min-height: 0;
+  margin: 0;
+  text-decoration: underline;
+}
+
+.questions-screen__question .drill__advance {
+  width: 100%;
+  margin-top: var(--space-3);
+}

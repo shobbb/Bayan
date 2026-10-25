@@ -117,6 +117,8 @@ export interface ReadingScreenProps {
    */
   questions?: {
     ready: boolean;
+    /** What the button says once a set exists — where the reader is in it. */
+    openLabel: string;
     busy: boolean;
     generate: () => void;
     open: () => void;
@@ -443,7 +445,7 @@ export function ReadingScreen({
             onClick={questions.ready ? questions.open : questions.generate}
           >
             {questions.ready
-              ? 'Questions'
+              ? questions.openLabel
               : questions.busy
                 ? 'Generating questions…'
                 : 'Generate questions'}

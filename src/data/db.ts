@@ -5,7 +5,7 @@
  */
 import Dexie, { type Table } from 'dexie';
 import type { Word, Round, Batch, WordId } from '@/domain/types';
-import type { ComprehensionSet } from '@/domain/articles/comprehension';
+import type { ComprehensionProgress, ComprehensionSet } from '@/domain/articles/comprehension';
 
 export interface SettingsRecord {
   key: string;
@@ -112,6 +112,7 @@ export class BayanDB extends Dexie {
   articleReads!: Table<ArticleReadRecord, string>;
   glosses!: Table<GlossRecord, WordId>;
   comprehension!: Table<ComprehensionSet, string>;
+  comprehensionProgress!: Table<ComprehensionProgress, string>;
 
   constructor() {
     super('bayan');
@@ -133,6 +134,10 @@ export class BayanDB extends Dexie {
     // request and kept, so taking the questions again costs nothing.
     this.version(4).stores({
       comprehension: 'articleId, createdAt',
+    });
+    // v5 adds the reader's way through each set, saved as they answer.
+    this.version(5).stores({
+      comprehensionProgress: 'articleId',
     });
   }
 }

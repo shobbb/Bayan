@@ -59,13 +59,17 @@ export type LlmSentence = z.infer<typeof llmSentenceSchema>;
 export type LlmSentencesResponse = z.infer<typeof llmSentencesResponseSchema>;
 
 /**
- * Multiple-choice comprehension questions on one article. Each question is
- * checked on its own terms — four distinct options and an answer that points
- * at one of them — because a question whose answer index is out of range, or
- * whose "wrong" option repeats the right one, cannot be marked fairly.
+ * Comprehension questions on one article: multiple choice and free response.
+ *
+ * Each multiple-choice question is checked on its own terms — four distinct
+ * options and an answer that points at one of them — because one whose answer
+ * index is out of range, or whose "wrong" option repeats the right one, cannot
+ * be marked fairly. A free-response question carries the answer the text
+ * supports, which the grader is given as a guide.
  */
-export const llmComprehensionQuestionSchema = z
+export const llmMultipleChoiceQuestionSchema = z
   .object({
+    type: z.literal('multipleChoice'),
     question: z.string().min(1),
     options: z.array(z.string().min(1)).length(4),
     correctIndex: z.number().int().min(0).max(3),
@@ -75,8 +79,27 @@ export const llmComprehensionQuestionSchema = z
     path: ['options'],
   });
 
+export const llmFreeResponseQuestionSchema = z.object({
+  type: z.literal('freeResponse'),
+  question: z.string().min(1),
+  answer: z.string().min(1),
+});
+
+export const llmComprehensionQuestionSchema = z.union([
+  llmMultipleChoiceQuestionSchema,
+  llmFreeResponseQuestionSchema,
+]);
+
 export const llmComprehensionResponseSchema = z.object({
   questions: z.array(llmComprehensionQuestionSchema).min(1),
 });
 
 export type LlmComprehensionResponse = z.infer<typeof llmComprehensionResponseSchema>;
+
+/** The grader's verdict on one free answer. */
+export const llmGradeResponseSchema = z.object({
+  pass: z.boolean(),
+  feedback: z.string().min(1),
+});
+
+export type LlmGradeResponse = z.infer<typeof llmGradeResponseSchema>;

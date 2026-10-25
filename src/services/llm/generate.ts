@@ -8,11 +8,13 @@ import type { ModelRoute } from '@/config/models';
 import { anthropicClient, type LlmClient } from './client';
 import {
   llmComprehensionResponseSchema,
+  llmGradeResponseSchema,
   llmGlossSchema,
   llmGlossesResponseSchema,
   llmRoundResponseSchema,
   llmSentencesResponseSchema,
   type LlmComprehensionResponse,
+  type LlmGradeResponse,
   type LlmGlossesResponse,
   type LlmRoundResponse,
   type LlmSentencesResponse,
@@ -20,10 +22,12 @@ import {
 import { salvageEntries, normalizeStructuralPunctuation } from './salvage';
 import {
   buildComprehensionPrompt,
+  buildGradingPrompt,
   buildGlossPrompt,
   buildRoundGenerationPrompt,
   buildSentenceGenerationPrompt,
   type ComprehensionPromptParams,
+  type GradingPromptParams,
   type GlossPromptParams,
   type RoundPromptParams,
   type SentencePromptParams,
@@ -206,7 +210,7 @@ export async function generateGlosses(
   }
 }
 
-/** Multiple-choice comprehension questions on one article, in one call. */
+/** Comprehension questions on one article, both kinds, in one call. */
 export async function generateComprehension(
   params: ComprehensionPromptParams,
   route: ModelRoute,
@@ -223,4 +227,16 @@ export async function generateComprehension(
     llmComprehensionResponseSchema,
     maxRetries,
   );
+}
+
+/** Marks one free answer against the article: pass, or feedback on what is missing. */
+export async function gradeFreeResponse(
+  params: GradingPromptParams,
+  route: ModelRoute,
+  apiKey: string,
+  maxRetries: number,
+  client: LlmClient = anthropicClient,
+): Promise<LlmGradeResponse> {
+  const prompt = buildGradingPrompt(params);
+  return generateAndValidate(client, route, apiKey, prompt, llmGradeResponseSchema, maxRetries);
 }

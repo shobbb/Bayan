@@ -99,7 +99,7 @@ const QUERY_KINDS: ReadonlyArray<{ kind: QueryKind; label: string; help: string 
   {
     kind: 'comprehension',
     label: 'Comprehension questions',
-    help: 'Writes multiple-choice questions on an article, in Arabic, when you ask for them. One call per article; the set is kept and reused.',
+    help: 'Writes questions on an article, in Arabic, when you ask for them — one call per article, kept and reused — and marks each free answer you submit, one call per submission.',
   },
   {
     kind: 'distractorGeneration',

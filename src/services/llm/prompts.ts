@@ -247,17 +247,26 @@ export function buildGlossPrompt(params: GlossPromptParams): string {
 
 const BASE_COMPREHENSION_INSTRUCTIONS = `You are writing reading-comprehension questions on a short Arabic article for a learner of Arabic.
 
-Rules:
-- Write every question and every option in simple Modern Standard Arabic, fully vowelled. No English anywhere.
+Rules for every question:
+- Write every question, option and answer in simple Modern Standard Arabic, fully vowelled. No English anywhere.
 - Each question must be answerable from the article alone, not from general knowledge.
 - Ask about what the article says — its facts, events, reasons and main idea — not about the meaning of single words.
+- Order the questions as the article runs.
+
+Multiple-choice questions:
 - Give exactly four options. Exactly one is supported by the article; the other three are plausible to someone who skimmed it but are contradicted by, or absent from, the text.
 - Keep the options similar in length and form, so the right one does not stand out.
-- Order the questions as the article runs.
+
+Free-response questions:
+- Ask something the reader answers in a sentence or two of their own words: why something happened, what someone wanted, what the article's main point is.
+- Give "answer": a short model answer that the article supports, which a grader will use as a guide. It is not shown to the reader.
 
 Respond with strict JSON only, matching this shape exactly, with no prose before or after and no markdown code fence:
 {
-  "questions": Array<{ "question": string, "options": [string, string, string, string], "correctIndex": number }>
+  "questions": Array<
+    | { "type": "multipleChoice", "question": string, "options": [string, string, string, string], "correctIndex": number }
+    | { "type": "freeResponse", "question": string, "answer": string }
+  >
 }
 
 "correctIndex" is the 0-based position of the right option in "options".`;
@@ -265,14 +274,48 @@ Respond with strict JSON only, matching this shape exactly, with no prose before
 export interface ComprehensionPromptParams {
   titleAr: string;
   paragraphs: readonly string[];
-  count: number;
+  multipleChoiceCount: number;
+  freeResponseCount: number;
 }
 
 export function buildComprehensionPrompt(params: ComprehensionPromptParams): string {
   return [
     BASE_COMPREHENSION_INSTRUCTIONS,
-    `Write ${params.count} questions.`,
+    `Write ${params.multipleChoiceCount} multiple-choice questions and ${params.freeResponseCount} free-response questions, mixed in article order.`,
     `Article title: ${params.titleAr}`,
     `Article:\n${params.paragraphs.join('\n\n')}`,
+  ].join('\n\n');
+}
+
+const BASE_GRADING_INSTRUCTIONS = `You are marking a learner's answer to a reading-comprehension question on a short Arabic article. The learner is still learning Arabic.
+
+Judge whether the answer shows the learner understood what the article says on this point.
+- Judge meaning, not form. Ignore missing or wrong vowel marks, spelling slips, grammar mistakes and short answers, as long as the meaning is right and clear.
+- The model answer is a guide to what the article supports, not the only acceptable wording. An answer that makes the same point in other words passes.
+- An answer that is wrong, contradicts the article, misses the point the question asks about, or is too vague to show understanding does not pass.
+
+"feedback" is one or two short sentences in simple Modern Standard Arabic, fully vowelled, addressed to the learner:
+- If it passes, confirm briefly what they got right.
+- If it does not pass, say what is wrong or missing and point them back to the part of the article that answers it, without giving the answer away.
+
+Respond with strict JSON only, with no prose before or after and no markdown code fence:
+{ "pass": boolean, "feedback": string }`;
+
+export interface GradingPromptParams {
+  titleAr: string;
+  paragraphs: readonly string[];
+  question: string;
+  referenceAnswer: string;
+  learnerAnswer: string;
+}
+
+export function buildGradingPrompt(params: GradingPromptParams): string {
+  return [
+    BASE_GRADING_INSTRUCTIONS,
+    `Article title: ${params.titleAr}`,
+    `Article:\n${params.paragraphs.join('\n\n')}`,
+    `Question: ${params.question}`,
+    `Model answer: ${params.referenceAnswer}`,
+    `Learner's answer: ${params.learnerAnswer}`,
   ].join('\n\n');
 }
