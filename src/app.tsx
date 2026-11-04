@@ -7,6 +7,10 @@ import { SettingsScreen } from '@/ui/screens/SettingsScreen';
 import { DrillScreen } from '@/ui/screens/DrillScreen';
 import { LibraryScreen } from '@/ui/screens/LibraryScreen';
 import { QuestionsScreen } from '@/ui/screens/QuestionsScreen';
+import { ListeningScreen } from '@/ui/screens/ListeningScreen';
+import { ListeningLessonScreen } from '@/ui/screens/ListeningLessonScreen';
+import { ListeningAudioScreen } from '@/ui/screens/ListeningAudioScreen';
+import { lessonWords, type ListeningLesson } from '@/domain/listening/types';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
@@ -98,6 +102,9 @@ type Screen =
       progress: ComprehensionProgress;
       returnTo: ArticleScreen;
     }
+  | { name: 'lesson'; lesson: ListeningLesson }
+  | { name: 'lessonAudio'; lesson: ListeningLesson }
+  | { name: 'lessonVocab'; lesson: ListeningLesson; queue: QueueEntry[] }
   | {
       name: 'drill';
       queue: QueueEntry[];
@@ -523,6 +530,68 @@ function AppScreens() {
       <BottomNav active={tab} onNavigate={handleNavigate} />
     </>
   );
+
+  if (screen.name === 'listening') {
+    return withNav(
+      'listening',
+      <ListeningScreen
+        onOpenLesson={(lesson) => navigate(() => setScreen({ name: 'lesson', lesson }))}
+      />,
+    );
+  }
+
+  if (screen.name === 'lesson') {
+    const { lesson } = screen;
+    return screenFrame(
+      <ListeningLessonScreen
+        lesson={lesson}
+        onExit={() => navigate(() => setScreen({ name: 'listening' }))}
+        onAudio={() => navigate(() => setScreen({ name: 'lessonAudio', lesson }))}
+        onVocab={() =>
+          navigate(() =>
+            setScreen({
+              name: 'lessonVocab',
+              lesson,
+              queue: lessonWords(lesson, Date.now()).map((word) => ({
+                word,
+                mode: 'flashcard' as const,
+              })),
+            }),
+          )
+        }
+      />,
+    );
+  }
+
+  if (screen.name === 'lessonAudio') {
+    const { lesson } = screen;
+    return screenFrame(
+      <ListeningAudioScreen
+        lesson={lesson}
+        onExit={() => navigate(() => setScreen({ name: 'lesson', lesson }))}
+      />,
+    );
+  }
+
+  // The study screen as it is, flashcards only. The deck's English is the only
+  // definition these words have, so it is the answer side whatever the
+  // Arabic-only setting says, and nothing is written: these are not corpus
+  // words and have no schedule to keep.
+  if (screen.name === 'lessonVocab') {
+    const { lesson, queue } = screen;
+    return screenFrame(
+      <DrillScreen
+        queue={queue}
+        corpus={[]}
+        sentences={{}}
+        exitLabel={`${lesson.topic} ${lesson.number}`}
+        persist={false}
+        glossLanguage="english"
+        flashcardsOnly
+        onExit={() => navigate(() => setScreen({ name: 'lesson', lesson }))}
+      />,
+    );
+  }
 
   if (screen.name === 'stats') {
     return withNav('stats', <StatsScreen onReplayRound={handleReplayRound} />);

@@ -1,0 +1,2862 @@
+{
+ "version": 1,
+ "lessons": [
+  {
+   "id": "ad_cul026",
+   "topic": "Culture",
+   "number": "026",
+   "audio": "listening/ad_cul026.mp3",
+   "durationSec": 79,
+   "cards": [
+    {
+     "arabic": "إشهار",
+     "english": "commercial/advertisement"
+    },
+    {
+     "arabic": "ترطيب",
+     "english": "moistening"
+    },
+    {
+     "arabic": "بشرة",
+     "english": "complexion"
+    },
+    {
+     "arabic": "العناية الفائقة",
+     "english": "exceptional care"
+    },
+    {
+     "arabic": "ناعم",
+     "english": "smooth"
+    },
+    {
+     "arabic": "جونسن",
+     "english": "Johnson"
+    },
+    {
+     "arabic": "رقيق",
+     "english": "delicate"
+    },
+    {
+     "arabic": "محافظة",
+     "english": "preserving/keeping"
+    },
+    {
+     "arabic": "باستمرار",
+     "english": "continuously"
+    },
+    {
+     "arabic": "جمال",
+     "english": "beauty"
+    },
+    {
+     "arabic": "كريم",
+     "english": "cream"
+    },
+    {
+     "arabic": "لوشن",
+     "english": "lotion"
+    },
+    {
+     "arabic": "تفتيح البشرة",
+     "english": "skin toning"
+    },
+    {
+     "arabic": "يمنح",
+     "english": "provides"
+    },
+    {
+     "arabic": "إشراقة صحية",
+     "english": "healthy radiance"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul027",
+   "topic": "Culture",
+   "number": "027",
+   "audio": "listening/ad_cul027.mp3",
+   "durationSec": 165,
+   "cards": [
+    {
+     "arabic": "برنامج",
+     "english": "program/itinerary"
+    },
+    {
+     "arabic": "السياحة",
+     "english": "tourism"
+    },
+    {
+     "arabic": "مطار دولي",
+     "english": "international airport"
+    },
+    {
+     "arabic": "فندق خمس نجوم",
+     "english": "five-star hotel"
+    },
+    {
+     "arabic": "الاستعداد",
+     "english": "preparation"
+    },
+    {
+     "arabic": "متحف",
+     "english": "museum"
+    },
+    {
+     "arabic": "حفلة موسيقية",
+     "english": "musical concert"
+    },
+    {
+     "arabic": "مفتوح",
+     "english": "open"
+    },
+    {
+     "arabic": "التسوّق",
+     "english": "shopping"
+    },
+    {
+     "arabic": "يشتمل على",
+     "english": "to include"
+    },
+    {
+     "arabic": "إفطار فاخر",
+     "english": "luxury breakfast"
+    },
+    {
+     "arabic": "الانتقالات",
+     "english": "transportation"
+    },
+    {
+     "arabic": "محلية",
+     "english": "local"
+    },
+    {
+     "arabic": "الوصول إلى",
+     "english": "arrival (at)"
+    },
+    {
+     "arabic": "بعد الظهر",
+     "english": "in the afternoon"
+    },
+    {
+     "arabic": "الصباح الباكر",
+     "english": "early morning"
+    },
+    {
+     "arabic": "الغوص",
+     "english": "scuba diving"
+    },
+    {
+     "arabic": "السباحة",
+     "english": "swimming"
+    },
+    {
+     "arabic": "مجاناً",
+     "english": "free"
+    },
+    {
+     "arabic": "حد أقصى",
+     "english": "maximum"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul036",
+   "topic": "Culture",
+   "number": "036",
+   "audio": "listening/ad_cul036.mp3",
+   "durationSec": 104,
+   "cards": [
+    {
+     "arabic": "شاب / شابة",
+     "english": "young man/young woman"
+    },
+    {
+     "arabic": "أسرة طيبة",
+     "english": "good/kind family"
+    },
+    {
+     "arabic": "من المغرب",
+     "english": "from Morocco"
+    },
+    {
+     "arabic": "التعليم الجامعي",
+     "english": "university education"
+    },
+    {
+     "arabic": "الزواج",
+     "english": "marriage"
+    },
+    {
+     "arabic": "وزارة الزراعة",
+     "english": "Ministry of Agriculture"
+    },
+    {
+     "arabic": "بكالوريوس زراعة",
+     "english": "B.A. in Agriculture"
+    },
+    {
+     "arabic": "هواياتي",
+     "english": "my hobbies"
+    },
+    {
+     "arabic": "خاصة",
+     "english": "especially"
+    },
+    {
+     "arabic": "في العالم",
+     "english": "in the world"
+    },
+    {
+     "arabic": "أسرة ميسورة الحال",
+     "english": "well-off family"
+    },
+    {
+     "arabic": "كلية الآداب",
+     "english": "faculty of arts"
+    },
+    {
+     "arabic": "شهادة الماجستير",
+     "english": "Master's degree"
+    },
+    {
+     "arabic": "أعزب",
+     "english": "single"
+    },
+    {
+     "arabic": "شاب متديـّن",
+     "english": "religious young man"
+    },
+    {
+     "arabic": "لم يسبق لي الزواج",
+     "english": "I have not been married before."
+    },
+    {
+     "arabic": "أبحث عن",
+     "english": "I am searching (for)"
+    },
+    {
+     "arabic": "تخرجتُ من",
+     "english": "I graduated from"
+    },
+    {
+     "arabic": "المراسلة",
+     "english": "correspondence"
+    },
+    {
+     "arabic": "غير مهم",
+     "english": "does not matter"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul037",
+   "topic": "Culture",
+   "number": "037",
+   "audio": "listening/ad_cul037.mp3",
+   "durationSec": 122,
+   "cards": [
+    {
+     "arabic": "عزيزي",
+     "english": "dear"
+    },
+    {
+     "arabic": "مأدبة العشاء",
+     "english": "dinner party"
+    },
+    {
+     "arabic": "ضيافة",
+     "english": "hospitality"
+    },
+    {
+     "arabic": "أتطلع إلى رؤيتكم",
+     "english": "looking forward to seeing you"
+    },
+    {
+     "arabic": "الشهر القادم",
+     "english": "next month"
+    },
+    {
+     "arabic": "حفلة التخرج",
+     "english": "graduation ceremony"
+    },
+    {
+     "arabic": "قررت",
+     "english": "I decided"
+    },
+    {
+     "arabic": "المناسبة السعيدة",
+     "english": "happy occasion"
+    },
+    {
+     "arabic": "الاحتفال ب",
+     "english": "celebrating"
+    },
+    {
+     "arabic": "التعازي",
+     "english": "condolences"
+    },
+    {
+     "arabic": "الشرف",
+     "english": "honor"
+    },
+    {
+     "arabic": "أفتقد",
+     "english": "I miss"
+    },
+    {
+     "arabic": "الاحترام",
+     "english": "respect"
+    },
+    {
+     "arabic": "صلاتي",
+     "english": "my prayers"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul043",
+   "topic": "Culture",
+   "number": "043",
+   "audio": "listening/ad_cul043.mp3",
+   "durationSec": 122,
+   "cards": [
+    {
+     "arabic": "عمارة سكنية",
+     "english": "apartment building"
+    },
+    {
+     "arabic": "للبيع",
+     "english": "for sale"
+    },
+    {
+     "arabic": "للايجار",
+     "english": "for rent"
+    },
+    {
+     "arabic": "مكونة",
+     "english": "consists of"
+    },
+    {
+     "arabic": "ادوار",
+     "english": "floors"
+    },
+    {
+     "arabic": "مُكيفة",
+     "english": "air-conditioned"
+    },
+    {
+     "arabic": "الخدمات",
+     "english": "services"
+    },
+    {
+     "arabic": "مسجد",
+     "english": "mosque"
+    },
+    {
+     "arabic": "غسالة الملابس",
+     "english": "washing machine"
+    },
+    {
+     "arabic": "مساحة",
+     "english": "area/surface"
+    },
+    {
+     "arabic": "فيلا",
+     "english": "villa"
+    },
+    {
+     "arabic": "غــرف نــوم",
+     "english": "bedrooms"
+    },
+    {
+     "arabic": "صالة للجلوس",
+     "english": "living room"
+    },
+    {
+     "arabic": "حمام",
+     "english": "bathroom"
+    },
+    {
+     "arabic": "أسانسير/ مصعد",
+     "english": "elevator"
+    },
+    {
+     "arabic": "مُطلة على الشاطىء",
+     "english": "overlooking the beach"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul046",
+   "topic": "Culture",
+   "number": "046",
+   "audio": "listening/ad_cul046.mp3",
+   "durationSec": 169,
+   "cards": [
+    {
+     "arabic": "المـُسافـِر",
+     "english": "(the) traveler"
+    },
+    {
+     "arabic": "عـُملة أجنبية",
+     "english": "foreign currency"
+    },
+    {
+     "arabic": "مـُغادرة",
+     "english": "leaving/departure"
+    },
+    {
+     "arabic": "وصول",
+     "english": "arrival"
+    },
+    {
+     "arabic": "سـِفارة",
+     "english": "(an) embassy"
+    },
+    {
+     "arabic": "مياه الصنبور",
+     "english": "tap water"
+    },
+    {
+     "arabic": "المياه المعدنية",
+     "english": "mineral water"
+    },
+    {
+     "arabic": "بقشيش أو إكرامية",
+     "english": "(a) tip"
+    },
+    {
+     "arabic": "سعر الخـِدمة",
+     "english": "price of services"
+    },
+    {
+     "arabic": "المواصلات العامة",
+     "english": "public transportation"
+    },
+    {
+     "arabic": "محافظات مصر",
+     "english": "Egypt's governorates"
+    },
+    {
+     "arabic": "الزوار والسائحون",
+     "english": "visitors and tourists"
+    },
+    {
+     "arabic": "تاكسي العاصمة",
+     "english": "yellow cab (capital cab)"
+    },
+    {
+     "arabic": "الاتصال ب",
+     "english": "calling/contacting"
+    },
+    {
+     "arabic": "وقت قصير",
+     "english": "(a) short time"
+    },
+    {
+     "arabic": "تسعيرة ثابتة للتاكسي",
+     "english": "taxi's fixed rate"
+    },
+    {
+     "arabic": "ضريبة المبيعات",
+     "english": "sales tax"
+    },
+    {
+     "arabic": "كيلومتر",
+     "english": "kilometer"
+    },
+    {
+     "arabic": "خدمات نقل",
+     "english": "transportation services"
+    },
+    {
+     "arabic": "تنقية ونظافة",
+     "english": "purity and cleanliness"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul219",
+   "topic": "Culture",
+   "number": "219",
+   "audio": "listening/ad_cul219.mp3",
+   "durationSec": 116,
+   "cards": [
+    {
+     "arabic": "الجيمنازبوم",
+     "english": "the gym"
+    },
+    {
+     "arabic": "اللياقة البدنية",
+     "english": "fitness"
+    },
+    {
+     "arabic": "تحسين",
+     "english": "improving"
+    },
+    {
+     "arabic": "وقت قصير",
+     "english": "short period of time"
+    },
+    {
+     "arabic": "الآونة الأخيرة",
+     "english": "lately"
+    },
+    {
+     "arabic": "مدربة رياضية",
+     "english": "personal trainer"
+    },
+    {
+     "arabic": "ممارسة الرياضة",
+     "english": "practicing sports"
+    },
+    {
+     "arabic": "ببطىء",
+     "english": "slowly"
+    },
+    {
+     "arabic": "التمارين الايقاعية",
+     "english": "aerobics"
+    },
+    {
+     "arabic": "الركض",
+     "english": "running/jogging"
+    },
+    {
+     "arabic": "رفع الأثقال",
+     "english": "weight-lifting"
+    },
+    {
+     "arabic": "التمرُن",
+     "english": "working out"
+    },
+    {
+     "arabic": "تدريجيا",
+     "english": "gradually"
+    },
+    {
+     "arabic": "أحذية رياضية",
+     "english": "running shoes"
+    },
+    {
+     "arabic": "الاشتراك",
+     "english": "signing up"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul222",
+   "topic": "Culture",
+   "number": "222",
+   "audio": "listening/ad_cul222.mp3",
+   "durationSec": 237,
+   "cards": [
+    {
+     "arabic": "هذا الصيف",
+     "english": "this summer"
+    },
+    {
+     "arabic": "زيارة",
+     "english": "visitation/visit"
+    },
+    {
+     "arabic": "الأسبوع الأول",
+     "english": "the first week"
+    },
+    {
+     "arabic": "خبر سار",
+     "english": "good news"
+    },
+    {
+     "arabic": "اشتقنا",
+     "english": "we miss you"
+    },
+    {
+     "arabic": "ستقضين",
+     "english": "you will spend"
+    },
+    {
+     "arabic": "للأسف",
+     "english": "unfortunately"
+    },
+    {
+     "arabic": "مشغول دائماً",
+     "english": "always busy"
+    },
+    {
+     "arabic": "الاسترخاء",
+     "english": "relaxation"
+    },
+    {
+     "arabic": "بالطبع",
+     "english": "of course"
+    },
+    {
+     "arabic": "السجاجيد",
+     "english": "carpets/rugs"
+    },
+    {
+     "arabic": "التوابل المغربية",
+     "english": "Moroccan spices"
+    },
+    {
+     "arabic": "شواطئ",
+     "english": "beaches"
+    },
+    {
+     "arabic": "الطقس",
+     "english": "weather"
+    },
+    {
+     "arabic": "درجة مئوية",
+     "english": "degrees celsius"
+    },
+    {
+     "arabic": "حفاضات",
+     "english": "diapers"
+    },
+    {
+     "arabic": "لا عليك",
+     "english": "do not worry"
+    },
+    {
+     "arabic": "سنُغادر",
+     "english": "we will leave"
+    },
+    {
+     "arabic": "رقم الرحلة",
+     "english": "flight number"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul412",
+   "topic": "Culture",
+   "number": "412",
+   "audio": "listening/ad_cul412.mp3",
+   "durationSec": 151,
+   "cards": [
+    {
+     "arabic": "مطعم",
+     "english": "restaurant"
+    },
+    {
+     "arabic": "قائمة الطعام",
+     "english": "menu"
+    },
+    {
+     "arabic": "سمك",
+     "english": "fish"
+    },
+    {
+     "arabic": "بصل",
+     "english": "onions"
+    },
+    {
+     "arabic": "طماطم",
+     "english": "tomatoes"
+    },
+    {
+     "arabic": "خبز",
+     "english": "bread"
+    },
+    {
+     "arabic": "سلطة",
+     "english": "salads"
+    },
+    {
+     "arabic": "مخللات",
+     "english": "pickles"
+    },
+    {
+     "arabic": "لبن",
+     "english": "yogurt"
+    },
+    {
+     "arabic": "شاي",
+     "english": "tea"
+    },
+    {
+     "arabic": "دجاج",
+     "english": "chicken"
+    },
+    {
+     "arabic": "أرز",
+     "english": "rice"
+    },
+    {
+     "arabic": "حساء",
+     "english": "soup"
+    },
+    {
+     "arabic": "لحم الغنم",
+     "english": "lamb"
+    },
+    {
+     "arabic": "لحم البقر",
+     "english": "beef"
+    },
+    {
+     "arabic": "خضروات",
+     "english": "vegetables"
+    },
+    {
+     "arabic": "مقلي",
+     "english": "fried"
+    },
+    {
+     "arabic": "زيتون",
+     "english": "olive"
+    },
+    {
+     "arabic": "زيت",
+     "english": "oil"
+    }
+   ]
+  },
+  {
+   "id": "ad_cul414",
+   "topic": "Culture",
+   "number": "414",
+   "audio": "listening/ad_cul414.mp3",
+   "durationSec": 169,
+   "cards": [
+    {
+     "arabic": "تخفيضات",
+     "english": "sale"
+    },
+    {
+     "arabic": "هائل",
+     "english": "huge"
+    },
+    {
+     "arabic": "ملبس (ج ملابس)",
+     "english": "clothes"
+    },
+    {
+     "arabic": "مستورد",
+     "english": "imported"
+    },
+    {
+     "arabic": "محل",
+     "english": "store"
+    },
+    {
+     "arabic": "موديلات",
+     "english": "fashion"
+    },
+    {
+     "arabic": "تنورة (ج تنانير)",
+     "english": "skirt"
+    },
+    {
+     "arabic": "فستان (ج فساتين)",
+     "english": "dresses"
+    },
+    {
+     "arabic": "قبعة",
+     "english": "hat"
+    },
+    {
+     "arabic": "ملون",
+     "english": "colored"
+    },
+    {
+     "arabic": "قميص (ج قمصان)",
+     "english": "shirts"
+    },
+    {
+     "arabic": "جوراب (ج جواريب)",
+     "english": "socks"
+    },
+    {
+     "arabic": "كُم (اكمام)",
+     "english": "sleeve"
+    },
+    {
+     "arabic": "نِقاب",
+     "english": "niqab (cover for the face)"
+    },
+    {
+     "arabic": "جلباب (ج جلابيب)",
+     "english": "jilbab (long dress for women)"
+    },
+    {
+     "arabic": "عباءة",
+     "english": "abaya (long garment for women)"
+    },
+    {
+     "arabic": "كوفيات",
+     "english": "men's scarves"
+    },
+    {
+     "arabic": "مطرزة",
+     "english": "embroidered"
+    }
+   ]
+  },
+  {
+   "id": "ad_ecn020",
+   "topic": "Economy",
+   "number": "020",
+   "audio": "listening/ad_ecn020.mp3",
+   "durationSec": 167,
+   "cards": [
+    {
+     "arabic": "الأسئلة الشائعة",
+     "english": "frequently asked questions"
+    },
+    {
+     "arabic": "موقـِع",
+     "english": "(a) website"
+    },
+    {
+     "arabic": "الاشتراك في",
+     "english": "participating, joining"
+    },
+    {
+     "arabic": "خدمات البنك",
+     "english": "bank services"
+    },
+    {
+     "arabic": "ملء استمارة",
+     "english": "filling in an application"
+    },
+    {
+     "arabic": "رقم تعريفي",
+     "english": "identification number"
+    },
+    {
+     "arabic": "مؤقتاً",
+     "english": "temporarily"
+    },
+    {
+     "arabic": "البريد",
+     "english": "mail"
+    },
+    {
+     "arabic": "تسجيل",
+     "english": "registering"
+    },
+    {
+     "arabic": "إعادة تنشيط",
+     "english": "reactivating"
+    },
+    {
+     "arabic": "جمهورية مصر العربية",
+     "english": "Arab Republic of Egypt"
+    },
+    {
+     "arabic": "هوية",
+     "english": "identity"
+    },
+    {
+     "arabic": "حساب",
+     "english": "(an) account"
+    },
+    {
+     "arabic": "البيانات الخاصة",
+     "english": "personal information"
+    },
+    {
+     "arabic": "متوفرة",
+     "english": "available"
+    },
+    {
+     "arabic": "أيقونة",
+     "english": "(an) icon"
+    },
+    {
+     "arabic": "كلمة المرور",
+     "english": "(a) password"
+    },
+    {
+     "arabic": "بطاقة الائتمان",
+     "english": "(a) credit card"
+    },
+    {
+     "arabic": "الحصول على",
+     "english": "getting, obtaining"
+    },
+    {
+     "arabic": "مركز خدمة العملاء",
+     "english": "customer service center"
+    },
+    {
+     "arabic": "يفـقـد",
+     "english": "to lose"
+    },
+    {
+     "arabic": "رسم صغير",
+     "english": "(a) small fee"
+    }
+   ]
+  },
+  {
+   "id": "ad_ecn311",
+   "topic": "Economy",
+   "number": "311",
+   "audio": "listening/ad_ecn311.mp3",
+   "durationSec": 210,
+   "cards": [
+    {
+     "arabic": "تسوق",
+     "english": "shopping"
+    },
+    {
+     "arabic": "مركز (ج مراكز)",
+     "english": "center"
+    },
+    {
+     "arabic": "يُعلن",
+     "english": "announce"
+    },
+    {
+     "arabic": "فرصة عمل (ج فرص عمل)",
+     "english": "job opportunity"
+    },
+    {
+     "arabic": "مدير (ج مدراء)",
+     "english": "manager"
+    },
+    {
+     "arabic": "متقدم",
+     "english": "applicant"
+    },
+    {
+     "arabic": "مبيعات",
+     "english": "sales"
+    },
+    {
+     "arabic": "عمر(ج أعمار)",
+     "english": "age"
+    },
+    {
+     "arabic": "تسويق",
+     "english": "marketing"
+    },
+    {
+     "arabic": "خبرة",
+     "english": "experience"
+    },
+    {
+     "arabic": "موظف",
+     "english": "employee"
+    },
+    {
+     "arabic": "إدارة",
+     "english": "administration"
+    },
+    {
+     "arabic": "قسم (ج أقسام)",
+     "english": "department"
+    },
+    {
+     "arabic": "معهد (ج معاهد)",
+     "english": "institute"
+    },
+    {
+     "arabic": "اِقتصاد",
+     "english": "economics"
+    },
+    {
+     "arabic": "حاسوب (ج حواسيب)",
+     "english": "computer"
+    },
+    {
+     "arabic": "مهارة",
+     "english": "skill"
+    },
+    {
+     "arabic": "مهندس",
+     "english": "engineer"
+    },
+    {
+     "arabic": "تدفئة",
+     "english": "heating"
+    },
+    {
+     "arabic": "اِختبار",
+     "english": "test"
+    }
+   ]
+  },
+  {
+   "id": "ad_ecn409",
+   "topic": "Economy",
+   "number": "409",
+   "audio": "listening/ad_ecn409.mp3",
+   "durationSec": 312,
+   "cards": [
+    {
+     "arabic": "تعلن",
+     "english": "to announce"
+    },
+    {
+     "arabic": "تجارة(ج تجارات)",
+     "english": "trade"
+    },
+    {
+     "arabic": "مَزاد (ج مزادات)",
+     "english": "auction"
+    },
+    {
+     "arabic": "سيَّارة(ج سيَّارات)",
+     "english": "car"
+    },
+    {
+     "arabic": "الأربعاء",
+     "english": "Wednesday"
+    },
+    {
+     "arabic": "شباط",
+     "english": "February"
+    },
+    {
+     "arabic": "رقم (ج أرقام)",
+     "english": "number"
+    },
+    {
+     "arabic": "صالون",
+     "english": "sedan"
+    },
+    {
+     "arabic": "موديل (ج موديلات)",
+     "english": "model"
+    },
+    {
+     "arabic": "نوع (ج أنواع)",
+     "english": "type"
+    },
+    {
+     "arabic": "مصنوعة",
+     "english": "made"
+    },
+    {
+     "arabic": "معلومة (ج معلومات)",
+     "english": "information"
+    },
+    {
+     "arabic": "حمراء(ج حمراوات)",
+     "english": "red"
+    },
+    {
+     "arabic": "درَّاجة ناريَّة (ج درَّاجات ناريَّة)",
+     "english": "motorcycle"
+    },
+    {
+     "arabic": "أصفر (ج صفراوات)",
+     "english": "yellow"
+    },
+    {
+     "arabic": "لون (ج الوان)",
+     "english": "color"
+    }
+   ]
+  },
+  {
+   "id": "ad_ecn410",
+   "topic": "Economy",
+   "number": "410",
+   "audio": "listening/ad_ecn410.mp3",
+   "durationSec": 133,
+   "cards": [
+    {
+     "arabic": "أثاث",
+     "english": "furniture"
+    },
+    {
+     "arabic": "مُستعمل",
+     "english": "used"
+    },
+    {
+     "arabic": "زوروا",
+     "english": "you all come visit"
+    },
+    {
+     "arabic": "تِلفاز",
+     "english": "TV"
+    },
+    {
+     "arabic": "كوريّ",
+     "english": "Korean"
+    },
+    {
+     "arabic": "حاسوب (ج حواسيب)",
+     "english": "computer"
+    },
+    {
+     "arabic": "حجم (ج أحجام)",
+     "english": "size"
+    },
+    {
+     "arabic": "ثلاَّجة (ج ثلاَّجات)",
+     "english": "refrigerator"
+    },
+    {
+     "arabic": "أصفر (ج صفراوات)",
+     "english": "yellow"
+    },
+    {
+     "arabic": "طبَّاخ",
+     "english": "stove"
+    },
+    {
+     "arabic": "المانيّ",
+     "english": "German"
+    },
+    {
+     "arabic": "محمصة خبز",
+     "english": "toaster"
+    },
+    {
+     "arabic": "فرن (ج أفران)",
+     "english": "oven"
+    },
+    {
+     "arabic": "محليّ",
+     "english": "local"
+    },
+    {
+     "arabic": "كرسي (ج كراسي)",
+     "english": "chair"
+    },
+    {
+     "arabic": "طاولة طعام",
+     "english": "dinner table"
+    },
+    {
+     "arabic": "أريكة",
+     "english": "sofa"
+    }
+   ]
+  },
+  {
+   "id": "ad_ecn411",
+   "topic": "Economy",
+   "number": "411",
+   "audio": "listening/ad_ecn411.mp3",
+   "durationSec": 184,
+   "cards": [
+    {
+     "arabic": "شركة",
+     "english": "company"
+    },
+    {
+     "arabic": "اعلان",
+     "english": "advertisement"
+    },
+    {
+     "arabic": "التالي",
+     "english": "following"
+    },
+    {
+     "arabic": "شقة (ج شقق)",
+     "english": "apartment"
+    },
+    {
+     "arabic": "بيت (ج بيوت)",
+     "english": "house"
+    },
+    {
+     "arabic": "عمارة سكنية",
+     "english": "residential building"
+    },
+    {
+     "arabic": "قطعة ارض (ج قطع أرض)",
+     "english": "piece of land"
+    },
+    {
+     "arabic": "معلومات",
+     "english": "information"
+    },
+    {
+     "arabic": "اتصل",
+     "english": "to call"
+    },
+    {
+     "arabic": "رقم (ج أرقام)",
+     "english": "number"
+    },
+    {
+     "arabic": "تقع",
+     "english": "located"
+    },
+    {
+     "arabic": "وسط المدينة",
+     "english": "downtown"
+    },
+    {
+     "arabic": "غرفة جلوس (ج غرف جلوس)",
+     "english": "living room"
+    },
+    {
+     "arabic": "غرفة نوم",
+     "english": "bedroom"
+    },
+    {
+     "arabic": "مطبخ (ج مطابخ)",
+     "english": "kitchen"
+    },
+    {
+     "arabic": "جديد",
+     "english": "new"
+    },
+    {
+     "arabic": "طابق (ج طوابق)",
+     "english": "story"
+    },
+    {
+     "arabic": "غرفة طعام",
+     "english": "dining room"
+    },
+    {
+     "arabic": "ساحل (ج سواحل)",
+     "english": "coast"
+    },
+    {
+     "arabic": "خليج",
+     "english": "gulf"
+    },
+    {
+     "arabic": "خارج",
+     "english": "outside"
+    }
+   ]
+  },
+  {
+   "id": "ad_geo008",
+   "topic": "Geography",
+   "number": "008",
+   "audio": "listening/ad_geo008.mp3",
+   "durationSec": 160,
+   "cards": [
+    {
+     "arabic": "جمهورية",
+     "english": "(a) republic"
+    },
+    {
+     "arabic": "مدن---مدينة",
+     "english": "city/cities"
+    },
+    {
+     "arabic": "ديانات",
+     "english": "religions"
+    },
+    {
+     "arabic": "اللغة السائدة",
+     "english": "primary language"
+    },
+    {
+     "arabic": "الطقس",
+     "english": "weather/climate"
+    },
+    {
+     "arabic": "فصل الشتاء",
+     "english": "winter [season]"
+    },
+    {
+     "arabic": "سكان مصر",
+     "english": "Egypt's population"
+    },
+    {
+     "arabic": "التاريخ الإسلامي",
+     "english": "Islamic history"
+    },
+    {
+     "arabic": "المرحلة الإعدادية",
+     "english": "middle school"
+    },
+    {
+     "arabic": "بحيرة--بحيرات",
+     "english": "lake/lakes"
+    },
+    {
+     "arabic": "المناطق السياحية",
+     "english": "tourist sites"
+    },
+    {
+     "arabic": "الطقس الدافئ",
+     "english": "[the] warm weather"
+    },
+    {
+     "arabic": "استقلال مصر",
+     "english": "Egypt's independence"
+    },
+    {
+     "arabic": "ثلاث رؤساء",
+     "english": "three presidents"
+    },
+    {
+     "arabic": "النظام التعليمي",
+     "english": "[the] educational system"
+    },
+    {
+     "arabic": "النظام السياسي",
+     "english": "[the] political system"
+    },
+    {
+     "arabic": "المرحلة الابتدائية",
+     "english": "elementary [school] stage"
+    },
+    {
+     "arabic": "الحـُكم",
+     "english": "the leadership"
+    },
+    {
+     "arabic": "الساحل الشمالي",
+     "english": "North Coast"
+    }
+   ]
+  },
+  {
+   "id": "ad_geo403",
+   "topic": "Geography",
+   "number": "403",
+   "audio": "listening/ad_geo403.mp3",
+   "durationSec": 163,
+   "cards": [
+    {
+     "arabic": "المناخ",
+     "english": "climate"
+    },
+    {
+     "arabic": "يتميز",
+     "english": "characterized"
+    },
+    {
+     "arabic": "تنوع",
+     "english": "variation"
+    },
+    {
+     "arabic": "منطقة",
+     "english": "region, area, part"
+    },
+    {
+     "arabic": "شمال",
+     "english": "north"
+    },
+    {
+     "arabic": "وسط",
+     "english": "central, middle"
+    },
+    {
+     "arabic": "جنوب",
+     "english": "south"
+    },
+    {
+     "arabic": "يقع",
+     "english": "located"
+    },
+    {
+     "arabic": "حدود",
+     "english": "borders"
+    },
+    {
+     "arabic": "العراق",
+     "english": "Iraq"
+    },
+    {
+     "arabic": "سوريا",
+     "english": "Syria"
+    },
+    {
+     "arabic": "الغرب",
+     "english": "west"
+    },
+    {
+     "arabic": "ايران",
+     "english": "Iran"
+    },
+    {
+     "arabic": "الشرق",
+     "english": "east"
+    },
+    {
+     "arabic": "تركيا",
+     "english": "Turkey"
+    },
+    {
+     "arabic": "الشمال",
+     "english": "north"
+    },
+    {
+     "arabic": "بارد",
+     "english": "cold"
+    },
+    {
+     "arabic": "ممطر",
+     "english": "rainy"
+    },
+    {
+     "arabic": "ربيع",
+     "english": "spring"
+    },
+    {
+     "arabic": "خريف",
+     "english": "autumn, fall"
+    },
+    {
+     "arabic": "جاف",
+     "english": "dry"
+    },
+    {
+     "arabic": "حار",
+     "english": "hot"
+    },
+    {
+     "arabic": "الاردن",
+     "english": "Jordan"
+    },
+    {
+     "arabic": "صحراء",
+     "english": "desert"
+    },
+    {
+     "arabic": "عاصفة ج عواصف",
+     "english": "storm"
+    },
+    {
+     "arabic": "خليج",
+     "english": "gulf"
+    }
+   ]
+  },
+  {
+   "id": "ad_pol416",
+   "topic": "Politics",
+   "number": "416",
+   "audio": "listening/ad_pol416.mp3",
+   "durationSec": 158,
+   "cards": [
+    {
+     "arabic": "مفوضية",
+     "english": "commission"
+    },
+    {
+     "arabic": "مُرشح",
+     "english": "candidate"
+    },
+    {
+     "arabic": "برلمان",
+     "english": "parliament"
+    },
+    {
+     "arabic": "اِنتخابات",
+     "english": "election"
+    },
+    {
+     "arabic": "إسلاميّ",
+     "english": "Islamic"
+    },
+    {
+     "arabic": "حزب (ج أحزاب)",
+     "english": "party"
+    },
+    {
+     "arabic": "بكالوريس",
+     "english": "bachelor"
+    },
+    {
+     "arabic": "علم (ج علوم)",
+     "english": "science"
+    },
+    {
+     "arabic": "جامعة",
+     "english": "University"
+    },
+    {
+     "arabic": "وطنيّ",
+     "english": "patriotic"
+    },
+    {
+     "arabic": "اِتحاد",
+     "english": "union"
+    },
+    {
+     "arabic": "كرديّ (ج أكرد)",
+     "english": "Kurdish"
+    },
+    {
+     "arabic": "مُـحَاسبة",
+     "english": "accounting"
+    },
+    {
+     "arabic": "إدارة",
+     "english": "management"
+    },
+    {
+     "arabic": "اِقتصاد",
+     "english": "economics"
+    },
+    {
+     "arabic": "ديمقراطيّ",
+     "english": "democratic"
+    }
+   ]
+  },
+  {
+   "id": "ad_sci206",
+   "topic": "Science",
+   "number": "206",
+   "audio": "listening/ad_sci206.mp3",
+   "durationSec": 204,
+   "cards": [
+    {
+     "arabic": "موعد",
+     "english": "appointment"
+    },
+    {
+     "arabic": "تُعاني",
+     "english": "you suffer"
+    },
+    {
+     "arabic": "الفحص السنوي",
+     "english": "annual check-up"
+    },
+    {
+     "arabic": "بالتأكيد",
+     "english": "certainly"
+    },
+    {
+     "arabic": "الأسبوع المقبل",
+     "english": "next week"
+    },
+    {
+     "arabic": "سنرى",
+     "english": "we'll see"
+    },
+    {
+     "arabic": "زيارة",
+     "english": "visiting/seeing"
+    },
+    {
+     "arabic": "ما الأمر؟",
+     "english": "what's the matter?"
+    },
+    {
+     "arabic": "آلام رهيبة",
+     "english": "terrible ache"
+    },
+    {
+     "arabic": "اسفل الظهر",
+     "english": "low back"
+    },
+    {
+     "arabic": "الاسبرين",
+     "english": "aspirin"
+    },
+    {
+     "arabic": "للتخلص",
+     "english": "to get rid of"
+    },
+    {
+     "arabic": "دواء",
+     "english": "medicine"
+    },
+    {
+     "arabic": "الفحص",
+     "english": "exam"
+    },
+    {
+     "arabic": "دعني",
+     "english": "let me!"
+    },
+    {
+     "arabic": "في الحقيقة",
+     "english": "in truth/actually"
+    },
+    {
+     "arabic": "درجة الحرارة",
+     "english": "temperature"
+    },
+    {
+     "arabic": "ضغط الدم",
+     "english": "blood pressure"
+    },
+    {
+     "arabic": "الكِلية",
+     "english": "kidney"
+    },
+    {
+     "arabic": "قسم التشخيص بالاشعة",
+     "english": "X-ray computed tomography department"
+    },
+    {
+     "arabic": "مُسكِّن للالام",
+     "english": "pain killer"
+    }
+   ]
+  },
+  {
+   "id": "ad_sci209",
+   "topic": "Science",
+   "number": "209",
+   "audio": "listening/ad_sci209.mp3",
+   "durationSec": 238,
+   "cards": [
+    {
+     "arabic": "مريض / مريضة",
+     "english": "sick (adj.)"
+    },
+    {
+     "arabic": "يشعر ب",
+     "english": "to feel"
+    },
+    {
+     "arabic": "صداع",
+     "english": "(a) headache"
+    },
+    {
+     "arabic": "إسهال",
+     "english": "diarrhea"
+    },
+    {
+     "arabic": "مـنهـَك",
+     "english": "tired (adj.)"
+    },
+    {
+     "arabic": "الأعمال اليومية العادية",
+     "english": "daily chores"
+    },
+    {
+     "arabic": "أعراض",
+     "english": "symptoms"
+    },
+    {
+     "arabic": "التعب والإنهاك",
+     "english": "tiredness and exhaustion (v. nouns)"
+    },
+    {
+     "arabic": "ملعقة كبيرة",
+     "english": "(a) tablespoon"
+    },
+    {
+     "arabic": "أقراص فيتامين",
+     "english": "vitamin pills"
+    },
+    {
+     "arabic": "صيدلية",
+     "english": "(a) pharmacy"
+    },
+    {
+     "arabic": "ثلاث مرات",
+     "english": "three times"
+    },
+    {
+     "arabic": "يومياً",
+     "english": "daily"
+    },
+    {
+     "arabic": "خضار وفاكهة",
+     "english": "vegetables and fruits"
+    },
+    {
+     "arabic": "لحوم",
+     "english": "meats"
+    },
+    {
+     "arabic": "طعام صحي",
+     "english": "healthy food"
+    },
+    {
+     "arabic": "مجيء",
+     "english": "coming (v. noun)"
+    },
+    {
+     "arabic": "دواء",
+     "english": "medicine"
+    },
+    {
+     "arabic": "تحسـّن",
+     "english": "to improve"
+    },
+    {
+     "arabic": "العمل",
+     "english": "work (v. noun)"
+    }
+   ]
+  },
+  {
+   "id": "ad_sec410",
+   "topic": "Security",
+   "number": "410",
+   "audio": "listening/ad_sec410.mp3",
+   "durationSec": 268,
+   "cards": [
+    {
+     "arabic": "إعلان",
+     "english": "announcement"
+    },
+    {
+     "arabic": "وزارة الداخلية",
+     "english": "interior ministry"
+    },
+    {
+     "arabic": "أسماء",
+     "english": "names"
+    },
+    {
+     "arabic": "مجموعة",
+     "english": "group"
+    },
+    {
+     "arabic": "مطلوب",
+     "english": "wanted"
+    },
+    {
+     "arabic": "اِتصال",
+     "english": "contact"
+    },
+    {
+     "arabic": "العمر",
+     "english": "age"
+    },
+    {
+     "arabic": "جنسية",
+     "english": "nationality"
+    },
+    {
+     "arabic": "مهنة",
+     "english": "job"
+    },
+    {
+     "arabic": "أوصاف",
+     "english": "description"
+    },
+    {
+     "arabic": "طويل",
+     "english": "tall"
+    },
+    {
+     "arabic": "نحيف",
+     "english": "thin"
+    },
+    {
+     "arabic": "لون",
+     "english": "color"
+    },
+    {
+     "arabic": "أسود",
+     "english": "black"
+    },
+    {
+     "arabic": "بيضاء",
+     "english": "white"
+    },
+    {
+     "arabic": "عامِل",
+     "english": "worker"
+    },
+    {
+     "arabic": "قصير",
+     "english": "short"
+    },
+    {
+     "arabic": "جسم",
+     "english": "body"
+    },
+    {
+     "arabic": "أزرق",
+     "english": "blue"
+    },
+    {
+     "arabic": "بُني",
+     "english": "brown"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc037",
+   "topic": "Society",
+   "number": "037",
+   "audio": "listening/ad_soc037.mp3",
+   "durationSec": 135,
+   "cards": [
+    {
+     "arabic": "معلومات",
+     "english": "information"
+    },
+    {
+     "arabic": "الفـنـدق",
+     "english": "(the) hotel"
+    },
+    {
+     "arabic": "مطار الإسكندرية",
+     "english": "Alexandria airport"
+    },
+    {
+     "arabic": "الحـَجـْز",
+     "english": "(the) reservation"
+    },
+    {
+     "arabic": "الوصول",
+     "english": "arrival (verbal noun)"
+    },
+    {
+     "arabic": "المـُغادرة",
+     "english": "departure (verbal noun)"
+    },
+    {
+     "arabic": "الغرفة",
+     "english": "(the) room"
+    },
+    {
+     "arabic": "إلغاء الحجز",
+     "english": "cancelling the reservation"
+    },
+    {
+     "arabic": "التـكـلـِفة",
+     "english": "(the) cost"
+    },
+    {
+     "arabic": "كرت الائتمان",
+     "english": "(a) credit card"
+    },
+    {
+     "arabic": "مـطْعـَم",
+     "english": "(a) restaurant"
+    },
+    {
+     "arabic": "المطعم الرئيسي",
+     "english": "main restaurant"
+    },
+    {
+     "arabic": "الخدمة الممتازة",
+     "english": "excellent service"
+    },
+    {
+     "arabic": "المناظـِر الساحـِرة",
+     "english": "magical views"
+    },
+    {
+     "arabic": "البحر الأبيض المتوسط",
+     "english": "the Mediterranean Sea"
+    },
+    {
+     "arabic": "مدار الأسبوع",
+     "english": "throughout the week"
+    },
+    {
+     "arabic": "صباحاً",
+     "english": "morning (a.m.)"
+    },
+    {
+     "arabic": "مساءً",
+     "english": "evening (p.m.)"
+    },
+    {
+     "arabic": "غير رسمي",
+     "english": "informal"
+    },
+    {
+     "arabic": "الإفطار والغداء",
+     "english": "breakfast and lunch"
+    },
+    {
+     "arabic": "مـُقدماً",
+     "english": "in advance"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc040",
+   "topic": "Society",
+   "number": "040",
+   "audio": "listening/ad_soc040.mp3",
+   "durationSec": 139,
+   "cards": [
+    {
+     "arabic": "متجر",
+     "english": "store"
+    },
+    {
+     "arabic": "الأجهزة الالكترونية",
+     "english": "electronic devices"
+    },
+    {
+     "arabic": "التخفيض السنوي",
+     "english": "annual discount"
+    },
+    {
+     "arabic": "مخزون كبير",
+     "english": "large inventory"
+    },
+    {
+     "arabic": "الهواتف المحمولة",
+     "english": "mobile phones"
+    },
+    {
+     "arabic": "الحواسيب المحمولة",
+     "english": "laptops"
+    },
+    {
+     "arabic": "أجهزة اللعب",
+     "english": "game consoles"
+    },
+    {
+     "arabic": "الرقمية",
+     "english": "digital"
+    },
+    {
+     "arabic": "كاميرا مُدمجة",
+     "english": "built-in camera"
+    },
+    {
+     "arabic": "برنامج محاربة الفيروس",
+     "english": "antivirus program"
+    },
+    {
+     "arabic": "مجانا",
+     "english": "for free"
+    },
+    {
+     "arabic": "شاشات التلفاز",
+     "english": "TV screens"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc223",
+   "topic": "Society",
+   "number": "223",
+   "audio": "listening/ad_soc223.mp3",
+   "durationSec": 215,
+   "cards": [
+    {
+     "arabic": "رسالة مـُسجلة",
+     "english": "(a) recorded message"
+    },
+    {
+     "arabic": "طيران الإمارات",
+     "english": "Emirates airline"
+    },
+    {
+     "arabic": "أكـّد / تأكيد",
+     "english": "confirmed/confirmation"
+    },
+    {
+     "arabic": "حـجـز",
+     "english": "reservation (v. noun)"
+    },
+    {
+     "arabic": "رحلة",
+     "english": "(a) trip/flight"
+    },
+    {
+     "arabic": "تـُقلع الطائرة",
+     "english": "the plane takes off"
+    },
+    {
+     "arabic": "مطار القاهرة الدولي",
+     "english": "Cairo International Airport"
+    },
+    {
+     "arabic": "تصل إلى",
+     "english": "arrives at"
+    },
+    {
+     "arabic": "راكـب / ركـّاب",
+     "english": "passenger/passengers"
+    },
+    {
+     "arabic": "كيلوجرام",
+     "english": "kilogram"
+    },
+    {
+     "arabic": "وزن الأمتعة",
+     "english": "luggage weight"
+    },
+    {
+     "arabic": "الدرجة السياحية",
+     "english": "economy class"
+    },
+    {
+     "arabic": "درجة رجال الأعمال",
+     "english": "business class"
+    },
+    {
+     "arabic": "الدرجة الأولى",
+     "english": "first class"
+    },
+    {
+     "arabic": "الحصول على",
+     "english": "obtaining (v. noun)"
+    },
+    {
+     "arabic": "عبر الانترنت",
+     "english": "online"
+    },
+    {
+     "arabic": "أسعار مـُخفضة",
+     "english": "discounted prices"
+    },
+    {
+     "arabic": "بطاقة الائتمان",
+     "english": "credit card"
+    },
+    {
+     "arabic": "الأسبوع القادم",
+     "english": "next week"
+    },
+    {
+     "arabic": "إقلاع الطائرة",
+     "english": "plane departure"
+    },
+    {
+     "arabic": "شراء",
+     "english": "buying (v. noun)"
+    },
+    {
+     "arabic": "المـُعاملة",
+     "english": "the transaction"
+    },
+    {
+     "arabic": "رحلة سعيدة",
+     "english": "(a) pleasant trip"
+    },
+    {
+     "arabic": "تزيد عن",
+     "english": "exceeds"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc225",
+   "topic": "Society",
+   "number": "225",
+   "audio": "listening/ad_soc225.mp3",
+   "durationSec": 131,
+   "cards": [
+    {
+     "arabic": "طاولة",
+     "english": "(a) table"
+    },
+    {
+     "arabic": "شخص",
+     "english": "(a) person"
+    },
+    {
+     "arabic": "لو سمحت",
+     "english": "please"
+    },
+    {
+     "arabic": "يشرب",
+     "english": "to drink"
+    },
+    {
+     "arabic": "مطعم",
+     "english": "(a) restaurant"
+    },
+    {
+     "arabic": "كوب من الشاي",
+     "english": "(a) cup of tea"
+    },
+    {
+     "arabic": "يأكل",
+     "english": "to eat"
+    },
+    {
+     "arabic": "طبق مصري",
+     "english": "Egyptian dish"
+    },
+    {
+     "arabic": "مشهور",
+     "english": "famous"
+    },
+    {
+     "arabic": "أصناف كثيرة",
+     "english": "many dishes"
+    },
+    {
+     "arabic": "محشي",
+     "english": "stuffed vegetables"
+    },
+    {
+     "arabic": "اللحوم",
+     "english": "meats"
+    },
+    {
+     "arabic": "أصناف نباتية",
+     "english": "vegetarian dishes"
+    },
+    {
+     "arabic": "سندويتش فلافل",
+     "english": "falafel sandwich"
+    },
+    {
+     "arabic": "سلطة خضراء",
+     "english": "(a) green salad"
+    },
+    {
+     "arabic": "اللهجة المصرية",
+     "english": "Egyptian dialect"
+    },
+    {
+     "arabic": "يدرس",
+     "english": "to study"
+    },
+    {
+     "arabic": "فاتورة الحساب",
+     "english": "bill"
+    },
+    {
+     "arabic": "منيو الأكل",
+     "english": "food menu"
+    },
+    {
+     "arabic": "يفهم",
+     "english": "to understand"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc303",
+   "topic": "Society",
+   "number": "303",
+   "audio": "listening/ad_soc303.mp3",
+   "durationSec": 164,
+   "cards": [
+    {
+     "arabic": "عرض رائع",
+     "english": "a great offer"
+    },
+    {
+     "arabic": "عطلتكم القادمة",
+     "english": "next holiday"
+    },
+    {
+     "arabic": "احجز إقامتك",
+     "english": "book your stay"
+    },
+    {
+     "arabic": "في منتجع",
+     "english": "at the resort"
+    },
+    {
+     "arabic": "شركائنا الرئيسيين",
+     "english": "our main partners"
+    },
+    {
+     "arabic": "شركات الطيران",
+     "english": "airlines"
+    },
+    {
+     "arabic": "إطلالة بحرية",
+     "english": "sea view"
+    },
+    {
+     "arabic": "عدد ليالي الإقامة",
+     "english": "length of stay"
+    },
+    {
+     "arabic": "خصم 30%",
+     "english": "30 percent off"
+    },
+    {
+     "arabic": "أفضل سعر",
+     "english": "the best price"
+    },
+    {
+     "arabic": "23 مطعماً ومقهى",
+     "english": "23 restaurants and cafes"
+    },
+    {
+     "arabic": "علاجات السبا",
+     "english": "spa treatments"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc324",
+   "topic": "Society",
+   "number": "324",
+   "audio": "listening/ad_soc324.mp3",
+   "durationSec": 395,
+   "cards": [
+    {
+     "arabic": "تميز بـِ",
+     "english": "to be distinguished"
+    },
+    {
+     "arabic": "أطباق",
+     "english": "dishes"
+    },
+    {
+     "arabic": "أصيل",
+     "english": "authentic"
+    },
+    {
+     "arabic": "يتخصص في",
+     "english": "specializes in"
+    },
+    {
+     "arabic": "خصائص",
+     "english": "features"
+    },
+    {
+     "arabic": "تمتع بـِ",
+     "english": "to enjoy"
+    },
+    {
+     "arabic": "مِنطقة",
+     "english": "location"
+    },
+    {
+     "arabic": "رقم التليفون",
+     "english": "telephone number"
+    },
+    {
+     "arabic": "عنوان",
+     "english": "address"
+    },
+    {
+     "arabic": "نوع المطبخ",
+     "english": "type of cuisine"
+    },
+    {
+     "arabic": "مفتوح",
+     "english": "opened"
+    },
+    {
+     "arabic": "طبيعة الأسعار",
+     "english": "(nature of) prices"
+    },
+    {
+     "arabic": "مطعم",
+     "english": "restaurant"
+    },
+    {
+     "arabic": "أشهى الوجبات",
+     "english": "the most appetizing meals"
+    },
+    {
+     "arabic": "مُقبلات",
+     "english": "entrées, appetizer"
+    },
+    {
+     "arabic": "تضمن",
+     "english": "to include"
+    },
+    {
+     "arabic": "حد أدنى للفاتورة",
+     "english": "minimum addition"
+    },
+    {
+     "arabic": "أكلات",
+     "english": "dishes, food"
+    },
+    {
+     "arabic": "عائم",
+     "english": "afloat"
+    },
+    {
+     "arabic": "أدوار(جمع دور)",
+     "english": "floors(plural of floor)"
+    },
+    {
+     "arabic": "زائر",
+     "english": "visitor"
+    },
+    {
+     "arabic": "في نفس الوقت",
+     "english": "at the same time"
+    },
+    {
+     "arabic": "تصميم",
+     "english": "desine"
+    },
+    {
+     "arabic": "آلهة",
+     "english": "goddess"
+    },
+    {
+     "arabic": "حب",
+     "english": "love"
+    },
+    {
+     "arabic": "جمال",
+     "english": "beauty"
+    },
+    {
+     "arabic": "رِحلة",
+     "english": "trip"
+    },
+    {
+     "arabic": "عشاء مُبكر",
+     "english": "early dinner"
+    },
+    {
+     "arabic": "أنغام",
+     "english": "rhythms"
+    },
+    {
+     "arabic": "يُـفضَّـل",
+     "english": "it is preferred"
+    },
+    {
+     "arabic": "حجْز",
+     "english": "reservation"
+    },
+    {
+     "arabic": "مُقدماً",
+     "english": "in advance"
+    },
+    {
+     "arabic": "صيفاً",
+     "english": "in the summer"
+    },
+    {
+     "arabic": "شتاءً",
+     "english": "in the winter"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc325",
+   "topic": "Society",
+   "number": "325",
+   "audio": "listening/ad_soc325.mp3",
+   "durationSec": 196,
+   "cards": [
+    {
+     "arabic": "ولاية",
+     "english": "state"
+    },
+    {
+     "arabic": "سَـفـَر",
+     "english": "traveling"
+    },
+    {
+     "arabic": "إجازة",
+     "english": "vacation"
+    },
+    {
+     "arabic": "مُناسِب",
+     "english": "appropriate, suitable"
+    },
+    {
+     "arabic": "بَـحـَث عن",
+     "english": "to search for"
+    },
+    {
+     "arabic": "حي (ج احياء)",
+     "english": "neighborhood"
+    },
+    {
+     "arabic": "جريدة",
+     "english": "newspaper"
+    },
+    {
+     "arabic": "إعلان",
+     "english": "advertisement"
+    },
+    {
+     "arabic": "التالي",
+     "english": "the following"
+    },
+    {
+     "arabic": "طابق",
+     "english": "floor, story"
+    },
+    {
+     "arabic": "اتصال بـ",
+     "english": "calling"
+    },
+    {
+     "arabic": "حدّد",
+     "english": "to determine, to set"
+    },
+    {
+     "arabic": "موعد",
+     "english": "appointment"
+    },
+    {
+     "arabic": "أثاث",
+     "english": "furniture"
+    },
+    {
+     "arabic": "أشعة الشمس",
+     "english": "rays of the sun"
+    },
+    {
+     "arabic": "شرط (ج شروط)",
+     "english": "condition"
+    },
+    {
+     "arabic": "نظافة",
+     "english": "cleanliness"
+    },
+    {
+     "arabic": "دخـَّن",
+     "english": "to smoke"
+    },
+    {
+     "arabic": "جلب",
+     "english": "to bring"
+    },
+    {
+     "arabic": "عَـقـْد",
+     "english": "contract"
+    },
+    {
+     "arabic": "وقـَّع",
+     "english": "to sign"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc414",
+   "topic": "Society",
+   "number": "414",
+   "audio": "listening/ad_soc414.mp3",
+   "durationSec": 165,
+   "cards": [
+    {
+     "arabic": "رسالة(ج رسائل)",
+     "english": "message or letter"
+    },
+    {
+     "arabic": "اطمئن",
+     "english": "to check on"
+    },
+    {
+     "arabic": "اتصل",
+     "english": "to contact"
+    },
+    {
+     "arabic": "هاتف (ج هواتف)",
+     "english": "phone"
+    },
+    {
+     "arabic": "زوجة (ج زوجات)",
+     "english": "wife"
+    },
+    {
+     "arabic": "زوج (ج أزواج)",
+     "english": "husband"
+    },
+    {
+     "arabic": "عم (ج أعمام)",
+     "english": "paternal uncle"
+    },
+    {
+     "arabic": "عمّة(ج عمّات)",
+     "english": "paternal aunt"
+    },
+    {
+     "arabic": "خال (ج أخوال)",
+     "english": "maternal uncle"
+    },
+    {
+     "arabic": "خالة(ج خالات)",
+     "english": "maternal aunt"
+    },
+    {
+     "arabic": "أب (ج آباء)",
+     "english": "father"
+    },
+    {
+     "arabic": "أم (ج أُمهات)",
+     "english": "mother"
+    },
+    {
+     "arabic": "أخ (ج أخوة)",
+     "english": "brother"
+    },
+    {
+     "arabic": "اُخت (ج أخوات)",
+     "english": "sister"
+    },
+    {
+     "arabic": "جامعة (ج جامعات)",
+     "english": "university"
+    },
+    {
+     "arabic": "مصنع (ج مصانع)",
+     "english": "factory"
+    },
+    {
+     "arabic": "ممرضة (ج ممرضات)",
+     "english": "female nurse"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc415",
+   "topic": "Society",
+   "number": "415",
+   "audio": "listening/ad_soc415.mp3",
+   "durationSec": 131,
+   "cards": [
+    {
+     "arabic": "سوق (ج أسواق)",
+     "english": "market"
+    },
+    {
+     "arabic": "ذهب",
+     "english": "to go"
+    },
+    {
+     "arabic": "شئ (ج أشياء)",
+     "english": "something"
+    },
+    {
+     "arabic": "خضروات",
+     "english": "vegetables"
+    },
+    {
+     "arabic": "فاكه (ج فواكه)",
+     "english": "fruit"
+    },
+    {
+     "arabic": "لحم بقر (ج لحوم الابقار)",
+     "english": "beef"
+    },
+    {
+     "arabic": "دجاج",
+     "english": "chicken"
+    },
+    {
+     "arabic": "بيض",
+     "english": "eggs"
+    },
+    {
+     "arabic": "نوع (ج أنواع)",
+     "english": "type"
+    },
+    {
+     "arabic": "خيار",
+     "english": "cucumber"
+    },
+    {
+     "arabic": "باذنجان",
+     "english": "eggplant"
+    },
+    {
+     "arabic": "خس",
+     "english": "lettuce"
+    },
+    {
+     "arabic": "بقدونس",
+     "english": "parsley"
+    },
+    {
+     "arabic": "بصل",
+     "english": "onion"
+    },
+    {
+     "arabic": "برتقال",
+     "english": "oranges"
+    },
+    {
+     "arabic": "تفاح",
+     "english": "apples"
+    },
+    {
+     "arabic": "موز",
+     "english": "bananas"
+    },
+    {
+     "arabic": "ليمون",
+     "english": "lemons"
+    },
+    {
+     "arabic": "عنب",
+     "english": "grapes"
+    },
+    {
+     "arabic": "كيلوغرام",
+     "english": "kilogram"
+    },
+    {
+     "arabic": "لحم بقر مفروم",
+     "english": "ground beef"
+    },
+    {
+     "arabic": "صدر دجاج",
+     "english": "chicken breast"
+    },
+    {
+     "arabic": "عظم (ج عِظام)",
+     "english": "bone"
+    },
+    {
+     "arabic": "نسى",
+     "english": "to forget"
+    }
+   ]
+  },
+  {
+   "id": "ad_soc416",
+   "topic": "Society",
+   "number": "416",
+   "audio": "listening/ad_soc416.mp3",
+   "durationSec": 81,
+   "cards": [
+    {
+     "arabic": "لعب",
+     "english": "to play"
+    },
+    {
+     "arabic": "كرة القدم",
+     "english": "soccer"
+    },
+    {
+     "arabic": "هواية",
+     "english": "hobby"
+    },
+    {
+     "arabic": "مفضل",
+     "english": "favorite"
+    },
+    {
+     "arabic": "جيد",
+     "english": "good"
+    },
+    {
+     "arabic": "ماذا",
+     "english": "what"
+    },
+    {
+     "arabic": "مَن",
+     "english": "who"
+    },
+    {
+     "arabic": "متى",
+     "english": "when"
+    },
+    {
+     "arabic": "كُرة السلة",
+     "english": "basketball"
+    },
+    {
+     "arabic": "حقاً",
+     "english": "really"
+    },
+    {
+     "arabic": "يوم الجمعة",
+     "english": "friday"
+    },
+    {
+     "arabic": "كل",
+     "english": "every"
+    },
+    {
+     "arabic": "جميل",
+     "english": "nice"
+    },
+    {
+     "arabic": "فريق",
+     "english": "team"
+    },
+    {
+     "arabic": "جامعة",
+     "english": "university"
+    },
+    {
+     "arabic": "مع",
+     "english": "with"
+    },
+    {
+     "arabic": "يرى",
+     "english": "see"
+    },
+    {
+     "arabic": "علَّم",
+     "english": "to teach"
+    },
+    {
+     "arabic": "تعلَّم",
+     "english": "to learn"
+    },
+    {
+     "arabic": "أب",
+     "english": "father"
+    },
+    {
+     "arabic": "آخر",
+     "english": "another"
+    },
+    {
+     "arabic": "سباحة",
+     "english": "swimming"
+    },
+    {
+     "arabic": "كرة الطائرة",
+     "english": "volleyball"
+    }
+   ]
+  },
+  {
+   "id": "ad_tec307",
+   "topic": "Technology",
+   "number": "307",
+   "audio": "listening/ad_tec307.mp3",
+   "durationSec": 157,
+   "cards": [
+    {
+     "arabic": "الكتروني",
+     "english": "electronic"
+    },
+    {
+     "arabic": "جهاز (ج أجهزة)",
+     "english": "device"
+    },
+    {
+     "arabic": "سعر (ج أسعار)",
+     "english": "price"
+    },
+    {
+     "arabic": "محل",
+     "english": "store"
+    },
+    {
+     "arabic": "طابعة",
+     "english": "printer"
+    },
+    {
+     "arabic": "حاسوب (ج حواسيب)",
+     "english": "computer"
+    },
+    {
+     "arabic": "شاشة",
+     "english": "screen"
+    },
+    {
+     "arabic": "لوحة مفاتيح",
+     "english": "keyboard"
+    },
+    {
+     "arabic": "كاميرة",
+     "english": "camera"
+    },
+    {
+     "arabic": "سماعة أذن",
+     "english": "headphone"
+    },
+    {
+     "arabic": "لاقطة صوت",
+     "english": "microphone"
+    },
+    {
+     "arabic": "ماركة",
+     "english": "brand"
+    },
+    {
+     "arabic": "هاتف (ج هواتف)",
+     "english": "phone"
+    },
+    {
+     "arabic": "تِلفاز",
+     "english": "TV"
+    }
+   ]
+  },
+  {
+   "id": "ad_tec402",
+   "topic": "Technology",
+   "number": "402",
+   "audio": "listening/ad_tec402.mp3",
+   "durationSec": 197,
+   "cards": [
+    {
+     "arabic": "محل",
+     "english": "store"
+    },
+    {
+     "arabic": "أجهزة الكترونية",
+     "english": "electronics"
+    },
+    {
+     "arabic": "تخفيض",
+     "english": "sales"
+    },
+    {
+     "arabic": "هائل",
+     "english": "huge"
+    },
+    {
+     "arabic": "مُستورد",
+     "english": "imported"
+    },
+    {
+     "arabic": "شخصيّ",
+     "english": "personal"
+    },
+    {
+     "arabic": "حاسوب (ح حواسيب)",
+     "english": "computer"
+    },
+    {
+     "arabic": "مُستعمل",
+     "english": "used"
+    },
+    {
+     "arabic": "حجم (ج احجام)",
+     "english": "size"
+    },
+    {
+     "arabic": "مجموعة",
+     "english": "group"
+    },
+    {
+     "arabic": "شاشة",
+     "english": "monitor"
+    },
+    {
+     "arabic": "لوحة مفاتيح",
+     "english": "keyboard"
+    },
+    {
+     "arabic": "طابعة",
+     "english": "printer"
+    },
+    {
+     "arabic": "صينيّ",
+     "english": "Chinese"
+    },
+    {
+     "arabic": "يابانيّ",
+     "english": "Japanese"
+    },
+    {
+     "arabic": "موديل",
+     "english": "model"
+    },
+    {
+     "arabic": "هاتف نقال (ج هواتف)",
+     "english": "cell phone"
+    },
+    {
+     "arabic": "العاب الكترونية",
+     "english": "video game"
+    },
+    {
+     "arabic": "تِلفاز",
+     "english": "TV"
+    },
+    {
+     "arabic": "سماعة أذن",
+     "english": "headset"
+    },
+    {
+     "arabic": "عُمْر (ج اعمار)",
+     "english": "age"
+    },
+    {
+     "arabic": "شاشة مُسطحة",
+     "english": "flat screen"
+    },
+    {
+     "arabic": "صيانة",
+     "english": "maintenance"
+    },
+    {
+     "arabic": "سِعر (ج اسعار)",
+     "english": "price"
+    }
+   ]
+  }
+ ]
+}

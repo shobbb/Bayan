@@ -1,6 +1,6 @@
 import './BottomNav.css';
 
-export type NavTab = 'home' | 'library' | 'stats' | 'settings';
+export type NavTab = 'home' | 'library' | 'listening' | 'stats' | 'settings';
 
 export interface BottomNavProps {
   active: NavTab;
@@ -29,6 +29,11 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: 'Articles',
     path: 'M4 4.5h16v15H4zM7.5 8.5h9M7.5 12h9M7.5 15.5h5',
   },
+  {
+    id: 'listening',
+    label: 'Listening',
+    path: 'M4 15v-3a8 8 0 0 1 16 0v3M4 15h3v5H4zM17 15h3v5h-3z',
+  },
   { id: 'stats', label: 'Stats', path: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
   {
     id: 'settings',
@@ -38,7 +43,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 /**
- * Bottom navigation across the four destinations.
+ * Bottom navigation across the five destinations.
  *
  * Deliberately absent from reading and drilling. Those are the two screens
  * where the interface is supposed to disappear (§5.1), the reader already owns

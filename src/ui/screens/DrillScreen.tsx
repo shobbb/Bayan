@@ -10,7 +10,7 @@ import {
 } from '@/domain/drills/session';
 import type { DrillOutcome, PrepareContext } from '@/domain/drills/types';
 import type { Grade, Word } from '@/domain/types';
-import { glossFor, glossLanguageFor } from '@/domain/glossLanguage';
+import { glossFor, glossLanguageFor, type GlossLanguage } from '@/domain/glossLanguage';
 import { recordAnswer, undoAnswer } from '@/services/batch/batchService';
 import { Definition } from '@/ui/drills/Definition';
 import { FlashcardView } from '@/ui/drills/FlashcardView';
@@ -23,6 +23,21 @@ export interface DrillScreenProps {
   corpus: readonly Word[];
   sentences: Readonly<Record<string, string>>;
   onExit: () => void;
+  /** What the way out says. Defaults to Home, where a study session starts. */
+  exitLabel?: string;
+  /**
+   * Whether answers are written to the words' schedules. Off for cards that
+   * are not corpus words — a listening lesson's glossary — which are drilled
+   * for practice and leave nothing behind.
+   */
+  persist?: boolean;
+  /**
+   * Which definitions are the answer side, when the cards fix it rather than
+   * the setting. A deck that only has English is drilled in English.
+   */
+  glossLanguage?: GlossLanguage;
+  /** Keep every card, including the review pass, a flashcard. */
+  flashcardsOnly?: boolean;
 }
 
 interface Result {
@@ -42,7 +57,16 @@ interface Result {
  * written as it happens, so a checkpoint, an exit, and a crash all preserve the
  * same progress.
  */
-export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenProps) {
+export function DrillScreen({
+  queue,
+  corpus,
+  sentences,
+  onExit,
+  exitLabel = 'Home',
+  persist = true,
+  glossLanguage: fixedLanguage,
+  flashcardsOnly = false,
+}: DrillScreenProps) {
   const config = useConfig();
   const [session, setSession] = useState<QueueEntry[]>(queue);
   const [index, setIndex] = useState(0);
@@ -54,7 +78,8 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
 
   const roundSize = config.algorithm.drill.roundSize;
 
-  const glossLanguage = glossLanguageFor(config.generation.arabicOnlyDefinitions);
+  const glossLanguage =
+    fixedLanguage ?? glossLanguageFor(config.generation.arabicOnlyDefinitions);
 
   const ctx = useMemo<PrepareContext>(
     () => ({
@@ -80,7 +105,7 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
     (settled: DrillOutcome) => {
       if (!entry) return;
       // REQ-27: every response writes SrsState through the scheduler.
-      void recordAnswer(entry.word, settled.grade);
+      if (persist) void recordAnswer(entry.word, settled.grade);
       setResults((prev) => [...prev, { word: entry.word, correct: settled.correct }]);
       setOutcome(null);
 
@@ -88,7 +113,7 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
       setIndex(next);
       if (isCheckpoint(session.length, roundSize, next)) setResting(true);
     },
-    [entry, index, session.length, roundSize],
+    [entry, index, session.length, roundSize, persist],
   );
 
   const handleRespond = useCallback(
@@ -117,12 +142,12 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
   const handleUndo = useCallback(() => {
     const last = results[results.length - 1];
     if (!last) return;
-    void undoAnswer(last.word);
+    if (persist) void undoAnswer(last.word);
     setResults((prev) => prev.slice(0, -1));
     setOutcome(null);
     setResting(false);
     setIndex((i) => Math.max(0, i - 1));
-  }, [results]);
+  }, [results, persist]);
 
   const summary = summarizeSession(results);
   const known = carried.known + summary.known;
@@ -142,7 +167,7 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
   const header = (
     <header className="drill-screen__header">
       <button type="button" className="drill-screen__exit" onClick={onExit}>
-        ← Home
+        ← {exitLabel}
       </button>
       {results.length > 0 && (
         <button type="button" className="drill-screen__undo" onClick={handleUndo}>
@@ -183,7 +208,11 @@ export function DrillScreen({ queue, corpus, sentences, onExit }: DrillScreenPro
     const keepReviewing = () => {
       // Carry the counts so a review pass reads as the same session continuing.
       setCarried({ known, stillLearning });
-      setSession(reviewQueueFor(summary.missed, session, glossLanguage));
+      setSession(
+        flashcardsOnly
+          ? summary.missed.map((word) => ({ word, mode: 'flashcard' as const }))
+          : reviewQueueFor(summary.missed, session, glossLanguage),
+      );
       setResults([]);
       setIndex(0);
       setOutcome(null);

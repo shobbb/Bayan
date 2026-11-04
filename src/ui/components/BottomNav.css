@@ -7,7 +7,7 @@
   inset-block-end: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--ground);
   border-top: 1px solid var(--rule);
   /* The inset extends the bar rather than being eaten by it, so the tabs keep
