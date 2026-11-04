@@ -1,12 +1,16 @@
 # Builds the native iOS app on a macOS runner and uploads it to TestFlight,
-# so a native change can ship without anyone's personal Mac (§ the Japan
-# workflow). Web-only changes do NOT need this — those go out over the air via
-# Capgo. This is only for changes to compiled code (Swift, plugins, native
-# config), which no OTA path can carry.
+# so a change can ship without anyone's personal Mac (§ the Japan workflow).
 #
-# Trigger is manual (workflow_dispatch): a native release is deliberate, and
-# you can start it from the GitHub mobile app or website — no laptop. It is not
-# wired to push, so ordinary web commits don't spend a 20-minute native build.
+# Runs on every push to the default branch (docs- and test-only pushes are
+# skipped) and on demand via workflow_dispatch, which can be started from the
+# GitHub mobile app or website — no laptop. A newer run cancels one still in
+# progress, so only the latest commit is built and uploaded.
+#
+# Each run starts on a fresh Mac with no signing certificate, so Xcode
+# (-allowProvisioningUpdates) asks Apple for a new one every run, and the
+# account caps how many it may hold. The "Revoke stale signing certificates"
+# step trims all but the newest of each type before archiving, so the count
+# never reaches the cap.
 #
 # Requires three repository secrets (Settings -> Secrets and variables ->
 # Actions), all from the one App Store Connect API key:
@@ -20,11 +24,21 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/design-specifications-qt1hjy
+    # Skipped only when every changed file matches one of these.
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - '**/*.test.ts'
+      - '**/*.test.tsx'
 
 concurrency:
-  # One native build at a time; a newer request supersedes an unfinished one.
+  # One native build at a time; a newer run supersedes an unfinished one, so
+  # only the latest commit is built and uploaded.
   group: ios-testflight
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -86,6 +100,48 @@ jobs:
         run: |
           mkdir -p ~/private_keys
           printf '%s' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      # Each run's Mac is new, so Xcode creates a new signing certificate every
+      # time, and Apple caps how many an account may hold. Before archiving,
+      # revoke all but the newest certificate of each type, so the count can
+      # never reach the cap. Installed builds and TestFlight builds are not
+      # affected by revoking a certificate.
+      - name: Revoke stale signing certificates
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync } from 'node:fs';
+          import { createSign } from 'node:crypto';
+          const keyId = process.env.ASC_KEY_ID;
+          const key = readFileSync(`${process.env.HOME}/private_keys/AuthKey_${keyId}.p8`, 'utf8');
+          const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+          const now = Math.floor(Date.now() / 1000);
+          const head = b64({ alg: 'ES256', kid: keyId, typ: 'JWT' });
+          const body = b64({ iss: process.env.ASC_ISSUER_ID, iat: now, exp: now + 600, aud: 'appstoreconnect-v1' });
+          const sig = createSign('SHA256').update(`${head}.${body}`)
+            .sign({ key, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+          const headers = { Authorization: `Bearer ${head}.${body}.${sig}` };
+          const api = 'https://api.appstoreconnect.apple.com/v1';
+          const res = await fetch(`${api}/certificates?limit=200`, { headers });
+          if (!res.ok) throw new Error(`listing certificates failed: ${res.status} ${await res.text()}`);
+          const { data } = await res.json();
+          const TYPES = ['DEVELOPMENT', 'IOS_DEVELOPMENT', 'DISTRIBUTION', 'IOS_DISTRIBUTION'];
+          const byType = new Map();
+          for (const cert of data) {
+            const type = cert.attributes.certificateType;
+            if (!TYPES.includes(type)) continue;
+            if (!byType.has(type)) byType.set(type, []);
+            byType.get(type).push(cert);
+          }
+          for (const [type, certs] of byType) {
+            certs.sort((a, b) => b.attributes.expirationDate.localeCompare(a.attributes.expirationDate));
+            console.log(`${type}: ${certs.length} found, keeping the newest`);
+            for (const cert of certs.slice(1)) {
+              const r = await fetch(`${api}/certificates/${cert.id}`, { method: 'DELETE', headers });
+              console.log(`  revoked ${cert.attributes.name} (expires ${cert.attributes.expirationDate}): ${r.status}`);
+              if (!r.ok && r.status !== 404) throw new Error(`revoking ${cert.id} failed: ${r.status} ${await r.text()}`);
+            }
+          }
+          EOF
 
       - name: Build number
         # Unique and increasing per run, offset past the build already on
