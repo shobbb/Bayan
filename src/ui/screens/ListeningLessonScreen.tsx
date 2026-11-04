@@ -17,7 +17,7 @@ export function ListeningLessonScreen({
 }: ListeningLessonScreenProps) {
   return (
     <div className="listening">
-      <button type="button" className="listening__exit" onClick={onExit}>
+      <button type="button" className="btn btn--text btn--back listening__exit" onClick={onExit}>
         ← Listening
       </button>
       <h1 dir="rtl" lang="ar" className="listening__title listening__title--ar">
@@ -28,11 +28,11 @@ export function ListeningLessonScreen({
       </p>
 
       <div className="listening__choices">
-        <button type="button" className="listening__choice" onClick={onVocab}>
+        <button type="button" className="tile listening__choice" onClick={onVocab}>
           <span className="listening__choice-name">Vocabulary</span>
           <span className="listening__lesson-meta">{lesson.cards.length} flashcards</span>
         </button>
-        <button type="button" className="listening__choice" onClick={onAudio}>
+        <button type="button" className="tile listening__choice" onClick={onAudio}>
           <span className="listening__choice-name">Audio</span>
           <span className="listening__lesson-meta">{formatDuration(lesson.durationSec)}</span>
         </button>

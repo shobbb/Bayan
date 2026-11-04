@@ -1,5 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+// The shared control styles load before any screen's stylesheet, so a screen
+// can adjust a button's layout without having to out-specify it.
+import './styles/buttons.css';
 import { App } from './app';
 import { seedOnFirstRun } from '@/services/seed/firstRunSeed';
 import { markTransitionSupport } from '@/ui/transitions';

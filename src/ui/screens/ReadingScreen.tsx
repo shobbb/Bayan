@@ -316,7 +316,7 @@ export function ReadingScreen({
       {/* Finish is at the far end of the text, which is no use to someone who
           wants out after two paragraphs. */}
       {onExit && (
-        <button type="button" className="reading-screen__exit" onClick={onExit.run}>
+        <button type="button" className="btn btn--text btn--back reading-screen__exit" onClick={onExit.run}>
           ← {onExit.label}
         </button>
       )}
@@ -359,7 +359,7 @@ export function ReadingScreen({
           {enrich.count > 0 && (
             <button
               type="button"
-              className="reading-screen__enrich-action"
+              className="btn btn--secondary reading-screen__enrich-action"
               aria-busy={enrich.busy}
               onClick={enrich.run}
             >
@@ -387,7 +387,7 @@ export function ReadingScreen({
                     {' '}
                     <button
                       type="button"
-                      className="reading-screen__enrich-settings"
+                      className="btn btn--text btn--inline reading-screen__enrich-settings"
                       onClick={enrich.onOpenSettings}
                     >
                       Open Settings
@@ -401,7 +401,7 @@ export function ReadingScreen({
                     {' '}
                     <button
                       type="button"
-                      className="reading-screen__enrich-settings"
+                      className="btn btn--text btn--inline reading-screen__enrich-settings"
                       onClick={() => window.location.reload()}
                     >
                       Reload
@@ -439,7 +439,7 @@ export function ReadingScreen({
         {questions && (
           <button
             type="button"
-            className="reading-screen__finish"
+            className="btn btn--secondary reading-screen__finish"
             aria-busy={questions.busy}
             disabled={questions.busy}
             onClick={questions.ready ? questions.open : questions.generate}
@@ -453,7 +453,7 @@ export function ReadingScreen({
         )}
         <button
           type="button"
-          className="reading-screen__finish"
+          className="btn btn--primary reading-screen__finish"
           onClick={() => onFinish([...notKnownIndices])}
         >
           Finish
@@ -468,7 +468,7 @@ export function ReadingScreen({
               {' '}
               <button
                 type="button"
-                className="reading-screen__enrich-settings"
+                className="btn btn--text btn--inline reading-screen__enrich-settings"
                 onClick={questions.onOpenSettings}
               >
                 Open Settings

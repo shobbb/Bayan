@@ -184,7 +184,7 @@ export function QuestionsScreen({
     <div className="questions-screen">
       <button
         type="button"
-        className="questions-screen__exit"
+        className="btn btn--text btn--back questions-screen__exit"
         onClick={() => {
           flushDraft();
           onExit();
@@ -230,7 +230,7 @@ export function QuestionsScreen({
                   {' '}
                   <button
                     type="button"
-                    className="questions-screen__link questions-screen__link--inline"
+                    className="btn btn--text btn--inline"
                     onClick={onOpenSettings}
                   >
                     Open Settings
@@ -241,7 +241,7 @@ export function QuestionsScreen({
           )}
 
           {isSettled(answer) && !grading && (
-            <button type="button" className="drill__advance" onClick={advance}>
+            <button type="button" className="btn btn--primary btn--block drill__advance" onClick={advance}>
               {position + 1 < set.questions.length ? 'Next question' : 'See result'}
             </button>
           )}
@@ -249,7 +249,7 @@ export function QuestionsScreen({
           {/* A free answer can always be left: being stuck on one question
               should not cost the reader the rest of the set. */}
           {question.kind === 'freeResponse' && !isSettled(answer) && !grading && (
-            <button type="button" className="questions-screen__link" onClick={advance}>
+            <button type="button" className="btn btn--text questions-screen__link" onClick={advance}>
               Skip this question
             </button>
           )}
@@ -260,10 +260,10 @@ export function QuestionsScreen({
             {correct} of {total} correct
           </p>
           <div className="questions-screen__result-actions">
-            <button type="button" className="drill__advance" onClick={onExit}>
+            <button type="button" className="btn btn--primary btn--block drill__advance" onClick={onExit}>
               Back to the article
             </button>
-            <button type="button" className="drill__secondary" onClick={restart}>
+            <button type="button" className="btn btn--secondary btn--block drill__secondary" onClick={restart}>
               Start again
             </button>
           </div>
@@ -273,7 +273,7 @@ export function QuestionsScreen({
       <div className="questions-screen__regenerate">
         <button
           type="button"
-          className="questions-screen__link"
+          className="btn btn--text questions-screen__link"
           disabled={regenerate.busy || grading}
           aria-busy={regenerate.busy}
           onClick={() => {
@@ -297,7 +297,7 @@ export function QuestionsScreen({
             Your answers to these questions will be cleared.{' '}
             <button
               type="button"
-              className="questions-screen__link questions-screen__link--inline"
+              className="btn btn--text btn--inline"
               onClick={() => setConfirmingRegenerate(false)}
             >
               Keep them
@@ -312,7 +312,7 @@ export function QuestionsScreen({
                 {' '}
                 <button
                   type="button"
-                  className="questions-screen__link questions-screen__link--inline"
+                  className="btn btn--text btn--inline"
                   onClick={onOpenSettings}
                 >
                   Open Settings
@@ -337,8 +337,8 @@ function MultipleChoice({
 }) {
   function stateFor(index: number): string {
     if (chosen === null) return '';
-    if (index === question.correctIndex) return ' drill__option--correct';
-    return index === chosen ? ' drill__option--wrong' : '';
+    if (index === question.correctIndex) return ' tile--correct';
+    return index === chosen ? ' tile--wrong' : '';
   }
 
   return (
@@ -347,7 +347,7 @@ function MultipleChoice({
         <li key={index}>
           <button
             type="button"
-            className={'drill__option questions-screen__option' + stateFor(index)}
+            className={'tile drill__option questions-screen__option' + stateFor(index)}
             disabled={chosen !== null}
             onClick={() => onChoose(index)}
           >
@@ -412,7 +412,7 @@ function FreeResponse({
       {!passed && (
         <button
           type="button"
-          className="drill__secondary questions-screen__submit"
+          className="btn btn--primary btn--block questions-screen__submit"
           disabled={grading || draft.trim() === '' || unchanged}
           aria-busy={grading}
           onClick={onSubmit}

@@ -12,14 +12,7 @@
 }
 
 .drill-screen__exit {
-  min-height: 44px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--ink-muted);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
+  margin-inline-start: calc(-1 * var(--space-2));
 }
 
 /* Thin bar, position within the round (§10.1). */
@@ -128,26 +121,7 @@
   color: var(--ink-muted);
 }
 
-.drill-screen__undo {
-  min-height: 44px;
-  padding: 0 var(--space-2);
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
-}
-
 .drill-screen__continue {
-  min-height: 48px;
+  min-width: 200px;
   margin: var(--space-4) 0;
-  padding: 0 var(--space-6);
-  background: transparent;
-  border: 1px solid var(--signal);
-  border-radius: var(--radius);
-  color: var(--signal);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
 }

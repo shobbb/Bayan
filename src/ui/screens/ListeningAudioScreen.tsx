@@ -14,7 +14,7 @@ export interface ListeningAudioScreenProps {
 export function ListeningAudioScreen({ lesson, onExit }: ListeningAudioScreenProps) {
   return (
     <div className="listening">
-      <button type="button" className="listening__exit" onClick={onExit}>
+      <button type="button" className="btn btn--text btn--back listening__exit" onClick={onExit}>
         ← Lesson
       </button>
       <h1 dir="rtl" lang="ar" className="listening__title listening__title--ar">

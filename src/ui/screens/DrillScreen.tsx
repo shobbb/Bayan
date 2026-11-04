@@ -166,11 +166,11 @@ export function DrillScreen({
 
   const header = (
     <header className="drill-screen__header">
-      <button type="button" className="drill-screen__exit" onClick={onExit}>
+      <button type="button" className="btn btn--text btn--back drill-screen__exit" onClick={onExit}>
         ← {exitLabel}
       </button>
       {results.length > 0 && (
-        <button type="button" className="drill-screen__undo" onClick={handleUndo}>
+        <button type="button" className="btn btn--text drill-screen__undo" onClick={handleUndo}>
           Undo
         </button>
       )}
@@ -194,7 +194,7 @@ export function DrillScreen({
           </p>
           <button
             type="button"
-            className="drill-screen__continue"
+            className="btn btn--primary drill-screen__continue"
             onClick={() => setResting(false)}
           >
             Continue
@@ -230,7 +230,7 @@ export function DrillScreen({
             <p className="drill-screen__note">Everything recalled.</p>
           ) : (
             <>
-              <button type="button" className="drill-screen__continue" onClick={keepReviewing}>
+              <button type="button" className="btn btn--primary drill-screen__continue" onClick={keepReviewing}>
                 Keep reviewing {summary.missed.length}
               </button>
               <p className="drill-screen__note">Still learning</p>

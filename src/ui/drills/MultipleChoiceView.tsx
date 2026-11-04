@@ -25,9 +25,9 @@ export function MultipleChoiceView({
 
   function stateFor(index: number): string {
     if (!answered) return '';
-    if (index === item.correctIndex) return ' drill__option--correct';
+    if (index === item.correctIndex) return ' tile--correct';
     // Only the option the learner actually chose is marked wrong.
-    return outcome.correct ? '' : ' drill__option--wrong';
+    return outcome.correct ? '' : ' tile--wrong';
   }
 
   return (
@@ -54,7 +54,7 @@ export function MultipleChoiceView({
             <li key={option}>
               <button
                 type="button"
-                className={'drill__option' + stateFor(index)}
+                className={'tile drill__option' + stateFor(index)}
                 disabled={answered}
                 onClick={() => onRespond(index)}
               >
@@ -69,7 +69,7 @@ export function MultipleChoiceView({
         </ul>
 
         {answered && (
-          <button type="button" className="drill__advance" onClick={onAdvance}>
+          <button type="button" className="btn btn--primary btn--block drill__advance" onClick={onAdvance}>
             Continue
           </button>
         )}

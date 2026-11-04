@@ -423,7 +423,7 @@ export function SettingsScreen() {
             <div className="settings-screen__row">
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 disabled={keyIsLocked}
                 onClick={() => void handleSave()}
               >
@@ -432,7 +432,7 @@ export function SettingsScreen() {
               {stored && !fromBuild && (
                 <button
                   type="button"
-                  className="settings-screen__button"
+                  className="btn btn--secondary btn--small settings-screen__button"
                   onClick={() => void handleClear()}
                 >
                   Remove
@@ -454,7 +454,7 @@ export function SettingsScreen() {
         <div className="settings-screen__row">
           <button
             type="button"
-            className="settings-screen__button"
+            className="btn btn--secondary btn--small settings-screen__button"
             disabled={busy}
             onClick={() => void runExport((json, filename) => downloadFile(filename, json))}
           >
@@ -462,7 +462,7 @@ export function SettingsScreen() {
           </button>
           <button
             type="button"
-            className="settings-screen__button"
+            className="btn btn--secondary btn--small settings-screen__button"
             disabled={busy}
             onClick={() => void runExport((json) => copyToClipboard(json))}
           >
@@ -493,7 +493,7 @@ export function SettingsScreen() {
             <div className="settings-screen__row">
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 disabled={busy}
                 onClick={() => void runBackup(false)}
               >
@@ -501,7 +501,7 @@ export function SettingsScreen() {
               </button>
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 disabled={busy || !remote?.exists}
                 onClick={() => void runRestore()}
               >
@@ -511,7 +511,7 @@ export function SettingsScreen() {
             <div className="settings-screen__row">
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 disabled={busy}
                 onClick={() => void runBackup(true)}
               >
@@ -519,7 +519,7 @@ export function SettingsScreen() {
               </button>
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 disabled={busy}
                 onClick={() => void handleClearSupabase()}
               >
@@ -550,7 +550,7 @@ export function SettingsScreen() {
             <div className="settings-screen__row">
               <button
                 type="button"
-                className="settings-screen__button"
+                className="btn btn--secondary btn--small settings-screen__button"
                 onClick={() => void handleSaveSupabase()}
               >
                 Save
@@ -586,7 +586,7 @@ export function SettingsScreen() {
                 (activePath !== null ? (
                   <button
                     type="button"
-                    className="settings-screen__button"
+                    className="btn btn--secondary btn--small settings-screen__button"
                     disabled={modelBusy !== null}
                     onClick={() => void revertToSystemModel()}
                   >
@@ -616,7 +616,7 @@ export function SettingsScreen() {
                   ) : (
                     <button
                       type="button"
-                      className="settings-screen__button"
+                      className="btn btn--secondary btn--small settings-screen__button"
                       disabled={modelBusy !== null}
                       onClick={() =>
                         void (downloaded ? reuseDownloaded(choice) : fetchModel(choice))
@@ -677,7 +677,7 @@ export function SettingsScreen() {
 
         <button
           type="button"
-          className="settings-screen__button"
+          className="btn btn--secondary btn--small settings-screen__button"
           disabled={checkingUpdate}
           onClick={() => void runUpdateCheck()}
         >
@@ -748,7 +748,7 @@ export function SettingsScreen() {
         <div className="settings-screen__row">
           <button
             type="button"
-            className="settings-screen__button"
+            className="btn btn--secondary btn--small settings-screen__button"
             disabled={busy || importText.trim() === ''}
             onClick={() => void runImport('merge')}
           >
@@ -758,7 +758,7 @@ export function SettingsScreen() {
               be undone — there is no server to recover from (REQ-37). */}
           <button
             type="button"
-            className="settings-screen__button settings-screen__button--danger"
+            className="btn btn--danger btn--small settings-screen__button"
             disabled={busy || importText.trim() === ''}
             onClick={() => {
               if (confirmingReplace) void runImport('replace');
@@ -791,7 +791,7 @@ export function SettingsScreen() {
         <div className="settings-screen__row">
           <button
             type="button"
-            className="settings-screen__button"
+            className="btn btn--secondary btn--small settings-screen__button"
             disabled={changedCount === 0}
             onClick={resetAll}
           >

@@ -63,14 +63,14 @@ export function FlashcardView({ item, onRespond }: FlashcardViewProps) {
           <div className="drill__report">
             <button
               type="button"
-              className="drill__report-button"
+              className="btn btn--secondary drill__report-button"
               onClick={() => onRespond('stillLearning')}
             >
               Still learning
             </button>
             <button
               type="button"
-              className="drill__report-button drill__report-button--known"
+              className="btn btn--primary drill__report-button"
               onClick={() => onRespond('known')}
             >
               Know it

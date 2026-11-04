@@ -28,15 +28,23 @@
   cursor: pointer;
 }
 
-/* The card is a surface, not a container full of chrome (REQ-D1): a single
-   hairline and a radius, no fill, no shadow. It reads as a card because it
-   flips, not because it is drawn like one. */
+/* The card is the one large tappable surface on the screen: filled like every
+   other control, so it reads as something to touch, and outlined in --signal
+   once it has been turned over. */
 .drill__card {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  border: 2px solid transparent;
+  border-radius: var(--radius-tile);
+  background: var(--surface);
   margin: var(--space-4) var(--space-5) 0;
   width: auto;
-  transition: border-color var(--motion-drill-reveal) ease-out;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--motion-drill-reveal) ease-out,
+    background-color var(--motion-tap-wash) ease-out;
+}
+
+.drill__card:active {
+  background: var(--surface-press);
 }
 
 .drill__card--flipped {
@@ -124,20 +132,6 @@
   gap: var(--space-3);
 }
 
-.drill__report-button,
-.drill__option,
-.drill__advance,
-.drill__secondary {
-  min-height: 48px;
-  padding: var(--space-3);
-  background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
-}
 
 .drill__options {
   list-style: none;
@@ -149,25 +143,10 @@
 }
 
 .drill__option {
-  width: 100%;
-  text-align: start;
-}
-
-/* Answer feedback is the one place colour carries meaning rather than
-   decoration, so it is stated directly rather than through --signal. */
-.drill__option--correct {
-  border-color: #2f7d4f;
-  color: #2f7d4f;
-}
-
-.drill__option--wrong {
-  border-color: #a33a3a;
-  color: #a33a3a;
-}
-
-.drill__advance,
-.drill__secondary {
-  width: 100%;
+  min-height: 60px;
+  align-items: stretch;
+  justify-content: center;
+  font-size: 0.95rem;
 }
 
 .drill__row {
@@ -220,9 +199,4 @@
 
 .drill__report-button {
   min-height: 56px;
-}
-
-.drill__report-button--known {
-  border-color: var(--signal);
-  color: var(--signal);
 }

@@ -268,7 +268,7 @@ export function LibraryScreen({ onOpenArticle, opening }: LibraryScreenProps) {
               {' '}
               <button
                 type="button"
-                className="library__note-action"
+                className="btn btn--text btn--inline library__note-action"
                 onClick={() => window.location.reload()}
               >
                 Reload

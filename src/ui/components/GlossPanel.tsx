@@ -83,7 +83,7 @@ export function GlossPanel({
                 {onDefine && (
                   <button
                     type="button"
-                    className="gloss-panel__define"
+                    className="btn btn--primary btn--small gloss-panel__define"
                     onClick={onDefine}
                     disabled={defining}
                   >
@@ -101,7 +101,7 @@ export function GlossPanel({
           <div className="gloss-panel__actions">
             <button
               type="button"
-              className={'gloss-panel__flag' + (isNotKnown ? ' gloss-panel__flag--on' : '')}
+              className={'btn btn--secondary btn--small gloss-panel__flag' + (isNotKnown ? ' gloss-panel__flag--on' : '')}
               aria-pressed={isNotKnown}
               onClick={onToggleNotKnown}
             >
@@ -110,7 +110,7 @@ export function GlossPanel({
             {onRedefine && (
               <button
                 type="button"
-                className="gloss-panel__redefine"
+                className="btn btn--text btn--muted btn--small gloss-panel__redefine"
                 onClick={onRedefine}
                 disabled={defining}
               >

@@ -74,7 +74,7 @@ export function ConfigFieldRow({
           {field.label}
         </label>
         {overridden && !locked && (
-          <button type="button" className="config-field__reset" onClick={onReset}>
+          <button type="button" className="btn btn--text btn--inline config-field__reset" onClick={onReset}>
             Reset
           </button>
         )}

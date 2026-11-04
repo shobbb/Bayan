@@ -47,7 +47,7 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
               <li key={lesson.id}>
                 <button
                   type="button"
-                  className="listening__lesson"
+                  className="tile listening__lesson"
                   onClick={() => onOpenLesson(lesson)}
                 >
                   <span dir="rtl" lang="ar" className="listening__lesson-title">

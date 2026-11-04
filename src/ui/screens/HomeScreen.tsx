@@ -161,7 +161,7 @@ export function HomeScreen({
           came back to finish it. Absent entirely the rest of the time, so it
           never costs a line it has not earned. */}
       {reading && (
-        <button type="button" className="home-screen__reading-resume" onClick={reading.resume}>
+        <button type="button" className="tile home-screen__reading-resume" onClick={reading.resume}>
           <span className="home-screen__resume-label">Continue reading</span>
           <span dir="rtl" lang="ar" className="home-screen__resume-title">
             {reading.titleAr}
@@ -182,7 +182,7 @@ export function HomeScreen({
         <div key={action.id}>
           <button
             type="button"
-            className="home-screen__action home-screen__action--primary"
+            className="btn btn--primary btn--block home-screen__action--primary"
             aria-busy={isActionBusy(action.id, generating, busy)}
             aria-expanded={studyOpen}
             onClick={() => action.run(ctx)}
@@ -202,7 +202,7 @@ export function HomeScreen({
                   <button
                     key={option.id}
                     type="button"
-                    className="home-screen__study-option"
+                    className="tile home-screen__study-option"
                     onClick={() => onChooseStudy(option.id)}
                   >
                     <span className="home-screen__study-label">
@@ -229,7 +229,7 @@ export function HomeScreen({
               <button
                 key={action.id}
                 type="button"
-                className="home-screen__action"
+                className="tile home-screen__action"
                 aria-busy={actionBusy}
                 onClick={() => action.run(ctx)}
               >
@@ -250,7 +250,7 @@ export function HomeScreen({
             <button
               key={action.id}
               type="button"
-              className="home-screen__action-link"
+              className="btn btn--secondary btn--small home-screen__action-link"
               aria-busy={actionBusy}
               onClick={() => action.run(ctx)}
             >
@@ -281,7 +281,7 @@ export function HomeScreen({
                 {' '}
                 <button
                   type="button"
-                  className="home-screen__notice-action"
+                  className="btn btn--text btn--inline home-screen__notice-action"
                   onClick={onOpenSettings}
                 >
                   Open Settings
@@ -295,7 +295,7 @@ export function HomeScreen({
                 {' '}
                 <button
                   type="button"
-                  className="home-screen__notice-action"
+                  className="btn btn--text btn--inline home-screen__notice-action"
                   onClick={() => window.location.reload()}
                 >
                   Reload

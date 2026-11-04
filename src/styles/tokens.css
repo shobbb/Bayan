@@ -14,6 +14,13 @@
   --mark-seen: #dce4ee;
   --mark-new: #e8dff0;
   --signal: #2e5e8c;
+  /* Controls (buttons.css): a soft fill a step off the ground, the same a
+     step further for a press, and text that sits on --signal. */
+  --surface: #ecece8;
+  --surface-press: #e0e0db;
+  --on-signal: #ffffff;
+  --success: #2f7d4f;
+  --danger: #a33a3a;
 
   /**
    * Attention, on a dark chip only.
@@ -50,8 +57,14 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  /* Border radius (REQ-D7): 0 or 4px. Nothing more. */
+  /* Border radius (REQ-D7): 0 or 4px for surfaces and text marks. */
   --radius: 4px;
+  /* Controls are rounder than surfaces so a button never reads as a box of
+     content, and a tile as a tappable thing rather than a panel. */
+  --radius-control: 12px;
+  --radius-tile: 14px;
+  --control-height: 50px;
+  --control-height-small: 40px;
 
   /**
    * Height of the GlossPanel's content box (§5.5 requires a fixed height).
@@ -88,6 +101,11 @@
     --mark-seen: #22303f;
     --mark-new: #2e2740;
     --signal: #6fa3d6;
+  --surface: #1f1f24;
+  --surface-press: #2a2a31;
+  --on-signal: #0d1620;
+  --success: #5fc48d;
+  --danger: #f0736c;
     --difficulty-1: #5fc48d;
     --difficulty-2: #a8c25c;
     --difficulty-3: #dcae4c;
@@ -105,6 +123,11 @@
   --mark-seen: #22303f;
   --mark-new: #2e2740;
   --signal: #6fa3d6;
+  --surface: #1f1f24;
+  --surface-press: #2a2a31;
+  --on-signal: #0d1620;
+  --success: #5fc48d;
+  --danger: #f0736c;
   --difficulty-1: #5fc48d;
   --difficulty-2: #a8c25c;
   --difficulty-3: #dcae4c;
@@ -120,6 +143,13 @@
   --mark-seen: #dce4ee;
   --mark-new: #e8dff0;
   --signal: #2e5e8c;
+  /* Controls (buttons.css): a soft fill a step off the ground, the same a
+     step further for a press, and text that sits on --signal. */
+  --surface: #ecece8;
+  --surface-press: #e0e0db;
+  --on-signal: #ffffff;
+  --success: #2f7d4f;
+  --danger: #a33a3a;
   --difficulty-1: #1f7a4d;
   --difficulty-2: #4f6b1e;
   --difficulty-3: #8a6114;

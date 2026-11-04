@@ -80,22 +80,6 @@
   gap: var(--space-3);
 }
 
-.settings-screen__button {
-  min-height: 44px;
-  padding: var(--space-2) var(--space-4);
-  background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
-}
-
-.settings-screen__button:hover {
-  border-color: var(--signal);
-  color: var(--signal);
-}
 
 .settings-screen__list {
   list-style: none;
@@ -120,14 +104,7 @@
   font-size: var(--text-data-size);
 }
 
-.settings-screen__button:disabled {
-  color: var(--ink-muted);
-  border-color: var(--rule);
-  cursor: default;
-  /* Muted colour alone left a disabled button looking clickable beside an
-     enabled one, which is the confusion a locked control exists to remove. */
-  opacity: 0.5;
-}
+
 
 /* --- On-device model rows ---------------------------------------------------
    One entry per model: its name and the one action its state allows on the same
@@ -256,14 +233,6 @@
   resize: vertical;
 }
 
-.settings-screen__button--danger {
-  border-color: var(--rule);
-}
-
-.settings-screen__button--danger:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
 
 .settings-screen__details,
 .settings-screen__group {
@@ -326,14 +295,7 @@
 }
 
 .config-field__reset {
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: var(--font-english);
   font-size: var(--text-data-size);
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .config-field__input {

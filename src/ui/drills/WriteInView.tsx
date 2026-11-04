@@ -64,11 +64,11 @@ export function WriteInView({
               <p className="drill__hint">You wrote “{outcome.acceptedAs}”.</p>
             )}
             <div className="drill__row">
-              <button type="button" className="drill__advance" onClick={onAdvance}>
+              <button type="button" className="btn btn--primary btn--block drill__advance" onClick={onAdvance}>
                 Continue
               </button>
               {!outcome.correct && (
-                <button type="button" className="drill__secondary" onClick={onOverride}>
+                <button type="button" className="btn btn--secondary btn--block drill__secondary" onClick={onOverride}>
                   I was right
                 </button>
               )}
@@ -94,7 +94,7 @@ export function WriteInView({
               spellCheck={false}
               onChange={(event) => setTyped(event.target.value)}
             />
-            <button type="submit" className="drill__advance">
+            <button type="submit" className="btn btn--primary btn--block drill__advance">
               Check
             </button>
           </form>

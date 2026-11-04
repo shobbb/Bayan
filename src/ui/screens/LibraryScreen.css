@@ -68,33 +68,39 @@
   flex: 0 0 auto;
 }
 
+/* Filter pills: a soft fill, and the selected one filled with --signal. */
 .library__chip {
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  color: var(--ink-muted);
-  font-family: var(--font-english);
-  font-size: var(--text-data-size);
-  cursor: pointer;
-}
-
-.library__chip--on {
-  border-color: var(--signal);
-  color: var(--signal);
-}
-
-.library__note-action {
-  min-height: 44px;
-  padding: 0;
-  background: transparent;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  background: var(--surface);
   border: none;
-  color: var(--signal);
-  font-family: inherit;
-  font-size: inherit;
-  text-decoration: underline;
+  border-radius: 999px;
+  color: var(--ink);
+  font-family: var(--font-english);
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--motion-tap-wash) ease-out,
+    color var(--motion-tap-wash) ease-out;
+}
+
+.library__chip:active {
+  background: var(--surface-press);
+}
+
+.library__chip--on,
+.library__chip--on:active {
+  background: var(--signal);
+  color: var(--on-signal);
+  font-weight: 600;
+}
+
+.library__chip:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
 }
 
 .library__grid {
@@ -124,6 +130,21 @@
   text-align: start;
   cursor: pointer;
   color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity var(--motion-tap-wash) ease-out,
+    transform var(--motion-tap-wash) ease-out;
+}
+
+.library__card:active {
+  opacity: 0.75;
+  transform: scale(0.99);
+}
+
+.library__card:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 4px;
+  border-radius: var(--radius-tile);
 }
 
 .library__thumb {

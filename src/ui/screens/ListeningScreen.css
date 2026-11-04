@@ -4,18 +4,8 @@
   padding: var(--space-6) var(--space-5) var(--space-7);
 }
 
-/* The same quiet way out the reading page uses (§5.1). */
 .listening__exit {
-  display: inline-block;
-  min-height: 44px;
   margin-bottom: var(--space-2);
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
 }
 
 .listening__title {
@@ -56,28 +46,6 @@
   gap: var(--space-2);
 }
 
-.listening__lesson,
-.listening__choice {
-  width: 100%;
-  min-height: 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  color: var(--ink);
-  font-family: var(--font-english);
-  text-align: start;
-  cursor: pointer;
-}
-
-.listening__lesson:hover,
-.listening__choice:hover {
-  border-color: var(--signal);
-}
 
 .listening__lesson-name,
 .listening__choice-name {
@@ -125,7 +93,9 @@
 }
 
 .listening__choice {
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  min-height: 72px;
+  justify-content: center;
 }
 
 .listening__player {

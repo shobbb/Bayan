@@ -6,18 +6,8 @@
     calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
 }
 
-/* Same quiet way out as the reading page (§5.1). */
 .questions-screen__exit {
-  display: inline-block;
-  min-height: 44px;
   margin-bottom: var(--space-2);
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
 }
 
 .questions-screen__title {
@@ -131,22 +121,9 @@
   color: var(--ink);
 }
 
-.questions-screen__submit:disabled {
-  color: var(--ink-muted);
-  cursor: default;
-}
-
 .questions-screen__link {
-  display: block;
-  min-height: 44px;
+  display: flex;
   margin: var(--space-2) auto 0;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--signal);
-  font-family: var(--font-english);
-  font-size: var(--text-ui-label-size);
-  cursor: pointer;
 }
 
 .questions-screen__failure {
@@ -155,18 +132,6 @@
   font-size: var(--text-data-size);
   color: var(--ink-muted);
   text-align: center;
-}
-
-.questions-screen__link--inline {
-  display: inline;
-  min-height: 0;
-  margin: 0;
-  text-decoration: underline;
-}
-
-.questions-screen__link:disabled {
-  color: var(--ink-muted);
-  cursor: progress;
 }
 
 /* Kept apart from the answer controls, below everything, so replacing the set

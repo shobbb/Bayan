@@ -214,7 +214,7 @@ export function StatsScreen({ onReplayRound }: StatsScreenProps) {
             {rows.length > visibleCount && (
               <button
                 type="button"
-                className="stats-screen__more"
+                className="btn btn--secondary btn--small btn--block stats-screen__more"
                 onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
               >
                 Show more — {visibleCount} of {rows.length}
