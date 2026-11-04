@@ -42,6 +42,29 @@ body,
   height: 100%;
 }
 
+/* The app draws edge to edge (viewport-fit=cover, contentInset 'never'), so the
+   status bar and notch sit over the page unless something makes room for them.
+   The bottom inset is handled where the fixed bars are; this is the top one,
+   once, so no screen can forget it. */
+#root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Text scrolled up past the top would otherwise run under the clock. A strip of
+   the page's own ground colour sits over the inset, so it scrolls out of sight
+   instead. Zero height wherever there is no inset, as in a browser. */
+body::before {
+  content: '';
+  position: fixed;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: 30;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--ground);
+  pointer-events: none;
+}
+
 body {
   margin: 0;
   background: var(--ground);
