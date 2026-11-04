@@ -9,6 +9,7 @@ export interface ListeningAudioScreenProps {
 /**
  * The lesson's recording, with the system's own player: play, pause, scrub and
  * volume are all there already, and they are the controls the reader knows.
+ * Its Arabic transcript follows, where there is one, to read along with.
  */
 export function ListeningAudioScreen({ lesson, onExit }: ListeningAudioScreenProps) {
   return (
@@ -24,6 +25,16 @@ export function ListeningAudioScreen({ lesson, onExit }: ListeningAudioScreenPro
       <audio className="listening__player" controls preload="metadata" src={lesson.audio}>
         Audio playback is not supported here.
       </audio>
+
+      {lesson.transcript && (
+        <div dir="rtl" lang="ar" className="listening__transcript">
+          {lesson.transcript.map((paragraph, index) => (
+            <p key={index} className="listening__transcript-paragraph">
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

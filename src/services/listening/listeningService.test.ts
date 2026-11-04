@@ -24,6 +24,16 @@ describe('the listening catalog', () => {
     expect(wrong).toEqual([]);
   });
 
+  it('keeps transcripts to Arabic text, with nothing from the English column', async () => {
+    const leaked = (await listeningLessons()).flatMap((lesson) =>
+      (lesson.transcript ?? [])
+        .filter((paragraph) => /[A-Za-z]/.test(paragraph) || !ARABIC.test(paragraph))
+        .map((paragraph) => `${lesson.id}: ${paragraph}`),
+    );
+
+    expect(leaked).toEqual([]);
+  });
+
   it('lists each lesson once', async () => {
     const ids = (await listeningLessons()).map((l) => l.id);
 

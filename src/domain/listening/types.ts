@@ -32,6 +32,13 @@ export interface ListeningLesson {
   audio: string;
   durationSec: number;
   cards: ListeningCard[];
+  /**
+   * The recording's Arabic text, by paragraph, where the course's transcript
+   * could be read back faithfully. Absent where it could not: several of the
+   * PDFs carry numbers that contradict their own English column, and a
+   * transcript that disagrees with the recording is worse than none.
+   */
+  transcript?: string[];
 }
 
 /**
