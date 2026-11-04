@@ -9,8 +9,12 @@ import { LibraryScreen } from '@/ui/screens/LibraryScreen';
 import { QuestionsScreen } from '@/ui/screens/QuestionsScreen';
 import { ListeningScreen } from '@/ui/screens/ListeningScreen';
 import { ListeningLessonScreen } from '@/ui/screens/ListeningLessonScreen';
-import { ListeningAudioScreen } from '@/ui/screens/ListeningAudioScreen';
-import { lessonWords, type ListeningLesson } from '@/domain/listening/types';
+import { LessonPlayer, ListeningAudioScreen } from '@/ui/screens/ListeningAudioScreen';
+import {
+  lessonWords,
+  transcriptArticleId,
+  type ListeningLesson,
+} from '@/domain/listening/types';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
 import { createRound, finishRound } from '@/services/rounds/roundService';
@@ -71,6 +75,12 @@ interface ArticleScreen {
   comprehension: ComprehensionSet | null;
   /** The reader's way through that set, saved as they answer. */
   comprehensionProgress: ComprehensionProgress | null;
+  /**
+   * Set when this is a listening lesson's transcript rather than a library
+   * article: the reader plays its recording above the text and returns to the
+   * lesson rather than to the library.
+   */
+  lesson: ListeningLesson | null;
 }
 
 /**
@@ -306,7 +316,7 @@ function AppScreens() {
   // reach the selector. What they do share is the corpus — finishing one writes
   // Words through the same ingestion a round uses.
   const handleOpenArticle = useCallback(
-    (id: string) => {
+    (id: string, lesson: ListeningLesson | null = null) => {
     setFailure(null);
     setEnrichFailure(null);
     setEnrichNotice(null);
@@ -334,6 +344,7 @@ function AppScreens() {
             titleOffset,
             comprehension,
             comprehensionProgress,
+            lesson,
           }),
         ),
       )
@@ -473,14 +484,20 @@ function AppScreens() {
   }, [screen]);
 
   const handleFinishArticle = useCallback(
-    (article: Article, segments: ResolvedSegment[], notKnownIndices: number[]) => {
+    (
+      article: Article,
+      segments: ResolvedSegment[],
+      notKnownIndices: number[],
+      lesson: ListeningLesson | null = null,
+    ) => {
       void finishArticle(
         article,
         segments,
         notKnownIndices,
         glossLanguageFor(config.generation.arabicOnlyDefinitions),
       ).then(() => setRefreshToken((n) => n + 1));
-      navigate(() => setScreen({ name: 'home' })); // REQ-14
+      // A transcript goes back to its lesson, where the vocabulary is.
+      navigate(() => setScreen(lesson ? { name: 'lesson', lesson } : { name: 'home' })); // REQ-14
     },
     [config],
   );
@@ -546,7 +563,13 @@ function AppScreens() {
       <ListeningLessonScreen
         lesson={lesson}
         onExit={() => navigate(() => setScreen({ name: 'listening' }))}
-        onAudio={() => navigate(() => setScreen({ name: 'lessonAudio', lesson }))}
+        onAudio={() =>
+          // With a transcript, the recording plays above it in the reader, so
+          // its words are tapped exactly as an article's are.
+          lesson.transcript
+            ? handleOpenArticle(transcriptArticleId(lesson), lesson)
+            : navigate(() => setScreen({ name: 'lessonAudio', lesson }))
+        }
         onVocab={() =>
           navigate(() =>
             setScreen({
@@ -605,7 +628,7 @@ function AppScreens() {
   }
 
   if (screen.name === 'article') {
-    const { article, segments, flaggedIndices, resumeAt, titleOffset } = screen;
+    const { article, segments, flaggedIndices, resumeAt, titleOffset, lesson } = screen;
     return screenFrame(
       <ReadingScreen
         segments={segments}
@@ -617,11 +640,11 @@ function AppScreens() {
           void saveReadingProgress(article.id, index, segments.length);
         }}
         onExit={{
-          label: 'Articles',
+          label: lesson ? 'Lesson' : 'Articles',
           run: () => {
             // The place is already stored; refresh so Home offers it back.
             setRefreshToken((n) => n + 1);
-            navigate(() => setScreen({ name: 'library' }));
+            navigate(() => setScreen(lesson ? { name: 'lesson', lesson } : { name: 'library' }));
           },
         }}
         onToggleNotKnown={(index, flagged) => {
@@ -651,7 +674,9 @@ function AppScreens() {
           notice: enrichNotice,
           onOpenSettings: handleOpenSettings,
         }}
-        questions={{
+        // Not offered on a lesson transcript yet: questions on a recording are
+        // a separate feature from reading its text.
+        questions={lesson ? null : {
           ready: screen.comprehension !== null,
           openLabel: screen.comprehension
             ? questionsLabel(screen.comprehension, screen.comprehensionProgress)
@@ -666,14 +691,24 @@ function AppScreens() {
         onRedefineWord={(index) => handleDefineWord(index, true)}
         definingIndex={definingIndex}
         media={
-          <ArticleMedia
-            imageUrl={article.imageUrl}
-            videoUrl={article.videoUrl}
-            title={article.titleEn ?? article.titleAr}
-          />
+          lesson ? (
+            <LessonPlayer lesson={lesson} />
+          ) : (
+            <ArticleMedia
+              imageUrl={article.imageUrl}
+              videoUrl={article.videoUrl}
+              title={article.titleEn ?? article.titleAr}
+            />
+          )
         }
-        attribution={{ label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }}
-        onFinish={(notKnownIndices) => handleFinishArticle(article, segments, notKnownIndices)}
+        attribution={
+          lesson
+            ? null
+            : { label: 'Al Jazeera Learning Arabic — read the original', url: article.sourceUrl }
+        }
+        onFinish={(notKnownIndices) =>
+          handleFinishArticle(article, segments, notKnownIndices, lesson)
+        }
       />,
     );
   }

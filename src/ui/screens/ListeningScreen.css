@@ -102,18 +102,3 @@
   width: 100%;
   margin-top: var(--space-4);
 }
-
-/* Read along with the recording: the reading page's type, without its chrome. */
-.listening__transcript {
-  margin-top: var(--space-6);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--rule);
-}
-
-.listening__transcript-paragraph {
-  margin: 0 0 var(--space-3);
-  font-family: var(--font-arabic);
-  font-size: 1.35rem;
-  line-height: 2.1;
-  color: var(--ink);
-}

@@ -6,6 +6,7 @@
  * and not a round — it has no text to segment — so it is its own type.
  */
 import { DEFAULT_TRACK_ID } from '@/domain/languageProfile';
+import type { Article } from '@/domain/articles/types';
 import type { Word, WordId } from '@/domain/types';
 
 export interface ListeningCard {
@@ -26,6 +27,13 @@ export interface ListeningLesson {
   titleAr: string;
   /** From the code's subject prefix: "soc" is Society. */
   topic: string;
+  /**
+   * What the lesson is about, multi-label and lowercase, for filtering the
+   * catalog the way the article gallery is filtered. Written by hand from each
+   * lesson's title and glossary; the course's one subject per lesson is too
+   * coarse to find "everything about food" by.
+   */
+  tags: string[];
   /** The code's number, kept as printed ("040"). */
   number: string;
   /** Path to the recording, relative to the app's root. */
@@ -66,6 +74,47 @@ export function lessonWords(lesson: ListeningLesson, now: number): Word[] {
     roundIds: [],
     srs: null,
   }));
+}
+
+const ARTICLE_ID_PREFIX = 'listening:';
+
+/** The id a lesson's transcript is read under, kept apart from the library's. */
+export function transcriptArticleId(lesson: ListeningLesson): string {
+  return `${ARTICLE_ID_PREFIX}${lesson.id}`;
+}
+
+export function isTranscriptArticleId(id: string): boolean {
+  return id.startsWith(ARTICLE_ID_PREFIX);
+}
+
+/**
+ * A lesson's transcript in the shape the reader reads, so its words are tapped,
+ * defined and flagged exactly as an article's are — one reading path, not two.
+ *
+ * Null without a transcript. The deck's cards are not passed as the article's
+ * vocabulary: they are unvowelled and English, and the publisher lists outrank
+ * every other gloss source, so they would override the Arabic definitions the
+ * reader is set to see.
+ */
+export function lessonAsArticle(lesson: ListeningLesson): Article | null {
+  if (!lesson.transcript || lesson.transcript.length === 0) return null;
+  return {
+    id: transcriptArticleId(lesson),
+    level: '',
+    series: 'other',
+    sourceUrl: '',
+    topics: [...lesson.tags],
+    difficulty: null,
+    wordCount: null,
+    titleAr: lesson.titleAr,
+    titleEn: null,
+    vowelled: false,
+    paragraphs: [...lesson.transcript],
+    imageUrl: null,
+    videoUrl: null,
+    vocab: [],
+    expressions: [],
+  };
 }
 
 /** "2:45" for a duration in seconds. */

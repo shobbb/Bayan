@@ -27,6 +27,8 @@ import { modernStandardArabicProfile, DEFAULT_TRACK_ID } from '@/domain/language
 import { listWords, getWords, upsertWords } from '@/data/wordRepository';
 import { getArticleRead, listArticleReads, markArticleRead } from '@/data/articleReadRepository';
 import type { ArticleReadRecord } from '@/data/db';
+import { isTranscriptArticleId, lessonAsArticle } from '@/domain/listening/types';
+import { listeningLessons } from '@/services/listening/listeningService';
 
 let cached: ArticleBundle | null = null;
 
@@ -96,7 +98,9 @@ export interface CurrentReading {
  * that only survives as long as the session would answer the wrong question.
  */
 export async function currentReading(): Promise<CurrentReading | null> {
-  const reads = await listArticleReads();
+  // A lesson transcript is read through the same records but is not in the
+  // library, so it must not take the place of the article Home offers back.
+  const reads = (await listArticleReads()).filter((record) => !isTranscriptArticleId(record.id));
   const current = pickCurrentReading(reads);
   if (!current) return null;
 
@@ -133,6 +137,22 @@ export async function saveReadingProgress(
 }
 
 /**
+ * A library article, or a listening lesson's transcript read as one.
+ */
+async function findReadable(id: string): Promise<Article | null> {
+  if (isTranscriptArticleId(id)) {
+    const lessons = await listeningLessons();
+    for (const lesson of lessons) {
+      const article = lessonAsArticle(lesson);
+      if (article?.id === id) return article;
+    }
+    return null;
+  }
+  const bundle = await loadArticles();
+  return bundle.articles.find((candidate) => candidate.id === id) ?? null;
+}
+
+/**
  * Prepares an article for the reader.
  *
  * Segmented on open rather than at import time, because gloss resolution
@@ -144,9 +164,7 @@ export async function openArticle(
   language: GlossLanguage = 'english',
   now = Date.now(),
 ): Promise<OpenedArticle> {
-  const [bundle, previous] = await Promise.all([loadArticles(), getArticleRead(id)]);
-
-  const article = bundle.articles.find((candidate) => candidate.id === id);
+  const [article, previous] = await Promise.all([findReadable(id), getArticleRead(id)]);
   if (!article) throw new Error('That article is not in the library.');
 
   // Segmented on open rather than at import time, because gloss resolution

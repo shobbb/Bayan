@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, lessonWords, type ListeningLesson } from './types';
+import {
+  formatDuration,
+  isTranscriptArticleId,
+  lessonAsArticle,
+  lessonWords,
+  type ListeningLesson,
+} from './types';
 
 const lesson: ListeningLesson = {
   id: 'ad_soc415',
   titleAr: 'مُحَادَثَةٌ فِي الْبَيْتِ',
   topic: 'Society',
+  tags: ['food', 'family'],
   number: '415',
   audio: 'listening/ad_soc415.mp3',
   durationSec: 131,
@@ -33,5 +40,28 @@ describe('formatDuration', () => {
     expect(formatDuration(131)).toBe('2:11');
     expect(formatDuration(65)).toBe('1:05');
     expect(formatDuration(9)).toBe('0:09');
+  });
+});
+
+describe('lessonAsArticle', () => {
+  it('reads a transcript as an article of its own, outside the library ids', () => {
+    const article = lessonAsArticle({ ...lesson, transcript: ['فِي السُّوقِ', 'سَمَكٌ'] });
+
+    expect(article?.paragraphs).toEqual(['فِي السُّوقِ', 'سَمَكٌ']);
+    expect(article?.titleAr).toBe(lesson.titleAr);
+    expect(isTranscriptArticleId(article?.id ?? '')).toBe(true);
+    expect(isTranscriptArticleId('0001_21968')).toBe(false);
+  });
+
+  it('carries none of the deck, whose English would outrank Arabic definitions', () => {
+    const article = lessonAsArticle({ ...lesson, transcript: ['سوق'] });
+
+    expect(article?.vocab).toEqual([]);
+    expect(article?.expressions).toEqual([]);
+  });
+
+  it('has nothing to read without a transcript', () => {
+    expect(lessonAsArticle(lesson)).toBeNull();
+    expect(lessonAsArticle({ ...lesson, transcript: [] })).toBeNull();
   });
 });

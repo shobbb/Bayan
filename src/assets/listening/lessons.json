@@ -5,6 +5,11 @@
    "id": "ad_cul026",
    "titleAr": "إِعْلَانٌ عَنْ كْرِيمٍ لِلْبَشَرَةِ",
    "topic": "Culture",
+   "tags": [
+    "advertising",
+    "health",
+    "shopping"
+   ],
    "number": "026",
    "audio": "listening/ad_cul026.mp3",
    "durationSec": 79,
@@ -75,6 +80,10 @@
    "id": "ad_cul027",
    "titleAr": "زِيَارَةٌ إِلَى مِصْرَ",
    "topic": "Culture",
+   "tags": [
+    "travel",
+    "culture"
+   ],
    "number": "027",
    "audio": "listening/ad_cul027.mp3",
    "durationSec": 165,
@@ -192,6 +201,11 @@
    "id": "ad_cul036",
    "titleAr": "طَلَبَاتُ زَوَاجٍ",
    "topic": "Culture",
+   "tags": [
+    "family",
+    "society",
+    "education"
+   ],
    "number": "036",
    "audio": "listening/ad_cul036.mp3",
    "durationSec": 104,
@@ -300,6 +314,11 @@
    "id": "ad_cul037",
    "titleAr": "رَسَائِلُ فِي الْمُنَاسَبَاتِ",
    "topic": "Culture",
+   "tags": [
+    "society",
+    "family",
+    "culture"
+   ],
    "number": "037",
    "audio": "listening/ad_cul037.mp3",
    "durationSec": 122,
@@ -366,6 +385,10 @@
    "id": "ad_cul043",
    "titleAr": "شُقَقٌ وَفِلَلٌ لِلْبَيْعِ وَالْإِيجَارِ",
    "topic": "Culture",
+   "tags": [
+    "housing",
+    "advertising"
+   ],
    "number": "043",
    "audio": "listening/ad_cul043.mp3",
    "durationSec": 122,
@@ -440,6 +463,10 @@
    "id": "ad_cul046",
    "titleAr": "نَصَائِحُ لِلْمُسَافِرِ إِلَى مِصْرَ",
    "topic": "Culture",
+   "tags": [
+    "travel",
+    "culture"
+   ],
    "number": "046",
    "audio": "listening/ad_cul046.mp3",
    "durationSec": 169,
@@ -530,6 +557,10 @@
    "id": "ad_cul219",
    "titleAr": "فِي النَّادِي الرِّيَاضِيِّ",
    "topic": "Culture",
+   "tags": [
+    "sports",
+    "health"
+   ],
    "number": "219",
    "audio": "listening/ad_cul219.mp3",
    "durationSec": 116,
@@ -621,6 +652,10 @@
    "id": "ad_cul222",
    "titleAr": "زِيَارَةُ الصَّيْفِ إِلَى الْمَغْرِبِ",
    "topic": "Culture",
+   "tags": [
+    "travel",
+    "family"
+   ],
    "number": "222",
    "audio": "listening/ad_cul222.mp3",
    "durationSec": 237,
@@ -707,6 +742,10 @@
    "id": "ad_cul412",
    "titleAr": "مَطْعَمُ الرَّافِدَيْنِ",
    "topic": "Culture",
+   "tags": [
+    "food",
+    "culture"
+   ],
    "number": "412",
    "audio": "listening/ad_cul412.mp3",
    "durationSec": 151,
@@ -805,6 +844,10 @@
    "id": "ad_cul414",
    "titleAr": "مَحَلُّ مَلَابِسَ",
    "topic": "Culture",
+   "tags": [
+    "shopping",
+    "advertising"
+   ],
    "number": "414",
    "audio": "listening/ad_cul414.mp3",
    "durationSec": 169,
@@ -901,6 +944,10 @@
    "id": "ad_ecn020",
    "titleAr": "أَسْئِلَةٌ شَائِعَةٌ عَنْ حِسَابِ الْبَنْكِ",
    "topic": "Economy",
+   "tags": [
+    "economy",
+    "technology"
+   ],
    "number": "020",
    "audio": "listening/ad_ecn020.mp3",
    "durationSec": 167,
@@ -999,6 +1046,10 @@
    "id": "ad_ecn311",
    "titleAr": "وَظَائِفُ فِي مَرْكَزِ تَسَوُّقٍ",
    "topic": "Economy",
+   "tags": [
+    "jobs",
+    "shopping"
+   ],
    "number": "311",
    "audio": "listening/ad_ecn311.mp3",
    "durationSec": 210,
@@ -1089,6 +1140,11 @@
    "id": "ad_ecn409",
    "titleAr": "مَزَادُ سَيَّارَاتٍ",
    "topic": "Economy",
+   "tags": [
+    "economy",
+    "transport",
+    "advertising"
+   ],
    "number": "409",
    "audio": "listening/ad_ecn409.mp3",
    "durationSec": 312,
@@ -1163,6 +1219,11 @@
    "id": "ad_ecn410",
    "titleAr": "أَثَاثٌ لِلْبَيْعِ",
    "topic": "Economy",
+   "tags": [
+    "shopping",
+    "advertising",
+    "housing"
+   ],
    "number": "410",
    "audio": "listening/ad_ecn410.mp3",
    "durationSec": 133,
@@ -1257,6 +1318,11 @@
    "id": "ad_ecn411",
    "titleAr": "شَرِكَةُ الْخَلِيجِ لِلْعَقَارَاتِ",
    "topic": "Economy",
+   "tags": [
+    "housing",
+    "economy",
+    "advertising"
+   ],
    "number": "411",
    "audio": "listening/ad_ecn411.mp3",
    "durationSec": 184,
@@ -1351,6 +1417,10 @@
    "id": "ad_geo008",
    "titleAr": "تَعَرَّفْ عَلَى مِصْرَ",
    "topic": "Geography",
+   "tags": [
+    "geography",
+    "culture"
+   ],
    "number": "008",
    "audio": "listening/ad_geo008.mp3",
    "durationSec": 160,
@@ -1437,6 +1507,10 @@
    "id": "ad_geo403",
    "titleAr": "مُنَاخُ الْعِرَاقِ",
    "topic": "Geography",
+   "tags": [
+    "geography",
+    "environment"
+   ],
    "number": "403",
    "audio": "listening/ad_geo403.mp3",
    "durationSec": 163,
@@ -1568,6 +1642,10 @@
    "id": "ad_pol416",
    "titleAr": "قَائِمَةُ مُرَشَّحِينَ لِلْبَرْلَمَانِ",
    "topic": "Politics",
+   "tags": [
+    "politics",
+    "education"
+   ],
    "number": "416",
    "audio": "listening/ad_pol416.mp3",
    "durationSec": 158,
@@ -1642,6 +1720,10 @@
    "id": "ad_sci206",
    "titleAr": "مَوْعِدٌ عِنْدَ الطَّبِيبِ",
    "topic": "Science",
+   "tags": [
+    "health",
+    "society"
+   ],
    "number": "206",
    "audio": "listening/ad_sci206.mp3",
    "durationSec": 204,
@@ -1736,6 +1818,10 @@
    "id": "ad_sci209",
    "titleAr": "أَعْرَاضُ الْمَرَضِ وَعِلَاجُهُ",
    "topic": "Science",
+   "tags": [
+    "health",
+    "science"
+   ],
    "number": "209",
    "audio": "listening/ad_sci209.mp3",
    "durationSec": 238,
@@ -1826,6 +1912,10 @@
    "id": "ad_sec410",
    "titleAr": "إِعْلَانٌ عَنْ مَطْلُوبِينَ",
    "topic": "Security",
+   "tags": [
+    "security",
+    "politics"
+   ],
    "number": "410",
    "audio": "listening/ad_sec410.mp3",
    "durationSec": 268,
@@ -1954,6 +2044,10 @@
    "id": "ad_soc037",
    "titleAr": "حَجْزُ فُنْدُقٍ فِي الْإِسْكَنْدَرِيَّةِ",
    "topic": "Society",
+   "tags": [
+    "travel",
+    "society"
+   ],
    "number": "037",
    "audio": "listening/ad_soc037.mp3",
    "durationSec": 135,
@@ -2048,6 +2142,11 @@
    "id": "ad_soc040",
    "titleAr": "تَخْفِيضَاتٌ فِي مَتْجَرِ الْإِلِكْتِرُونِيَّاتِ",
    "topic": "Society",
+   "tags": [
+    "shopping",
+    "technology",
+    "advertising"
+   ],
    "number": "040",
    "audio": "listening/ad_soc040.mp3",
    "durationSec": 139,
@@ -2106,6 +2205,10 @@
    "id": "ad_soc223",
    "titleAr": "رِسَالَةٌ مُسَجَّلَةٌ مِنْ شَرِكَةِ طَيَرَانٍ",
    "topic": "Society",
+   "tags": [
+    "travel",
+    "transport"
+   ],
    "number": "223",
    "audio": "listening/ad_soc223.mp3",
    "durationSec": 215,
@@ -2212,6 +2315,10 @@
    "id": "ad_soc225",
    "titleAr": "فِي مَطْعَمٍ مِصْرِيٍّ",
    "topic": "Society",
+   "tags": [
+    "food",
+    "society"
+   ],
    "number": "225",
    "audio": "listening/ad_soc225.mp3",
    "durationSec": 131,
@@ -2302,6 +2409,10 @@
    "id": "ad_soc303",
    "titleAr": "عَرْضٌ رَائِعٌ لِعُطْلَتِكُمُ الْقَادِمَةِ",
    "topic": "Society",
+   "tags": [
+    "travel",
+    "advertising"
+   ],
    "number": "303",
    "audio": "listening/ad_soc303.mp3",
    "durationSec": 164,
@@ -2360,6 +2471,10 @@
    "id": "ad_soc324",
    "titleAr": "دَلِيلُ الْمَطَاعِمِ",
    "topic": "Society",
+   "tags": [
+    "food",
+    "culture"
+   ],
    "number": "324",
    "audio": "listening/ad_soc324.mp3",
    "durationSec": 395,
@@ -2506,6 +2621,10 @@
    "id": "ad_soc325",
    "titleAr": "اسْتِئْجَارُ شَقَّةٍ",
    "topic": "Society",
+   "tags": [
+    "housing",
+    "travel"
+   ],
    "number": "325",
    "audio": "listening/ad_soc325.mp3",
    "durationSec": 196,
@@ -2600,6 +2719,10 @@
    "id": "ad_soc414",
    "titleAr": "رِسَالَةٌ هَاتِفِيَّةٌ عَنِ الْعَائِلَةِ",
    "topic": "Society",
+   "tags": [
+    "family",
+    "society"
+   ],
    "number": "414",
    "audio": "listening/ad_soc414.mp3",
    "durationSec": 165,
@@ -2689,6 +2812,11 @@
    "id": "ad_soc415",
    "titleAr": "مُحَادَثَةٌ فِي الْبَيْتِ",
    "topic": "Society",
+   "tags": [
+    "food",
+    "family",
+    "shopping"
+   ],
    "number": "415",
    "audio": "listening/ad_soc415.mp3",
    "durationSec": 131,
@@ -2815,6 +2943,10 @@
    "id": "ad_soc416",
    "titleAr": "مُحَادَثَةٌ فِي الْجَامِعَةِ",
    "topic": "Society",
+   "tags": [
+    "education",
+    "sports"
+   ],
    "number": "416",
    "audio": "listening/ad_soc416.mp3",
    "durationSec": 81,
@@ -2941,6 +3073,10 @@
    "id": "ad_tec307",
    "titleAr": "مَحَلُّ الطَّارِقِ لِلْإِلِكْتِرُونِيَّاتِ",
    "topic": "Technology",
+   "tags": [
+    "technology",
+    "shopping"
+   ],
    "number": "307",
    "audio": "listening/ad_tec307.mp3",
    "durationSec": 157,
@@ -3007,6 +3143,11 @@
    "id": "ad_tec402",
    "titleAr": "مَحَلُّ الْمُسْتَقْبَلِ",
    "topic": "Technology",
+   "tags": [
+    "technology",
+    "shopping",
+    "advertising"
+   ],
    "number": "402",
    "audio": "listening/ad_tec402.mp3",
    "durationSec": 197,

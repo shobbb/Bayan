@@ -34,6 +34,19 @@ describe('the listening catalog', () => {
     expect(leaked).toEqual([]);
   });
 
+  it('tags every lesson more than once, in lowercase', async () => {
+    const wrong = (await listeningLessons())
+      .filter(
+        (lesson) =>
+          lesson.tags.length < 2 ||
+          new Set(lesson.tags).size !== lesson.tags.length ||
+          lesson.tags.some((tag) => tag !== tag.toLowerCase() || tag.trim() === ''),
+      )
+      .map((lesson) => `${lesson.id}: ${lesson.tags.join(', ')}`);
+
+    expect(wrong).toEqual([]);
+  });
+
   it('lists each lesson once', async () => {
     const ids = (await listeningLessons()).map((l) => l.id);
 
