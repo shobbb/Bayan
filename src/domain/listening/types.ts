@@ -18,6 +18,12 @@ export interface ListeningCard {
 export interface ListeningLesson {
   /** The course's lesson code, e.g. "ad_soc415". */
   id: string;
+  /**
+   * What the lesson is about, in vowelled Arabic. The course names lessons only
+   * by code; these were written from each lesson's own title where it had one
+   * and from its glossary where it did not.
+   */
+  titleAr: string;
   /** From the code's subject prefix: "soc" is Society. */
   topic: string;
   /** The code's number, kept as printed ("040"). */

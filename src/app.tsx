@@ -584,7 +584,7 @@ function AppScreens() {
         queue={queue}
         corpus={[]}
         sentences={{}}
-        exitLabel={`${lesson.topic} ${lesson.number}`}
+        exitLabel="Lesson"
         persist={false}
         glossLanguage="english"
         flashcardsOnly

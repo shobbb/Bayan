@@ -90,6 +90,22 @@
   color: var(--ink-muted);
 }
 
+/* The lesson's Arabic title leads the card; it is what tells lessons apart. */
+.listening__lesson-title {
+  align-self: stretch;
+  font-family: var(--font-arabic);
+  font-size: 1.35rem;
+  line-height: 1.9;
+  color: var(--ink);
+}
+
+.listening__title--ar {
+  font-family: var(--font-arabic);
+  font-weight: normal;
+  font-size: 1.9rem;
+  line-height: 1.9;
+}
+
 /* A taste of the glossary, so lessons are told apart by more than a number. */
 .listening__lesson-preview {
   align-self: stretch;

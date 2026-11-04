@@ -20,10 +20,12 @@ export function ListeningLessonScreen({
       <button type="button" className="listening__exit" onClick={onExit}>
         ← Listening
       </button>
-      <h1 className="listening__title">
-        {lesson.topic} {lesson.number}
+      <h1 dir="rtl" lang="ar" className="listening__title listening__title--ar">
+        {lesson.titleAr}
       </h1>
-      <p className="listening__note">{lesson.id}</p>
+      <p className="listening__note">
+        {lesson.topic} · {lesson.id}
+      </p>
 
       <div className="listening__choices">
         <button type="button" className="listening__choice" onClick={onVocab}>

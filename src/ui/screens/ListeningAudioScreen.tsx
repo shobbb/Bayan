@@ -14,10 +14,10 @@ export function ListeningAudioScreen({ lesson, onExit }: ListeningAudioScreenPro
   return (
     <div className="listening">
       <button type="button" className="listening__exit" onClick={onExit}>
-        ← {lesson.topic} {lesson.number}
+        ← Lesson
       </button>
-      <h1 className="listening__title">
-        {lesson.topic} {lesson.number}
+      <h1 dir="rtl" lang="ar" className="listening__title listening__title--ar">
+        {lesson.titleAr}
       </h1>
       <p className="listening__note">{formatDuration(lesson.durationSec)}</p>
 

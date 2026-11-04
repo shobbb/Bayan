@@ -3,6 +3,7 @@ import { formatDuration, lessonWords, type ListeningLesson } from './types';
 
 const lesson: ListeningLesson = {
   id: 'ad_soc415',
+  titleAr: 'مُحَادَثَةٌ فِي الْبَيْتِ',
   topic: 'Society',
   number: '415',
   audio: 'listening/ad_soc415.mp3',

@@ -50,8 +50,8 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
                   className="listening__lesson"
                   onClick={() => onOpenLesson(lesson)}
                 >
-                  <span className="listening__lesson-name">
-                    {lesson.topic} {lesson.number}
+                  <span dir="rtl" lang="ar" className="listening__lesson-title">
+                    {lesson.titleAr}
                   </span>
                   <span className="listening__lesson-meta">
                     {lesson.cards.length} words · {formatDuration(lesson.durationSec)}
