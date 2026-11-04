@@ -102,3 +102,22 @@
   width: 100%;
   margin-top: var(--space-4);
 }
+
+/* "Has transcript", on the meta line rather than a line of its own. */
+.listening__lesson-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.listening__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background: var(--surface-press);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+}

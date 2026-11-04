@@ -93,6 +93,22 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
                   </span>
                   <span className="listening__lesson-meta">
                     {lesson.cards.length} words · {formatDuration(lesson.durationSec)}
+                    {/* Marked only where there is one: about a third of the
+                        lessons, and the ones whose words can be tapped. */}
+                    {lesson.transcript && (
+                      <span className="listening__badge" title="Has transcript">
+                        <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+                          <path
+                            d="M3 3.5h10M3 6.5h10M3 9.5h10M3 12.5h6"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        Transcript
+                      </span>
+                    )}
                   </span>
                   <span dir="rtl" lang="ar" className="listening__lesson-preview">
                     {lesson.cards
