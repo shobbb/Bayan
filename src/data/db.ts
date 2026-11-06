@@ -6,6 +6,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Word, Round, Batch, WordId } from '@/domain/types';
 import type { ComprehensionProgress, ComprehensionSet } from '@/domain/articles/comprehension';
+import type { DrillSnapshot } from '@/domain/drills/snapshot';
 
 export interface SettingsRecord {
   key: string;
@@ -104,6 +105,17 @@ export interface GlossRecord {
   createdAt: number;
 }
 
+/**
+ * A listening lesson's flashcards as they were left: one record per lesson,
+ * written after every card. Not corpus state — these cards have no schedule —
+ * only a place to pick back up from.
+ */
+export interface ListeningVocabProgressRecord {
+  lessonId: string;
+  snapshot: DrillSnapshot;
+  updatedAt: number;
+}
+
 export class BayanDB extends Dexie {
   words!: Table<Word, WordId>;
   rounds!: Table<Round, string>;
@@ -113,6 +125,7 @@ export class BayanDB extends Dexie {
   glosses!: Table<GlossRecord, WordId>;
   comprehension!: Table<ComprehensionSet, string>;
   comprehensionProgress!: Table<ComprehensionProgress, string>;
+  listeningVocabProgress!: Table<ListeningVocabProgressRecord, string>;
 
   constructor() {
     super('bayan');
@@ -138,6 +151,10 @@ export class BayanDB extends Dexie {
     // v5 adds the reader's way through each set, saved as they answer.
     this.version(5).stores({
       comprehensionProgress: 'articleId',
+    });
+    // v6 adds where the reader is in each listening lesson's flashcards.
+    this.version(6).stores({
+      listeningVocabProgress: 'lessonId',
     });
   }
 }

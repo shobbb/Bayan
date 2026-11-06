@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConfig } from '@/ui/context/ConfigContext';
 import { getDrillMode, overrideAsCorrect } from '@/domain/drills/modes';
 import {
@@ -9,6 +9,7 @@ import {
   type QueueEntry,
 } from '@/domain/drills/session';
 import type { DrillOutcome, PrepareContext } from '@/domain/drills/types';
+import { restoreDrill, snapshotOf, type DrillSnapshot } from '@/domain/drills/snapshot';
 import type { Grade, Word } from '@/domain/types';
 import { glossFor, glossLanguageFor, type GlossLanguage } from '@/domain/glossLanguage';
 import { recordAnswer, undoAnswer } from '@/services/batch/batchService';
@@ -38,6 +39,13 @@ export interface DrillScreenProps {
   glossLanguage?: GlossLanguage;
   /** Keep every card, including the review pass, a flashcard. */
   flashcardsOnly?: boolean;
+  /**
+   * A session saved earlier, to pick back up from instead of starting the
+   * queue at the top. Ignored when it no longer fits the queue's words.
+   */
+  resume?: DrillSnapshot | null;
+  /** Receives the session as it stands after every change, to be saved. */
+  onSnapshot?: (snapshot: DrillSnapshot) => void;
 }
 
 interface Result {
@@ -66,15 +74,28 @@ export function DrillScreen({
   persist = true,
   glossLanguage: fixedLanguage,
   flashcardsOnly = false,
+  resume = null,
+  onSnapshot,
 }: DrillScreenProps) {
   const config = useConfig();
-  const [session, setSession] = useState<QueueEntry[]>(queue);
-  const [index, setIndex] = useState(0);
+  // Read once, on mount: the saved session is where to start, not something
+  // to keep re-applying while the reader moves on from it.
+  const [restored] = useState(() => restoreDrill(resume, queue.map((entry) => entry.word)));
+  const [session, setSession] = useState<QueueEntry[]>(restored?.session ?? queue);
+  const [index, setIndex] = useState(restored?.index ?? 0);
   const [outcome, setOutcome] = useState<DrillOutcome | null>(null);
-  const [results, setResults] = useState<Result[]>([]);
-  const [resting, setResting] = useState(false);
+  const [results, setResults] = useState<Result[]>(restored?.results ?? []);
+  const [resting, setResting] = useState(restored?.resting ?? false);
   /** Counts carried across a review pass, so "known" does not reset to zero. */
-  const [carried, setCarried] = useState({ known: 0, stillLearning: 0 });
+  const [carried, setCarried] = useState(restored?.carried ?? { known: 0, stillLearning: 0 });
+
+  // Reported after every change rather than on exit, so a session left by any
+  // route — the back button, the app being closed — keeps its place.
+  const reportRef = useRef(onSnapshot);
+  reportRef.current = onSnapshot;
+  useEffect(() => {
+    reportRef.current?.(snapshotOf({ session, index, results, carried, resting }));
+  }, [session, index, results, carried, resting]);
 
   const roundSize = config.algorithm.drill.roundSize;
 

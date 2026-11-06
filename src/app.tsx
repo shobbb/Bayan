@@ -52,6 +52,11 @@ import {
 import type { Article } from '@/domain/articles/types';
 import type { ResolvedSegment } from '@/domain/articles/segment';
 import type { QueueEntry } from '@/domain/drills/session';
+import type { DrillSnapshot } from '@/domain/drills/snapshot';
+import {
+  loadLessonVocabProgress,
+  saveLessonVocabProgress,
+} from '@/services/listening/vocabProgressService';
 import { glossLanguageFor } from '@/domain/glossLanguage';
 import { describeFailure, type Failure } from '@/ui/failure';
 import { navigate } from '@/ui/transitions';
@@ -114,7 +119,13 @@ type Screen =
     }
   | { name: 'lesson'; lesson: ListeningLesson }
   | { name: 'lessonAudio'; lesson: ListeningLesson }
-  | { name: 'lessonVocab'; lesson: ListeningLesson; queue: QueueEntry[] }
+  | {
+      name: 'lessonVocab';
+      lesson: ListeningLesson;
+      queue: QueueEntry[];
+      /** Where the reader left this deck last time, if anywhere. */
+      resume: DrillSnapshot | null;
+    }
   | {
       name: 'drill';
       queue: QueueEntry[];
@@ -570,18 +581,25 @@ function AppScreens() {
             ? handleOpenArticle(transcriptArticleId(lesson), lesson)
             : navigate(() => setScreen({ name: 'lessonAudio', lesson }))
         }
-        onVocab={() =>
-          navigate(() =>
-            setScreen({
-              name: 'lessonVocab',
-              lesson,
-              queue: lessonWords(lesson, Date.now()).map((word) => ({
-                word,
-                mode: 'flashcard' as const,
-              })),
-            }),
-          )
-        }
+        onVocab={() => {
+          // A failed read is not worth a failure: the deck still opens, at
+          // the top, as it did before progress was kept.
+          void loadLessonVocabProgress(lesson.id)
+            .catch(() => null)
+            .then((resume) =>
+              navigate(() =>
+                setScreen({
+                  name: 'lessonVocab',
+                  lesson,
+                  queue: lessonWords(lesson, Date.now()).map((word) => ({
+                    word,
+                    mode: 'flashcard' as const,
+                  })),
+                  resume,
+                }),
+              ),
+            );
+        }}
       />,
     );
   }
@@ -598,10 +616,11 @@ function AppScreens() {
 
   // The study screen as it is, flashcards only. The deck's English is the only
   // definition these words have, so it is the answer side whatever the
-  // Arabic-only setting says, and nothing is written: these are not corpus
-  // words and have no schedule to keep.
+  // Arabic-only setting says. Nothing is written to the corpus — these are not
+  // corpus words and have no schedule — but the session itself is saved as it
+  // goes, so the deck reopens where it was left.
   if (screen.name === 'lessonVocab') {
-    const { lesson, queue } = screen;
+    const { lesson, queue, resume } = screen;
     return screenFrame(
       <DrillScreen
         queue={queue}
@@ -611,6 +630,10 @@ function AppScreens() {
         persist={false}
         glossLanguage="english"
         flashcardsOnly
+        resume={resume}
+        onSnapshot={(snapshot) => {
+          void saveLessonVocabProgress(lesson.id, snapshot).catch(() => undefined);
+        }}
         onExit={() => navigate(() => setScreen({ name: 'lesson', lesson }))}
       />,
     );
