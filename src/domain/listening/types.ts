@@ -41,14 +41,27 @@ export interface ListeningLesson {
   durationSec: number;
   cards: ListeningCard[];
   /**
-   * The recording's Arabic text, by paragraph, where the course supplied a
-   * transcript. Absent for lessons that came with none.
+   * The recording's Arabic text, by paragraph. From the course's PDF where it
+   * supplied one, and from speech recognition where it did not (see
+   * transcriptSource).
    *
    * Nine PDFs set their Arabic digits in a font that mangled them (20 as "02",
    * 27 as "72"); in those the numbers were corrected by hand from the PDF's own
    * English column, along with the words the extraction split in two.
    */
   transcript?: string[];
+  /**
+   * Where the transcript came from. "course" is the course's own PDF; "auto" is
+   * speech recognition run on the recording, for lessons the course gave no
+   * transcript for, and it will have mistakes the course's text does not — so
+   * it is labelled wherever it is shown. Absent is "course".
+   */
+  transcriptSource?: 'course' | 'auto';
+}
+
+/** True when the transcript is machine-made and should say so. */
+export function isAutoTranscript(lesson: ListeningLesson): boolean {
+  return lesson.transcript !== undefined && lesson.transcriptSource === 'auto';
 }
 
 /**

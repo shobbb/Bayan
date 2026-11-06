@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDuration,
+  isAutoTranscript,
   isTranscriptArticleId,
   lessonAsArticle,
   lessonWords,
@@ -63,5 +64,14 @@ describe('lessonAsArticle', () => {
   it('has nothing to read without a transcript', () => {
     expect(lessonAsArticle(lesson)).toBeNull();
     expect(lessonAsArticle({ ...lesson, transcript: [] })).toBeNull();
+  });
+});
+
+describe('isAutoTranscript', () => {
+  it('is true only for a machine-made transcript that is actually there', () => {
+    expect(isAutoTranscript({ ...lesson, transcript: ['سوق'], transcriptSource: 'auto' })).toBe(true);
+    expect(isAutoTranscript({ ...lesson, transcript: ['سوق'], transcriptSource: 'course' })).toBe(false);
+    expect(isAutoTranscript({ ...lesson, transcript: ['سوق'] })).toBe(false);
+    expect(isAutoTranscript({ ...lesson, transcriptSource: 'auto' })).toBe(false);
   });
 });

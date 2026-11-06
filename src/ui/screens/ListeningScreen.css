@@ -121,3 +121,18 @@
   font-size: 0.72rem;
   font-weight: 600;
 }
+
+/* Machine-made: same mark, outlined rather than filled, so it reads as less
+   certain than the course's own text. */
+.listening__badge--auto {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--ink-muted);
+}
+
+.listening__auto-note {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-english);
+  font-size: var(--text-data-size);
+  color: var(--ink-muted);
+}

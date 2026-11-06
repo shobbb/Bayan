@@ -1,4 +1,4 @@
-import { formatDuration, type ListeningLesson } from '@/domain/listening/types';
+import { formatDuration, isAutoTranscript, type ListeningLesson } from '@/domain/listening/types';
 import './ListeningScreen.css';
 
 export interface ListeningAudioScreenProps {
@@ -12,9 +12,17 @@ export interface ListeningAudioScreenProps {
  */
 export function LessonPlayer({ lesson }: { lesson: ListeningLesson }) {
   return (
-    <audio className="listening__player" controls preload="metadata" src={lesson.audio}>
-      Audio playback is not supported here.
-    </audio>
+    <>
+      <audio className="listening__player" controls preload="metadata" src={lesson.audio}>
+        Audio playback is not supported here.
+      </audio>
+      {isAutoTranscript(lesson) && (
+        <p className="listening__auto-note">
+          Transcribed automatically from the recording. Expect some mistakes; the audio is
+          the authority.
+        </p>
+      )}
+    </>
   );
 }
 

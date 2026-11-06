@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatDuration, type ListeningLesson } from '@/domain/listening/types';
+import { formatDuration, isAutoTranscript, type ListeningLesson } from '@/domain/listening/types';
 import { listeningLessons } from '@/services/listening/listeningService';
 import './ListeningScreen.css';
 
@@ -96,7 +96,17 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
                     {/* Marked only where there is one: about a third of the
                         lessons, and the ones whose words can be tapped. */}
                     {lesson.transcript && (
-                      <span className="listening__badge" title="Has transcript">
+                      <span
+                        className={
+                          'listening__badge' +
+                          (isAutoTranscript(lesson) ? ' listening__badge--auto' : '')
+                        }
+                        title={
+                          isAutoTranscript(lesson)
+                            ? 'Transcribed automatically'
+                            : 'Has transcript'
+                        }
+                      >
                         <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
                           <path
                             d="M3 3.5h10M3 6.5h10M3 9.5h10M3 12.5h6"
@@ -106,7 +116,7 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
                             strokeLinecap="round"
                           />
                         </svg>
-                        Transcript
+                        {isAutoTranscript(lesson) ? 'Auto transcript' : 'Transcript'}
                       </span>
                     )}
                   </span>
