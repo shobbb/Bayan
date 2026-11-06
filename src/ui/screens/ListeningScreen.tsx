@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDuration, isAutoTranscript, type ListeningLesson } from '@/domain/listening/types';
+import { listeningDifficulty } from '@/domain/listening/difficulty';
 import { listeningLessons } from '@/services/listening/listeningService';
+import { DifficultyLabel } from '@/ui/components/DifficultyLabel';
 import './ListeningScreen.css';
 
 export interface ListeningScreenProps {
@@ -40,6 +42,10 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([name]) => name);
   }, [lessons]);
+
+  // Ranked across the whole catalog, not the filtered list, so a lesson's
+  // level does not change with the tag that is selected.
+  const levels = useMemo(() => listeningDifficulty(lessons ?? []), [lessons]);
 
   const shown = useMemo(
     () => (lessons ?? []).filter((lesson) => tag === 'all' || lesson.tags.includes(tag)),
@@ -92,7 +98,16 @@ export function ListeningScreen({ onOpenLesson }: ListeningScreenProps) {
                     {lesson.titleAr}
                   </span>
                   <span className="listening__lesson-meta">
-                    {lesson.cards.length} words · {formatDuration(lesson.durationSec)}
+                    {/* How fast it is spoken, ranked against the other
+                        lessons; only lessons with a transcript can be timed. */}
+                    <span>
+                      {levels.has(lesson.id) && (
+                        <>
+                          <DifficultyLabel level={levels.get(lesson.id) ?? null} /> ·{' '}
+                        </>
+                      )}
+                      {lesson.cards.length} words · {formatDuration(lesson.durationSec)}
+                    </span>
                     {/* Marked only where there is one: about a third of the
                         lessons, and the ones whose words can be tapped. */}
                     {lesson.transcript && (
