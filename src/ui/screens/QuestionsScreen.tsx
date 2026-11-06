@@ -29,6 +29,8 @@ export interface QuestionsScreenProps {
   onOpenSettings: () => void;
   /** Back to the article, from any question or from the end. */
   onExit: () => void;
+  /** What the text being questioned is called: "article", or "transcript". */
+  textName?: string;
   /**
    * Replaces this set with a freshly written one. The caller swaps the screen
    * over to the new set when it arrives; this screen only asks and shows the
@@ -66,6 +68,7 @@ export function QuestionsScreen({
   onOpenSettings,
   onExit,
   regenerate,
+  textName = 'article',
 }: QuestionsScreenProps) {
   const [progress, setProgress] = useState(initialProgress);
   // The latest progress, for the grading call to build on when it returns.
@@ -190,7 +193,7 @@ export function QuestionsScreen({
           onExit();
         }}
       >
-        ← Article
+        ← {textName.charAt(0).toUpperCase() + textName.slice(1)}
       </button>
 
       <h1 dir="rtl" lang="ar" className="questions-screen__title">
@@ -261,7 +264,7 @@ export function QuestionsScreen({
           </p>
           <div className="questions-screen__result-actions">
             <button type="button" className="btn btn--primary btn--block drill__advance" onClick={onExit}>
-              Back to the article
+              Back to the {textName}
             </button>
             <button type="button" className="btn btn--secondary btn--block drill__secondary" onClick={restart}>
               Start again

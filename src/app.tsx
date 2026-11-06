@@ -674,9 +674,9 @@ function AppScreens() {
           notice: enrichNotice,
           onOpenSettings: handleOpenSettings,
         }}
-        // Not offered on a lesson transcript yet: questions on a recording are
-        // a separate feature from reading its text.
-        questions={lesson ? null : {
+        // Offered on a lesson's transcript as on an article: the questions are
+        // written from the text, and are stored under the transcript's own id.
+        questions={{
           ready: screen.comprehension !== null,
           openLabel: screen.comprehension
             ? questionsLabel(screen.comprehension, screen.comprehensionProgress)
@@ -720,6 +720,7 @@ function AppScreens() {
         // Remounted for a new set, so nothing from the old one carries over.
         key={comprehension.createdAt}
         titleAr={returnTo.article.titleAr}
+        textName={returnTo.lesson ? 'transcript' : 'article'}
         set={comprehension}
         initialProgress={progress}
         onSave={(next) => {
