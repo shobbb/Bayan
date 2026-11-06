@@ -41,10 +41,12 @@ export interface ListeningLesson {
   durationSec: number;
   cards: ListeningCard[];
   /**
-   * The recording's Arabic text, by paragraph, where the course's transcript
-   * could be read back faithfully. Absent where it could not: several of the
-   * PDFs carry numbers that contradict their own English column, and a
-   * transcript that disagrees with the recording is worse than none.
+   * The recording's Arabic text, by paragraph, where the course supplied a
+   * transcript. Absent for lessons that came with none.
+   *
+   * Nine PDFs set their Arabic digits in a font that mangled them (20 as "02",
+   * 27 as "72"); in those the numbers were corrected by hand from the PDF's own
+   * English column, along with the words the extraction split in two.
    */
   transcript?: string[];
 }
