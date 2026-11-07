@@ -131,7 +131,7 @@
 }
 
 .listening__auto-note {
-  margin: var(--space-2) 0 0;
+  margin: var(--space-2) 0 var(--space-4);
   font-family: var(--font-english);
   font-size: var(--text-data-size);
   color: var(--ink-muted);

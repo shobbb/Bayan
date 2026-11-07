@@ -47,6 +47,15 @@ describe('the listening catalog', () => {
     expect(wrong).toEqual([]);
   });
 
+  it('gives every lesson a transcript, and says which ones a machine made', async () => {
+    const lessons = await listeningLessons();
+
+    expect(lessons.filter((l) => !l.transcript?.length).map((l) => l.id)).toEqual([]);
+    expect(
+      lessons.filter((l) => l.transcriptSource !== undefined && l.transcriptSource !== 'auto'),
+    ).toEqual([]);
+  });
+
   it('lists each lesson once', async () => {
     const ids = (await listeningLessons()).map((l) => l.id);
 
