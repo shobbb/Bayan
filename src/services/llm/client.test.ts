@@ -99,3 +99,69 @@ describe('anthropicClient', () => {
     await expect(anthropicClient.complete(PARAMS)).rejects.toThrow(/no text content/);
   });
 });
+
+/** A streamed response, its bytes cut into the given chunks. */
+function streamWith(chunks: string[]) {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    },
+  });
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: new Headers({ 'content-type': 'text/event-stream; charset=utf-8' }),
+    body,
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+const event = (name: string, data: unknown) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+
+describe('anthropicClient, streamed', () => {
+  // A plain request sends nothing until the answer is done, and iOS drops a
+  // connection that silent for a minute ("Load failed") — a round takes longer.
+  it('asks for a stream', async () => {
+    const fetchMock = streamWith([event('message_stop', { type: 'message_stop' })]);
+    await anthropicClient.complete(PARAMS).catch(() => undefined);
+
+    expect(sentBody(fetchMock).stream).toBe(true);
+  });
+
+  it('assembles the answer from text deltas, skipping thinking', async () => {
+    const whole =
+      event('message_start', { type: 'message_start', message: { content: [] } }) +
+      event('content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } }) +
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'hmm' } }) +
+      event('content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: '{"words":' } }) +
+      event('ping', { type: 'ping' }) +
+      event('content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: ' []}' } }) +
+      event('message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn' } }) +
+      event('message_stop', { type: 'message_stop' });
+    // Cut mid-line, as the network does.
+    streamWith([whole.slice(0, 137), whole.slice(137, 400), whole.slice(400)]);
+
+    expect(await anthropicClient.complete(PARAMS)).toEqual({ text: '{"words": []}', truncated: false });
+  });
+
+  it('reports a stream cut off by the output ceiling as partial', async () => {
+    streamWith([
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '{"a":' } }),
+      event('message_delta', { type: 'message_delta', delta: { stop_reason: 'max_tokens' } }),
+    ]);
+
+    expect((await anthropicClient.complete(PARAMS)).truncated).toBe(true);
+  });
+
+  it('fails on an error that arrives mid-stream', async () => {
+    streamWith([
+      event('content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'par' } }),
+      event('error', { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }),
+    ]);
+
+    await expect(anthropicClient.complete(PARAMS)).rejects.toThrow(/Overloaded/);
+  });
+});
