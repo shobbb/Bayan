@@ -35,7 +35,7 @@ import {
   currentBundle,
   type RunningBundle,
 } from '@/services/platform/liveUpdates';
-import { copyToClipboard, downloadFile } from '@/services/platform/files';
+import { copyToClipboard, saveBackupFile } from '@/services/platform/files';
 import { exportState } from '@/services/interchange/exportState';
 import { importFromJson, ImportValidationError } from '@/services/interchange/importState';
 import {
@@ -294,13 +294,17 @@ export function SettingsScreen() {
   }
 
   // REQ-37: export is the only backup path, so it is surfaced, not buried.
-  async function runExport(deliver: (json: string, filename: string) => Promise<void> | void) {
+  async function runExport(
+    deliver: (json: string, filename: string) => Promise<string | void> | string | void,
+  ) {
     setBusy(true);
     setBackupStatus(null);
     try {
       const dump = await exportState(config.categories);
-      await deliver(dump.json, dump.filename);
-      setBackupStatus(`Exported ${dump.wordCount} words and ${dump.roundCount} rounds.`);
+      const where = await deliver(dump.json, dump.filename);
+      setBackupStatus(
+        `Exported ${dump.wordCount} words and ${dump.roundCount} rounds.` + (where ? ` ${where}` : ''),
+      );
     } catch (error) {
       setBackupStatus(error instanceof Error ? error.message : 'Export failed.');
     } finally {
@@ -448,15 +452,15 @@ export function SettingsScreen() {
       <section className="settings-screen__section">
         <h2 className="settings-screen__section-title">Backup</h2>
         <p className="settings-screen__note">
-          A complete dump of every word, round, and setting. This is the only backup path —
-          browser storage is not included in device backups.
+          A complete dump of every word, round, and setting. Save file keeps it on this phone,
+          in Files → On My iPhone → Bayan → Backups; deleting the app deletes that folder too.
         </p>
         <div className="settings-screen__row">
           <button
             type="button"
             className="btn btn--secondary btn--small settings-screen__button"
             disabled={busy}
-            onClick={() => void runExport((json, filename) => downloadFile(filename, json))}
+            onClick={() => void runExport((json, filename) => saveBackupFile(filename, json))}
           >
             Save file
           </button>
@@ -731,9 +735,34 @@ export function SettingsScreen() {
       <section className="settings-screen__section">
         <h2 className="settings-screen__section-title">Import</h2>
         <p className="settings-screen__note">
-          Paste a dump produced by Export. Merge layers it over what is here, keeping the higher
-          counts per word. Replace discards everything on this device first.
+          Choose a saved backup file, or paste a dump produced by Export. Merge layers it over
+          what is here, keeping the higher counts per word. Replace discards everything on this
+          device first.
         </p>
+        <div className="settings-screen__row">
+          <label className="btn btn--secondary btn--small settings-screen__button">
+            Choose file
+            {/* The system's own picker: on iPhone it opens Files, where Save file puts them. */}
+            <input
+              type="file"
+              accept=".json,application/json"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (!file) return;
+                void file
+                  .text()
+                  .then((text) => {
+                    setImportText(text);
+                    setConfirmingReplace(false);
+                    setBackupStatus(`Loaded ${file.name}. Choose Merge or Replace.`);
+                  })
+                  .catch(() => setBackupStatus(`Could not read ${file.name}.`));
+              }}
+            />
+          </label>
+        </div>
         <textarea
           className="settings-screen__textarea"
           placeholder='{"schemaVersion": …}'

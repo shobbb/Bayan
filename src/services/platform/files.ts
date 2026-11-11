@@ -4,6 +4,7 @@
  */
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 export async function writeExportFile(filename: string, contents: string): Promise<string> {
   const result = await Filesystem.writeFile({
@@ -22,6 +23,31 @@ export async function shareExportFile(uri: string, title: string): Promise<void>
 export async function readImportFile(uri: string): Promise<string> {
   const result = await Filesystem.readFile({ path: uri, encoding: Encoding.UTF8 });
   return typeof result.data === 'string' ? result.data : '';
+}
+
+const BACKUP_FOLDER = 'Backups';
+
+/**
+ * Saves a backup on this device and says where it went.
+ *
+ * In the app it goes to the app's own Documents folder, which Info.plist
+ * exposes in the Files app (On My iPhone → Bayan). A web-style download, which
+ * is what this used to do, goes nowhere inside the iOS web view. In a browser
+ * it is still a download.
+ */
+export async function saveBackupFile(filename: string, contents: string): Promise<string> {
+  if (!Capacitor.isNativePlatform()) {
+    downloadFile(filename, contents);
+    return `Downloaded ${filename}.`;
+  }
+  await Filesystem.writeFile({
+    path: `${BACKUP_FOLDER}/${filename}`,
+    data: contents,
+    directory: Directory.Documents,
+    encoding: Encoding.UTF8,
+    recursive: true,
+  });
+  return `Saved ${filename} in Files → On My iPhone → Bayan → ${BACKUP_FOLDER}.`;
 }
 
 /**
