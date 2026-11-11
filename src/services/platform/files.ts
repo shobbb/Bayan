@@ -51,6 +51,34 @@ export async function saveBackupFile(filename: string, contents: string): Promis
 }
 
 /**
+ * The newest backup Save file left on this device, or null when there is none.
+ *
+ * Null covers every way of having nothing: a browser (which has no such
+ * folder), a fresh install where the folder was never created, and an empty
+ * folder. Backups are named by their timestamp, so the last name is the newest.
+ */
+export async function readLatestSavedBackup(): Promise<{ name: string; contents: string } | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    const { files } = await Filesystem.readdir({ path: BACKUP_FOLDER, directory: Directory.Documents });
+    const names = files
+      .map((file) => file.name)
+      .filter((name) => name.endsWith('.json'))
+      .sort();
+    const newest = names[names.length - 1];
+    if (!newest) return null;
+    const result = await Filesystem.readFile({
+      path: `${BACKUP_FOLDER}/${newest}`,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+    });
+    return typeof result.data === 'string' ? { name: newest, contents: result.data } : null;
+  } catch {
+    return null; // no folder yet
+  }
+}
+
+/**
  * Browser-surface equivalents. On a hosted build the Filesystem plugin writes
  * to origin-private storage rather than anywhere the user can reach, so the
  * dump has to leave through a real download. Keeping both here is this layer

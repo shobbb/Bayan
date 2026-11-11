@@ -12,7 +12,9 @@ import { DEFAULT_CATEGORIES } from '@/config/categories';
 import { acquisitionRate, statusCounts } from '@/domain/stats/metrics';
 import { modernStandardArabicProfile } from '@/domain/languageProfile';
 import type { TrackId } from '@/domain/types';
-import seedState from '@/assets/seed/seedState.json';
+// A real export from the method's earlier tooling, kept as a test fixture
+// only: it is one person's history and no longer ships in the app.
+import seedState from './fixtures/seedState.json';
 
 const TRACK = 'msa' as TrackId;
 

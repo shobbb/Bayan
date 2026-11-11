@@ -4,7 +4,10 @@ import { createRoot } from 'react-dom/client';
 // can adjust a button's layout without having to out-specify it.
 import './styles/buttons.css';
 import { App } from './app';
-import { seedOnFirstRun } from '@/services/seed/firstRunSeed';
+import {
+  describeRestore,
+  restoreSavedBackupIfEmpty,
+} from '@/services/interchange/restoreOnLaunch';
 import { markTransitionSupport } from '@/ui/transitions';
 import './styles/global.css';
 import './styles/transitions.css';
@@ -18,21 +21,21 @@ if (!rootEl) throw new Error('Root element not found');
 const root = createRoot(rootEl);
 
 /**
- * Seed before the first render so Home and Stats mount against a populated
- * corpus (§14). A seeding failure must never block the app: the reader still
- * works, and the import can be retried from Settings (REQ-I2).
+ * An empty install starts empty, unless this device holds a backup from Save
+ * file, which is put back before the first render so Home mounts against it.
+ * Nothing here may block the app: with no backup, or any failure, it opens.
  */
 async function start() {
+  let startupNotice: string | null = null;
   try {
-    const outcome = await seedOnFirstRun();
-    if (outcome.status === 'failed') console.error('First-run seed failed:', outcome.reason);
+    startupNotice = describeRestore(await restoreSavedBackupIfEmpty());
   } catch (error) {
-    console.error('First-run seed failed:', error);
+    console.error('Restoring the saved backup failed:', error);
   }
 
   root.render(
     <StrictMode>
-      <App />
+      <App startupNotice={startupNotice} />
     </StrictMode>,
   );
 }

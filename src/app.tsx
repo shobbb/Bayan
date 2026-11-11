@@ -133,13 +133,14 @@ type Screen =
       sentences: Readonly<Record<string, string>>;
     };
 
-function AppScreens() {
+function AppScreens({ startupNotice }: { startupNotice: string | null }) {
   const config = useConfig();
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [generating, setGenerating] = useState<RoundType | null>(null);
   const [busy, setBusy] = useState<'batch' | 'study' | 'sync' | null>(null);
   const [lastBackupAt, setLastBackupAt] = useState<number | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  // Opens on what launch did, if it did anything worth saying (a restore).
+  const [notice, setNotice] = useState<string | null>(startupNotice);
   const [failure, setFailure] = useState<Failure | null>(null);
   // Bumped after anything that writes to the corpus, so Home re-reads its
   // status strip instead of showing figures from when it first mounted.
@@ -829,10 +830,10 @@ function AppScreens() {
   );
 }
 
-export function App() {
+export function App({ startupNotice = null }: { startupNotice?: string | null }) {
   return (
     <ConfigProvider>
-      <AppScreens />
+      <AppScreens startupNotice={startupNotice} />
     </ConfigProvider>
   );
 }
