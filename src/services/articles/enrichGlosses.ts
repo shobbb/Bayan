@@ -37,7 +37,7 @@ import { anthropicClient } from '@/services/llm/client';
 import { localLlmClient } from '@/services/llm/localClient';
 import { localModelSupported } from '@/services/platform/localModel';
 import { getApiKey } from '@/services/platform/storage';
-import { MissingApiKeyError } from '@/services/rounds/roundService';
+import { MissingApiKeyError } from '@/services/rounds/missingApiKey';
 
 /**
  * Words per request, by the language the definitions are written in.

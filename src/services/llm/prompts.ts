@@ -17,30 +17,10 @@ Respond with strict JSON only, matching this shape exactly, with no prose before
 {
   "titleAr": string,
   "titleEn": string,
-  "segments": Array<{ "text": string, "gloss": string | null, "forms": string | null }>
+  "paragraphs": string[]
 }
 
-Segment rules:
-- Each word is its own segment, fully vowelled, with an English gloss (1-3 words) and, where relevant, its forms (e.g. "كَتَبَ / يَكْتُبُ / كِتَابَة" for a verb, "جَانِب / جَوَانِب" for a noun). Use null for forms when not applicable (particles, pronouns, proper nouns).
-- Punctuation is its own segment with "gloss": null and "forms": null.
-- Mark paragraph breaks with a segment where "text" is exactly "¶" and "gloss" is null.`;
-
-/**
- * What a generated round's segment glosses become under Arabic-only mode (§13).
- *
- * Injected as an override rather than by forking BASE_ROUND_INSTRUCTIONS: the
- * segment rules, the JSON shape and the diacritics requirement are all
- * unchanged, and two near-identical templates would drift apart the first time
- * one of them was edited.
- */
-const ARABIC_ROUND_GLOSS_OVERRIDE = `Override the gloss rule above: each word's "gloss" must be a short DEFINITION IN SIMPLE ARABIC, not an English translation.
-
-- A short phrase, typically 2-6 words, in common high-frequency Arabic.
-- Fully vowelled, like the rest of the passage.
-- Never the word itself or another form of its root.
-- No English anywhere in a gloss.
-
-"titleEn" is unaffected and stays English — it is how the round is listed, not something the learner reads to understand the text.`;
+"titleAr" and every paragraph are fully vowelled Arabic. "titleEn" is a short English title, used only to list the passage. Write the passage only: no glosses, translations or word lists — the app defines the words itself.`;
 
 export interface RoundPromptParams {
   topic: string;
@@ -53,14 +33,11 @@ export interface RoundPromptParams {
   languageGuidance: string;
   minWords: number;
   maxWords: number;
-  /** Which language the segment glosses are written in (§13). */
-  glossLanguage?: GlossLanguage;
 }
 
 export function buildRoundGenerationPrompt(params: RoundPromptParams): string {
   const sections = [
     BASE_ROUND_INSTRUCTIONS,
-    params.glossLanguage === 'arabic' ? ARABIC_ROUND_GLOSS_OVERRIDE : '',
     params.languageGuidance,
     ...params.directives,
     `Topic: ${params.topic}`,

@@ -17,7 +17,13 @@ import {
 } from '@/domain/listening/types';
 import { ArticleMedia } from '@/ui/components/ArticleMedia';
 import { BottomNav, type NavTab } from '@/ui/components/BottomNav';
-import { createRound, finishRound } from '@/services/rounds/roundService';
+import {
+  createRound,
+  defineRoundWord,
+  defineRoundWords,
+  finishRound,
+  undefinedWordCount,
+} from '@/services/rounds/roundService';
 import { generateBatch, startDrillSession, studyOptions } from '@/services/batch/batchService';
 import type { StudySourceId } from '@/domain/drills/studySources';
 import {
@@ -148,6 +154,11 @@ function AppScreens({ startupNotice }: { startupNotice: string | null }) {
   const [openingArticle, setOpeningArticle] = useState<string | null>(null);
   const [enriching, setEnriching] = useState(false);
   const [definingIndex, setDefiningIndex] = useState<number | null>(null);
+  // A round's own definition pass, kept apart from the article's: it runs in the
+  // background, and must not show as busy on an article opened meanwhile.
+  const [roundDefining, setRoundDefining] = useState(false);
+  const [roundDefiningIndex, setRoundDefiningIndex] = useState<number | null>(null);
+  const [roundDefineFailure, setRoundDefineFailure] = useState<Failure | null>(null);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [questionsFailure, setQuestionsFailure] = useState<Failure | null>(null);
   // The newest progress the questions screen has saved, carried back to the
@@ -204,16 +215,59 @@ function AppScreens({ startupNotice }: { startupNotice: string | null }) {
     };
   }, [refreshToken]);
 
+  // A definition pass's result goes onto the round on screen, if it is still
+  // that round; either way it is already saved, words and all.
+  const showUpdatedRound = useCallback((updated: Round) => {
+    setScreen((current) =>
+      current.name === 'reading' && current.round.id === updated.id
+        ? { ...current, round: updated }
+        : current,
+    );
+    setRefreshToken((n) => n + 1);
+  }, []);
+
+  // Defines the round's undefined words in the background, so they have a
+  // definition to show when tapped and a flashcard to make. The round is
+  // readable meanwhile: most words already had a definition on hand.
+  const handleDefineRound = useCallback(
+    (round: Round) => {
+      if (undefinedWordCount(round) === 0) return;
+      setRoundDefineFailure(null);
+      setRoundDefining(true);
+      defineRoundWords(round, config)
+        .then(showUpdatedRound)
+        .catch((error: unknown) => setRoundDefineFailure(describeFailure(error)))
+        .finally(() => setRoundDefining(false));
+    },
+    [config, showUpdatedRound],
+  );
+
+  const handleDefineRoundWord = useCallback(
+    (round: Round, index: number, replace = false) => {
+      setRoundDefineFailure(null);
+      setRoundDefiningIndex(index);
+      defineRoundWord(round, index, config, replace)
+        .then(showUpdatedRound)
+        .catch((error: unknown) => setRoundDefineFailure(describeFailure(error)))
+        .finally(() => setRoundDefiningIndex(null));
+    },
+    [config, showUpdatedRound],
+  );
+
   const handleStartRound = useCallback(
     (roundType: RoundType) => {
       setFailure(null);
       setGenerating(roundType);
       createRound(roundType, config)
-        .then((round) => navigate(() => setScreen({ name: 'reading', round })))
+        .then((round) => {
+          setRoundDefineFailure(null);
+          navigate(() => setScreen({ name: 'reading', round }));
+          handleDefineRound(round);
+        })
         .catch((error: unknown) => setFailure(describeFailure(error)))
         .finally(() => setGenerating(null));
     },
-    [config],
+    [config, handleDefineRound],
   );
 
   // REQ-I6: history-only rounds carry no segments and are not re-readable.
@@ -227,6 +281,7 @@ function AppScreens({ startupNotice }: { startupNotice: string | null }) {
       return;
     }
     setFailure(null);
+    setRoundDefineFailure(null);
     navigate(() => setScreen({ name: 'reading', round }));
   }, []);
 
@@ -796,6 +851,20 @@ function AppScreens({ startupNotice }: { startupNotice: string | null }) {
         segments={round.segments}
         titleAr={round.titleAr}
         onExit={{ label: 'Home', run: handleBackHome }}
+        // The article reader's definition controls. A new round starts this
+        // pass on its own; the button is there to retry it or to start it on
+        // an older round that has gaps.
+        enrich={{
+          count: undefinedWordCount(round),
+          busy: roundDefining,
+          run: () => handleDefineRound(round),
+          failure: roundDefineFailure,
+          notice: null,
+          onOpenSettings: handleOpenSettings,
+        }}
+        onDefineWord={(index) => handleDefineRoundWord(round, index)}
+        onRedefineWord={(index) => handleDefineRoundWord(round, index, true)}
+        definingIndex={roundDefiningIndex}
         onFinish={(notKnownIndices) => handleFinishReading(round, notKnownIndices)}
       />,
     );

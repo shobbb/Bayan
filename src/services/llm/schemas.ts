@@ -7,19 +7,18 @@
  */
 import { z } from 'zod';
 
-export const llmSegmentSchema = z.object({
-  text: z.string().min(1),
-  gloss: z.string().nullable(),
-  forms: z.string().nullable(),
-});
-
+/**
+ * A generated round: the passage alone. Its words are segmented and defined by
+ * the app, as an article's are, rather than glossed one by one by the model —
+ * writing a vowelled definition and forms for every word made the output about
+ * twenty times the size of the passage, and the wait to match.
+ */
 export const llmRoundResponseSchema = z.object({
   titleAr: z.string().min(1),
   titleEn: z.string().min(1),
-  segments: z.array(llmSegmentSchema).min(1),
+  paragraphs: z.array(z.string().min(1)).min(1),
 });
 
-export type LlmSegment = z.infer<typeof llmSegmentSchema>;
 export type LlmRoundResponse = z.infer<typeof llmRoundResponseSchema>;
 
 /**

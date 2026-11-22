@@ -19,7 +19,7 @@ const PARAMS = {
 const VALID = JSON.stringify({
   titleAr: 'عُنْوَان',
   titleEn: 'A Title',
-  segments: [{ text: 'كِتَاب', gloss: 'book', forms: null }],
+  paragraphs: ['قَرَأْتُ الْكِتَابَ.'],
 });
 
 /** Replays a fixed list of completions, one per attempt, recording the count. */
@@ -42,7 +42,7 @@ describe('generateRound', () => {
     const round = await generateRound(PARAMS, ROUTE, 'k', 1, client);
 
     expect(round.titleEn).toBe('A Title');
-    expect(round.segments).toHaveLength(1);
+    expect(round.paragraphs).toEqual(['قَرَأْتُ الْكِتَابَ.']);
     expect(client.calls).toBe(1);
   });
 
@@ -65,7 +65,7 @@ describe('generateRound', () => {
   });
 
   it('reports schema issues when the shape is wrong after every retry', async () => {
-    const wrong = JSON.stringify({ titleAr: 'x', titleEn: 'y', segments: [] });
+    const wrong = JSON.stringify({ titleAr: 'x', titleEn: 'y', paragraphs: [] });
     const client = clientReturning(
       { text: wrong, truncated: false },
       { text: wrong, truncated: false },
@@ -77,7 +77,7 @@ describe('generateRound', () => {
     const validation = error as LlmValidationError;
     expect(validation.truncated).toBe(false);
     expect(validation.issues.length).toBeGreaterThan(0);
-    expect(validation.describe()).toContain('segments');
+    expect(validation.describe()).toContain('paragraphs');
   });
 
   it('stops immediately on truncation instead of spending the retry', async () => {

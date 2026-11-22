@@ -63,18 +63,18 @@ describe('buildRoundGenerationPrompt', () => {
     maxWords: 140,
   };
 
-  it('leaves the gloss rule alone by default', () => {
-    expect(buildRoundGenerationPrompt(base)).not.toContain('Override the gloss rule');
+  // The passage only: defining each word in the reply made it about twenty
+  // times the passage's size, and the app defines words itself.
+  it('asks for the passage as paragraphs, and for no per-word glosses', () => {
+    const prompt = buildRoundGenerationPrompt(base);
+
+    expect(prompt).toContain('"paragraphs": string[]');
+    expect(prompt).not.toContain('"segments"');
+    expect(prompt).toContain('no glosses');
   });
 
-  it('overrides the segment glosses to Arabic when asked (§13)', () => {
-    const prompt = buildRoundGenerationPrompt({ ...base, glossLanguage: 'arabic' });
-
-    expect(prompt).toContain('Override the gloss rule');
-    expect(prompt).toContain('DEFINITION IN SIMPLE ARABIC');
-    // The English title is how a round is listed, not something read to
-    // understand the text, so it is explicitly exempted.
-    expect(prompt).toContain('"titleEn" is unaffected');
+  it('still asks for full vowelling', () => {
+    expect(buildRoundGenerationPrompt(base)).toContain('Full diacritics');
   });
 });
 
